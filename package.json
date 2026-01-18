@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsx main.ts",
     "main": "npm run xlsx2json && npm run start",
-    "xlsx2json": "tsx xlsx.ts"
+    "utils": "tsx utils.ts",
+    "xlsx2json": "tsx xlsx.ts",
+    "convert-jfif": "tsx convertJfif.ts"
   },
   "keywords": [],
   "author": "",

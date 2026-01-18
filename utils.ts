@@ -282,13 +282,13 @@ export interface ConfigGenerateItem {
 
 export async function readConfigJsonAsGeminiJobs(
   configPath: string = path.resolve(process.cwd(), 'config.json'),
-): Promise<Array<{ prompt: string; options: { responseModalities?: string[]; imageConfig?: any; generationConfig?: any; referenceImages?: Array<{ data: string; mimeType: string }> }; output?: string; count?: number }>> {
+): Promise<Array<{ prompt: string; options: { responseModalities?: string[]; imageConfig?: any; generationConfig?: any; referenceImages?: Array<{ data: string; mimeType: string }> }; output?: string; count?: number; nextPromptFun?: string[]; meta?: Record<string, any> }>> {
   const items = await readJsonFile(configPath);
   if (!Array.isArray(items)) {
     throw new Error(`config.json 格式错误：根节点必须是数组，实际为 ${typeof items}`);
   }
 
-  const jobs: Array<{ prompt: string; options: { responseModalities?: string[]; imageConfig?: any; generationConfig?: any; referenceImages?: Array<{ data: string; mimeType: string }> }; output?: string; count?: number }> = [];
+  const jobs: Array<{ prompt: string; options: { responseModalities?: string[]; imageConfig?: any; generationConfig?: any; referenceImages?: Array<{ data: string; mimeType: string }> }; output?: string; count?: number; nextPromptFun?: string[]; meta?: Record<string, any> }> = [];
   for (const item of items as ConfigGenerateItem[]) {
     const rawPromptValue = ConfigJsonParser.getValueByCleanKey(item as any, 'prompt');
     let prompt = (rawPromptValue ?? '').toString();
@@ -300,6 +300,13 @@ export async function readConfigJsonAsGeminiJobs(
     const output = ConfigJsonParser.getValueByCleanKey(item as any, 'output');
     const countRaw = ConfigJsonParser.getValueByCleanKey(item as any, 'count');
     const count = countRaw === undefined || countRaw === null ? undefined : Number(countRaw);
+    const nextPromptFunRaw = ConfigJsonParser.getValueByCleanKey(item as any, 'nextPromptFun') ?? ConfigJsonParser.getValueByCleanKey(item as any, 'next');
+    let nextPromptFun: string[] = [];
+    if (typeof nextPromptFunRaw === 'string') {
+      nextPromptFun = nextPromptFunRaw.split(/[，,]/).map((s) => s.trim()).filter(Boolean);
+    } else if (Array.isArray(nextPromptFunRaw)) {
+      nextPromptFun = (nextPromptFunRaw as any[]).map((s) => (s ?? '').toString().trim()).filter(Boolean);
+    }
 
     const refRaw = ConfigJsonParser.getValueByCleanKey(item as any, 'referenceImages');
     let refList: Array<string | { data: string; mimeType: string }> = [];
@@ -333,7 +340,7 @@ export async function readConfigJsonAsGeminiJobs(
     if (generationConfig && typeof generationConfig === 'object') options.generationConfig = generationConfig;
     if (inlineRefs.length) options.referenceImages = inlineRefs;
 
-    jobs.push({ prompt, options, output: typeof output === 'string' ? output : undefined, count: typeof count === 'number' && !Number.isNaN(count) ? count : undefined });
+    jobs.push({ prompt, options, output: typeof output === 'string' ? output : undefined, count: typeof count === 'number' && !Number.isNaN(count) ? count : undefined, nextPromptFun: nextPromptFun.length ? nextPromptFun : undefined, meta: item as any });
   }
   return jobs;
 }
@@ -591,14 +598,36 @@ export async function renameImagesByResolution(
 
     console.log(`\n处理子文件夹: ${folderInfo.newName} (序号: ${folderIndex})`);
 
-    // 读取子文件夹中的所有图片文件
-    const files = await fs.readdir(subFolderPath);
+    // 读取子文件夹中的所有文件
+    const entries = await fs.readdir(subFolderPath, { withFileTypes: true });
+    const files = entries.filter(entry => entry.isFile()).map(entry => entry.name);
+
+    // 分离图片文件和非图片文件
     const imageFiles = files
       .filter(file => {
         const ext = path.extname(file).toLowerCase();
         return imageExts.includes(ext);
       })
       .sort();
+
+    // 删除非图片文件
+    const nonImageFiles = files.filter(file => {
+      const ext = path.extname(file).toLowerCase();
+      return !imageExts.includes(ext);
+    });
+
+    if (nonImageFiles.length > 0) {
+      console.log(`  删除 ${nonImageFiles.length} 个非图片文件:`);
+      for (const nonImageFile of nonImageFiles) {
+        const nonImagePath = path.join(subFolderPath, nonImageFile);
+        try {
+          await fs.remove(nonImagePath);
+          console.log(`    已删除: ${nonImageFile}`);
+        } catch (error) {
+          console.log(`    删除失败: ${nonImageFile}, 错误: ${error}`);
+        }
+      }
+    }
 
     if (imageFiles.length === 0) {
       console.log(`  子文件夹中没有找到图片文件，跳过`);
@@ -633,21 +662,30 @@ export async function renameImagesByResolution(
       let type: 'landscape' | 'square' | 'vertical' | null = null;
       let newName: string;
 
-      // 判断图片类型
-      if (width === 1200 && height === 628) {
+      // 计算宽高比
+      const aspectRatio = width / height;
+
+      // 目标宽高比和容差
+      const landscapeRatio = 1200 / 628; // ≈ 1.9108
+      const squareRatio = 1024 / 1024; // = 1.0
+      const verticalRatio = 960 / 1200; // = 0.8
+      const tolerance = 0.01; // 容差
+
+      // 判断图片类型（按宽高比匹配）
+      if (Math.abs(aspectRatio - landscapeRatio) <= tolerance) {
         type = 'landscape';
         counters.landscape++;
         newName = `${folderIndex}@404-landscape-${counters.landscape}${ext}`;
-      } else if (width === 1024 && height === 1024) {
+      } else if (Math.abs(aspectRatio - squareRatio) <= tolerance) {
         type = 'square';
         counters.square++;
         newName = `${folderIndex}@404-square-${counters.square}${ext}`;
-      } else if (width === 960 && height === 1200) {
+      } else if (Math.abs(aspectRatio - verticalRatio) <= tolerance) {
         type = 'vertical';
         counters.vertical++;
         newName = `${folderIndex}@404-vertical-${counters.vertical}${ext}`;
       } else {
-        console.log(`    跳过 ${imageFile}: 尺寸不匹配 (${width}x${height})`);
+        console.log(`    跳过 ${imageFile}: 宽高比不匹配 (${width}x${height}, 宽高比: ${aspectRatio.toFixed(4)})`);
         continue;
       }
 
@@ -679,6 +717,7 @@ export async function renameImagesByResolution(
 }
 
 
-// splitAndStitchLongImage("D:\\mog素材\\xjt\\谷歌地图1", 1024, 1024);
-// splitAndStitchLongImage("D:\\mog素材\\xjt\\谷歌地图1", 960, 1200);
-// renameImagesByResolution("D:\\mog素材\\xjt\\谷歌地图1");
+// splitAndStitchLongImage("D:\\mog素材\\xjt\\gmail\\jp", 1024, 1024);
+// splitAndStitchLongImage("D:\\mog素材\\xjt\\gmail\\jp", 960, 1200);
+// renameImagesByResolution("D:\\mog素材\\xjt\\line\\jp");
+

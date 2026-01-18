@@ -1,340 +1,197 @@
 [
   {
+    "prompt": "生成一张1:1的方图，适当调整构图使应用的图标战图比例变大在显眼位置",
     "referenceImages": [
-      "referenceImages\\谷歌地图2\\1-1.jpg"
+      "referenceImages\\line方\\1768534784026-1200x628.jpg"
     ],
-    "generationConfig": {
-      "temperature": 1
-    },
     "imageConfig": {
       "aspectRatio": "1:1",
       "imageSize": "1k"
     },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1-1",
+    "output": "D:\\mog素材\\待用素材库\\line方2\\1768534784026-1200x628",
+    "​count": 3,
+    "appName": "Gmail",
+    "lang": "jp",
+    "batchFun": "batch"
+  },
+  {
+    "prompt": "生成一张1:1的方图，适当调整构图使应用的图标战图比例变大在显眼位置",
+    "referenceImages": [
+      "referenceImages\\line方\\1768534789899-1200x628.jpg"
+    ],
+    "imageConfig": {
+      "aspectRatio": "1:1",
+      "imageSize": "1k"
+    },
+    "output": "D:\\mog素材\\待用素材库\\line方2\\1768534789899-1200x628",
+    "​count": 3,
+    "appName": "Gmail",
+    "lang": "jp",
+    "batchFun": "batch"
+  },
+  {
+    "prompt": "生成一张1:1的方图，适当调整构图使应用的图标战图比例变大在显眼位置",
+    "referenceImages": [
+      "referenceImages\\line方\\1768546221992-1200x628.jpg"
+    ],
+    "imageConfig": {
+      "aspectRatio": "1:1",
+      "imageSize": "1k"
+    },
+    "output": "D:\\mog素材\\待用素材库\\line方2\\1768546221992-1200x628",
+    "​count": 3,
+    "appName": "Gmail",
+    "lang": "jp",
+    "batchFun": "batch"
+  },
+  {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，为了进一步推广产品，你需要制作更多的广告图片，你应该使用相同风格制作新的广告，但请注意新的广告与现有广告不应过度相似，需要调整背景以及构图。\n  2、图片将用于Gmail应用推广，所以参考图无论是什么应用图标一定要是Gmail的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言/字母。若出现任意非jp文字则视为失败，必须重新生成。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  6、按钮颜色不为红色。\n  7、要使用参考图的按钮类型的图标、简约风格，发挥创意\n  ",
+    "referenceImages": [
+      "referenceImages/Gmail"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1k"
+    },
+    "output": "D:\\mog素材\\待用素材库\\谷歌邮箱",
     "​count": 0,
-    "appName": "谷歌地图",
+    "appName": "Gmail",
+    "lang": "jp",
+    "promptTmpFunName": "getAppDefaultPrompt"
+  },
+  {
+    "referenceImages": [
+      "referenceImages\\line\\jimeng-2026-01-16-6846-将图1中的文案改为使用图二.png"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "aspectRatio": "4:5",
+      "imageSize": "1k"
+    },
+    "output": "D:\\mog素材\\待用素材库\\line竖2\\jimeng-2026-01-16-6846-将图1中的文案改为使用图二",
+    "​count": 0,
+    "appName": "line",
     "lang": "jp",
     "promptTmpFunName": "getCutLogoPrompt",
     "batchFun": "batch",
-    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素字体可以丢弃掉。\n  2、如果没有文字可以适当添加文字参考为:谷歌地图、下载、更新、免费需要为jp语言。\n  3、背景保留裁剪部分背景的。\n  4、\n  "
+    "nextPromptFun": [
+      "getCentralPositionPrompt"
+    ],
+    "next": [
+      "getCentralPositionPrompt"
+    ],
+    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素以及字体可以丢弃掉。\n  2、背景保留裁剪部分背景的。\n  "
   },
   {
     "referenceImages": [
-      "referenceImages\\谷歌地图2\\1768474054857.jpg"
+      "referenceImages\\line\\jimeng-2026-01-16-7682-将图2中的文案改为使用图1.png"
     ],
     "generationConfig": {
-      "temperature": 1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "1:1",
+      "aspectRatio": "4:5",
       "imageSize": "1k"
     },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768474054857",
+    "output": "D:\\mog素材\\待用素材库\\line竖2\\jimeng-2026-01-16-7682-将图2中的文案改为使用图1",
     "​count": 0,
-    "appName": "谷歌地图",
+    "appName": "line",
     "lang": "jp",
     "promptTmpFunName": "getCutLogoPrompt",
     "batchFun": "batch",
-    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素字体可以丢弃掉。\n  2、如果没有文字可以适当添加文字参考为:谷歌地图、下载、更新、免费需要为jp语言。\n  3、背景保留裁剪部分背景的。\n  4、\n  "
+    "nextPromptFun": [
+      "getCentralPositionPrompt"
+    ],
+    "next": [
+      "getCentralPositionPrompt"
+    ],
+    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素以及字体可以丢弃掉。\n  2、背景保留裁剪部分背景的。\n  "
   },
   {
     "referenceImages": [
-      "referenceImages\\谷歌地图2\\1768474329585.jpg"
+      "referenceImages\\line\\jimeng-2026-01-16-8584-将图2中的文案改为使用图1.png"
     ],
     "generationConfig": {
-      "temperature": 1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "1:1",
+      "aspectRatio": "4:5",
       "imageSize": "1k"
     },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768474329585",
+    "output": "D:\\mog素材\\待用素材库\\line竖2\\jimeng-2026-01-16-8584-将图2中的文案改为使用图1",
     "​count": 0,
-    "appName": "谷歌地图",
+    "appName": "line",
     "lang": "jp",
     "promptTmpFunName": "getCutLogoPrompt",
     "batchFun": "batch",
-    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素字体可以丢弃掉。\n  2、如果没有文字可以适当添加文字参考为:谷歌地图、下载、更新、免费需要为jp语言。\n  3、背景保留裁剪部分背景的。\n  4、\n  "
+    "nextPromptFun": [
+      "getCentralPositionPrompt"
+    ],
+    "next": [
+      "getCentralPositionPrompt"
+    ],
+    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素以及字体可以丢弃掉。\n  2、背景保留裁剪部分背景的。\n  "
   },
   {
     "referenceImages": [
-      "referenceImages\\谷歌地图2\\1768474341191.jpg"
+      "D:\\mog素材\\待用素材库\\YouTube方\\1768535732148-1200x628\\1768543870879-1024x1024.jpg"
     ],
     "generationConfig": {
-      "temperature": 1
+      "temperature": 0.5
     },
     "imageConfig": {
       "aspectRatio": "1:1",
       "imageSize": "1k"
     },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768474341191",
+    "output": "D:\\mog素材\\待用素材库\\YouTube方\\1\\1768543870879-1024x1024",
     "​count": 0,
-    "appName": "谷歌地图",
-    "lang": "jp",
-    "promptTmpFunName": "getCutLogoPrompt",
+    "appName": "YouTube",
+    "lang": "us",
+    "promptTmpFunName": "getCentralPositionPrompt",
     "batchFun": "batch",
-    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素字体可以丢弃掉。\n  2、如果没有文字可以适当添加文字参考为:谷歌地图、下载、更新、免费需要为jp语言。\n  3、背景保留裁剪部分背景的。\n  4、\n  "
+    "prompt": "1、将图中除了背景以外的所有元素缩小放到中心位置，图片边缘跟元素之间需要有一些内边距，残缺的文字、元素需要智能补全或者去掉。\n  2、logo元素放大需要显眼一些。\n  3、\n  "
   },
   {
     "referenceImages": [
-      "referenceImages\\谷歌地图2\\1768474344708.jpg"
+      "D:\\mog素材\\待用素材库\\YouTube方\\1768535732148-1200x628\\1768544445506-1024x1024.jpg"
     ],
     "generationConfig": {
-      "temperature": 1
+      "temperature": 0.5
     },
     "imageConfig": {
       "aspectRatio": "1:1",
       "imageSize": "1k"
     },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768474344708",
+    "output": "D:\\mog素材\\待用素材库\\YouTube方\\1\\1768544445506-1024x1024",
     "​count": 0,
-    "appName": "谷歌地图",
-    "lang": "jp",
-    "promptTmpFunName": "getCutLogoPrompt",
+    "appName": "YouTube",
+    "lang": "us",
+    "promptTmpFunName": "getCentralPositionPrompt",
     "batchFun": "batch",
-    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素字体可以丢弃掉。\n  2、如果没有文字可以适当添加文字参考为:谷歌地图、下载、更新、免费需要为jp语言。\n  3、背景保留裁剪部分背景的。\n  4、\n  "
+    "prompt": "1、将图中除了背景以外的所有元素缩小放到中心位置，图片边缘跟元素之间需要有一些内边距，残缺的文字、元素需要智能补全或者去掉。\n  2、logo元素放大需要显眼一些。\n  3、\n  "
   },
   {
     "referenceImages": [
-      "referenceImages\\谷歌地图2\\3-1.jpg"
+      "D:\\mog素材\\待用素材库\\YouTube方\\1768535732148-1200x628\\1768544446377-1024x1024.jpg"
     ],
     "generationConfig": {
-      "temperature": 1
+      "temperature": 0.5
     },
     "imageConfig": {
       "aspectRatio": "1:1",
       "imageSize": "1k"
     },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\3-1",
+    "output": "D:\\mog素材\\待用素材库\\YouTube方\\1\\1768544446377-1024x1024",
     "​count": 0,
-    "appName": "谷歌地图",
-    "lang": "jp",
-    "promptTmpFunName": "getCutLogoPrompt",
-    "batchFun": "batch",
-    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素字体可以丢弃掉。\n  2、如果没有文字可以适当添加文字参考为:谷歌地图、下载、更新、免费需要为jp语言。\n  3、背景保留裁剪部分背景的。\n  4、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478126197.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478126197",
-    "​count": 3,
-    "appName": "谷歌地图",
+    "appName": "YouTube",
     "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
+    "promptTmpFunName": "getCentralPositionPrompt",
     "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478130228.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478130228",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478311248.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478311248",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478312437.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478312437",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478315892.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478315892",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478320286.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478320286",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478342312.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478342312",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478587540.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478587540",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478590909.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478590909",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478598440.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478598440",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478941679.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478941679",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\1768478946530.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\1768478946530",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\23f086e78c57d2b651bba02e0154d6a399fdfc780aa49a5d58a5a68ad4e2c849.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\23f086e78c57d2b651bba02e0154d6a399fdfc780aa49a5d58a5a68ad4e2c849",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
-  },
-  {
-    "referenceImages": [
-      "referenceImages\\4\\4c3a76d8dc4a2a89cf55eef4105b281735cf6f7b9761ef5c127e8efc408c26d2.jpg"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\谷歌地图\\方\\4c3a76d8dc4a2a89cf55eef4105b281735cf6f7b9761ef5c127e8efc408c26d2",
-    "​count": 3,
-    "appName": "谷歌地图",
-    "lang": "us",
-    "promptTmpFunName": "getCutImagePrompt",
-    "batchFun": "batch",
-    "prompt": "1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。\n  2、\n  "
+    "prompt": "1、将图中除了背景以外的所有元素缩小放到中心位置，图片边缘跟元素之间需要有一些内边距，残缺的文字、元素需要智能补全或者去掉。\n  2、logo元素放大需要显眼一些。\n  3、\n  "
   }
 ]

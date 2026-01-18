@@ -3,7 +3,8 @@ export function getAppDefaultPrompt({ appName, lang, prompt }: { appName?: strin
   2、图片将用于${appName}应用推广，所以参考图无论是什么应用图标一定要是${appName}的图标。
   3、图片内出现的所有可见文字必须 100% 为${lang}语言，禁止出现任何其他语言/字母。若出现任意非${lang}文字则视为失败，必须重新生成。
   4、图片中只能出现一张图不能是多张图拼接而成的。
-  5、${prompt}
+  6、按钮颜色不为红色。
+  7、${prompt}
   `;
 }
 
@@ -16,17 +17,18 @@ export function getAppDefaultPrompt2({ appName, lang, prompt }: { appName?: stri
 }
 
 export function getAppDefaultPrompt3({ appName, lang, prompt }: { appName?: string; lang?: string; prompt?: string;[key: string]: any }) {
-  return `1、你是一个专业的广告设计师，这是你之前为${appName}设计的广告，你现在需要已这个风格再制作一些${appName}广告，要求每个广告都有一定差异，而不是看上去就像同一个广告。
+  return `1、你是一个专业的广告设计师，这是你之前为${appName}设计的广告，你现在需要已这个风格再制作一些${appName}广告，要求每个广告跟原图有差异，而不是看上去就像同一个广告。
   2、图中文字要简洁明了加起来不能超过3条单条文字长度不能超过10个字符。
-  3、${prompt}
+  3、文字的语言必须为${lang}语言。
+  4、${prompt}
   `;
 }
 
 export function getAppAdsDesignerPrompt({ appName, lang, prompt }: { appName?: string; lang?: string; prompt?: string;[key: string]: any }) {
   return `1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:
-    - 推广应用的图标一定要在核心位置。
+    - 推广应用的图标以及文字一定要在核心位置。
     - 背景与主体有对比色凸显主体但是要简洁一些。
-    - 文字要简明了图中所有文字加起来不能超过3条并且单条文字长度不超过参考图的文字长度(具体条数可以参考参考图)并且突出重点为:应用名字、下载、更新、免费。
+    - 文字要简明了图中所有文字加起来不能超过3条并且单条文字长度不超过参考图的文字长度(具体条数可以参考参考图)。
   2、图片将用于${appName}应用推广，所以参考图无论是什么应用图标一定要是${appName}的图标。
   3、图片内出现的所有可见文字必须 100% 为${lang}语言，禁止出现任何其他语言/字母。
   4、图片中只能出现一张图不能是多张图拼接而成的。
@@ -54,21 +56,26 @@ export function getTextTranslatePrompt({ lang, prompt }: { lang?: string; prompt
 }
 
 export function getCutImagePrompt({ lang, prompt }: { lang?: string; prompt?: string;[key: string]: any }) {
-  return `1、基于上传的参考图片保持原图的高级广告摄影风格，对图片主体有适当缩放微调，以适应新的构图，但不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列。
+  return `1、基于上传的参考图片保持原图的高级广告摄影风格，可以对图片主体有适当缩放微调，以适应新的构图，主体要整体缩放不能有拉伸变形的情况，主体必须与参考图看起来没有太多变化属于同一个广告系列，如果参考图有文本，则需要保留文本，并且语言必须与参考图一致。
   2、${prompt}
   `;
 }
 
 export function getCutLogoPrompt({ appName, lang, prompt }: { appName?: string; lang?: string; prompt?: string;[key: string]: any }) {
-  return `1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素字体可以丢弃掉。
-  2、如果没有文字可以适当添加文字参考为:${appName}、下载、更新、免费需要为${lang}语言。
-  3、背景保留裁剪部分背景的。
-  4、${prompt}
+  return `1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素以及字体可以丢弃掉。
+  2、背景保留裁剪部分背景的。
   `;
 }
 
 export function getCutOtherPrompt({ appName, lang, prompt }: { appName?: string; lang?: string; prompt?: string;[key: string]: any }) {
-  return `1、找到参考图中除了应用图标以及文字之外的一个元素裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，图中不能出现残缺文字情况，背景保留裁剪部分。
+  return `1、找到参考图中除了应用图标以及文字之外的一个元素裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素以及字体可以丢弃掉，背景保留裁剪部分。
   2、${prompt}
+  `;
+}
+
+export function getCentralPositionPrompt({ appName, lang, prompt }: { appName?: string; lang?: string; prompt?: string;[key: string]: any }) {
+  return `1、将图中除了背景以外的所有元素缩小放到中心位置，图片边缘跟元素之间需要有一些内边距，残缺的文字、元素需要智能补全或者去掉。
+  2、logo元素放大需要显眼一些。
+  3、${prompt}
   `;
 }

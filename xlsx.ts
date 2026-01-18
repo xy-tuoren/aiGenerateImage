@@ -67,6 +67,18 @@ export async function promptXlsxToJson(
       if (record.referenceImages && typeof record.referenceImages === 'string') {
         record.referenceImages = record.referenceImages.split(/[，,]/).map((s: string) => s.trim()).filter(Boolean);
       }
+      if (record.nextPromptFun && typeof record.nextPromptFun === 'string') {
+        record.nextPromptFun = record.nextPromptFun.split(/[，,]/).map((s: string) => s.trim()).filter(Boolean);
+      }
+      if (record.next && typeof record.next === 'string') {
+        record.next = record.next.split(/[，,]/).map((s: string) => s.trim()).filter(Boolean);
+      }
+      if (!record.nextPromptFun && record.next && Array.isArray(record.next)) {
+        record.nextPromptFun = record.next;
+      }
+      if (!record.next && record.nextPromptFun && Array.isArray(record.nextPromptFun)) {
+        record.next = record.nextPromptFun;
+      }
       // 处理数值字段
       const numberFields = ['generationConfig.temperature', 'generationConfig.topP', 'generationConfig.topK', 'count'];
       numberFields.forEach((fieldPath) => {
@@ -158,7 +170,7 @@ export async function promptXlsxToJson(
         } catch (error) {
           throw new Error(`batchFun 模式下读取 referenceImages 路径失败: ${refImagePath}, 错误: ${error}`);
         }
-      } else if (record.batchFun === 'combination') {
+      } else if (record.batchFun && typeof record.batchFun === 'string' && record.batchFun.startsWith('combination')) {
         const projectRoot = path.dirname(filePath);
         const countKey = Object.keys(record).find((k) => k.trim() === 'count' || k.replace(/[\u200B-\u200D\uFEFF]/g, '') === 'count');
         const rawCount = countKey ? (record as any)[countKey] : undefined;
@@ -170,6 +182,9 @@ export async function promptXlsxToJson(
         if (!record.referenceImages || !Array.isArray(record.referenceImages) || record.referenceImages.length === 0) {
           throw new Error(`combination 模式下 referenceImages 不能为空`);
         }
+        const batchFunStr = String(record.batchFun);
+        const match = batchFunStr.match(/^combination(\d+)?$/);
+        const targetImageCount = match && match[1] ? parseInt(match[1], 10) : 1;
         const imageExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.tif'];
         const allImages: string[] = [];
         for (const ref of record.referenceImages) {
@@ -201,7 +216,7 @@ export async function promptXlsxToJson(
         if (allImages.length === 0) {
           throw new Error(`combination 模式下未找到参考图片`);
         }
-        const maxGroupSize = Math.min(3, allImages.length);
+        const maxGroupSize = Math.min(targetImageCount, allImages.length);
         const combos: string[][] = [];
         const buildCombos = (targetSize: number, startIndex: number, picked: string[]) => {
           if (picked.length === targetSize) {
@@ -214,9 +229,7 @@ export async function promptXlsxToJson(
             picked.pop();
           }
         };
-        for (let size = 1; size <= maxGroupSize; size++) {
-          buildCombos(size, 0, []);
-        }
+        buildCombos(maxGroupSize, 0, []);
         const pairs: Array<{ templateName: string; images: string[] }> = [];
         for (const imgCombo of combos) {
           for (const templateName of templateNames) {

@@ -1,8 +1,10 @@
 import 'dotenv/config';
 import * as path from 'path';
 import async from 'async';
+import sharp from 'sharp';
 import { GeminiClient } from './gemini.js';
 import { mimeTypeToExt, readConfigJsonAsGeminiJobs, writeGeneratedImageFile, resizeImageByAspectRatio } from './utils.js';
+import * as promptTemplates from './prompt.js';
 
 async function runBatchFromConfig(configPath: string = path.resolve(process.cwd(), 'config.json')): Promise<void> {
   const jobs = await readConfigJsonAsGeminiJobs(configPath);
@@ -40,10 +42,48 @@ async function runBatchFromConfig(configPath: string = path.resolve(process.cwd(
         imageData = await resizeImageByAspectRatio(result.data, aspectRatio);
       }
       const ext = mimeTypeToExt(result.mimeType);
+      const imageBuffer = Buffer.from(imageData, 'base64');
+      const metadata = await sharp(imageBuffer).metadata();
+      const width = metadata.width || 0;
+      const height = metadata.height || 0;
       const timestamp = Date.now();
-      const filename = path.join(outputDir, `${timestamp}.${ext}`);
+      const filename = path.join(outputDir, `${timestamp}-${width}x${height}.${ext}`);
       await writeGeneratedImageFile(filename, imageData);
       console.log(`已生成: ${filename}`);
+      if (job.nextPromptFun && Array.isArray(job.nextPromptFun) && job.nextPromptFun.length > 0) {
+        let nextRef: { data: string; mimeType: string } = { data: imageData, mimeType: result.mimeType };
+        for (let i = 0; i < job.nextPromptFun.length; i++) {
+          const fnName = (job.nextPromptFun[i] ?? '').toString().trim();
+          if (!fnName) continue;
+          const fn = (promptTemplates as any)[fnName];
+          if (typeof fn !== 'function') {
+            throw new Error(`nextPromptFun 指定的方法不存在或不是函数: ${fnName}`);
+          }
+          const meta: any = job.meta && typeof job.meta === 'object' ? job.meta : {};
+          const templateParams = {
+            ...meta,
+            appName: meta.appName ? String(meta.appName) : '',
+            lang: meta.lang ? String(meta.lang) : '',
+            prompt: meta.prompt ? String(meta.prompt) : job.prompt
+          };
+          const nextPrompt = fn(templateParams);
+          const nextResult = await client.generateImage(nextPrompt, { ...job.options, referenceImages: [nextRef] });
+          let nextImageData = nextResult.data;
+          if (aspectRatio === '4:5' || aspectRatio === '1:1' || aspectRatio === '16:9') {
+            nextImageData = await resizeImageByAspectRatio(nextResult.data, aspectRatio);
+          }
+          const nextExt = mimeTypeToExt(nextResult.mimeType);
+          const nextImageBuffer = Buffer.from(nextImageData, 'base64');
+          const nextMetadata = await sharp(nextImageBuffer).metadata();
+          const nextWidth = nextMetadata.width || 0;
+          const nextHeight = nextMetadata.height || 0;
+          const nextTimestamp = Date.now();
+          const nextFilename = path.join(outputDir, `${nextTimestamp}-${nextWidth}x${nextHeight}-next-${i + 1}-${fnName}.${nextExt}`);
+          await writeGeneratedImageFile(nextFilename, nextImageData);
+          console.log(`已生成(next): ${nextFilename}`);
+          nextRef = { data: nextImageData, mimeType: nextResult.mimeType };
+        }
+      }
     } catch (error) {
       console.error(`任务失败 [Job ${jobIndex + 1}, Task ${taskIndex + 1}]:`, error instanceof Error ? error.message : String(error));
     }
