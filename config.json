@@ -2,13 +2,13 @@
   {
     "prompt": "生成一张1:1的方图，适当调整构图使应用的图标战图比例变大在显眼位置",
     "referenceImages": [
-      "referenceImages\\line方\\1768534784026-1200x628.jpg"
+      "referenceImages\\line\\jimeng-2026-01-16-6846-将图1中的文案改为使用图二.png"
     ],
     "imageConfig": {
       "aspectRatio": "1:1",
       "imageSize": "1k"
     },
-    "output": "D:\\mog素材\\待用素材库\\line方2\\1768534784026-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\line方2\\jimeng-2026-01-16-6846-将图1中的文案改为使用图二",
     "​count": 3,
     "appName": "Gmail",
     "lang": "jp",
@@ -17,13 +17,13 @@
   {
     "prompt": "生成一张1:1的方图，适当调整构图使应用的图标战图比例变大在显眼位置",
     "referenceImages": [
-      "referenceImages\\line方\\1768534789899-1200x628.jpg"
+      "referenceImages\\line\\jimeng-2026-01-16-7682-将图2中的文案改为使用图1.png"
     ],
     "imageConfig": {
       "aspectRatio": "1:1",
       "imageSize": "1k"
     },
-    "output": "D:\\mog素材\\待用素材库\\line方2\\1768534789899-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\line方2\\jimeng-2026-01-16-7682-将图2中的文案改为使用图1",
     "​count": 3,
     "appName": "Gmail",
     "lang": "jp",
@@ -32,13 +32,13 @@
   {
     "prompt": "生成一张1:1的方图，适当调整构图使应用的图标战图比例变大在显眼位置",
     "referenceImages": [
-      "referenceImages\\line方\\1768546221992-1200x628.jpg"
+      "referenceImages\\line\\jimeng-2026-01-16-8584-将图2中的文案改为使用图1.png"
     ],
     "imageConfig": {
       "aspectRatio": "1:1",
       "imageSize": "1k"
     },
-    "output": "D:\\mog素材\\待用素材库\\line方2\\1768546221992-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\line方2\\jimeng-2026-01-16-8584-将图2中的文案改为使用图1",
     "​count": 3,
     "appName": "Gmail",
     "lang": "jp",
