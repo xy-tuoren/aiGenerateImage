@@ -9,7 +9,12 @@ import * as promptTemplates from './prompt.js';
 async function runBatchFromConfig(configPath: string = path.resolve(process.cwd(), 'config.json')): Promise<void> {
   const jobs = await readConfigJsonAsGeminiJobs(configPath);
   const client = new GeminiClient({});
-  console.log(jobs);
+  const filteredJobs = jobs.filter(job => {
+    const numCount = job.count !== undefined && job.count !== null && !isNaN(Number(job.count)) ? Number(job.count) : undefined;
+    const count = numCount !== undefined ? Math.floor(numCount) : 1;
+    return count > 0;
+  });
+  console.log(filteredJobs);
 
   // 收集所有任务
   interface TaskItem {
@@ -64,7 +69,8 @@ async function runBatchFromConfig(configPath: string = path.resolve(process.cwd(
             ...meta,
             appName: meta.appName ? String(meta.appName) : '',
             lang: meta.lang ? String(meta.lang) : '',
-            prompt: meta.prompt ? String(meta.prompt) : job.prompt
+            prompt: meta.prompt ? String(meta.prompt) : job.prompt,
+            aspectRatio: meta.aspectRatio ? String(meta.aspectRatio) : (meta.imageConfig?.aspectRatio ? String(meta.imageConfig.aspectRatio) : (aspectRatio ? String(aspectRatio) : ''))
           };
           const nextPrompt = fn(templateParams);
           const nextResult = await client.generateImage(nextPrompt, { ...job.options, referenceImages: [nextRef] });

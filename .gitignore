@@ -44,3 +44,4 @@ coverage/
 
 # 其他
 *.tsbuildinfo
+~$config.xlsx

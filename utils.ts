@@ -717,7 +717,77 @@ export async function renameImagesByResolution(
 }
 
 
-// splitAndStitchLongImage("D:\\mog素材\\xjt\\gmail\\jp", 1024, 1024);
-// splitAndStitchLongImage("D:\\mog素材\\xjt\\gmail\\jp", 960, 1200);
-// renameImagesByResolution("D:\\mog素材\\xjt\\line\\jp");
+// 命令行调用支持
+const isMainModule = process.argv[1] && (process.argv[1].endsWith('utils.ts') || process.argv[1].endsWith('utils.js') || process.argv[1].includes('utils'));
+if (isMainModule) {
+  const args = process.argv.slice(2);
+  const command = args[0];
+
+  async function main() {
+    try {
+      if (command === 'split') {
+        // 用法: npm run utils split <路径> <尺寸>
+        // 示例: npm run utils split "D:\path\to\folder" 1024*1024
+        // 示例: npm run utils split "D:\path\to\folder" 960*1200
+        if (args.length < 3) {
+          console.error('用法: npm run utils split <路径> <尺寸>');
+          console.error('尺寸格式: 宽度*高度 或 宽度x高度');
+          console.error('示例: npm run utils split "D:\\path\\to\\folder" 1024*1024');
+          console.error('示例: npm run utils split "D:\\path\\to\\folder" 960*1200');
+          process.exit(1);
+        }
+        const inputPath = args[1];
+        const sizeStr = args[2];
+        // 支持 * 或 x 作为分隔符
+        const sizeMatch = sizeStr.match(/^(\d+)[*x](\d+)$/i);
+        if (!sizeMatch) {
+          console.error('错误: 尺寸格式不正确，应为 宽度*高度 或 宽度x高度');
+          console.error('示例: 1024*1024 或 960*1200');
+          process.exit(1);
+        }
+        const targetWidth = parseInt(sizeMatch[1], 10);
+        const targetHeight = parseInt(sizeMatch[2], 10);
+        if (isNaN(targetWidth) || isNaN(targetHeight) || targetWidth <= 0 || targetHeight <= 0) {
+          console.error('错误: 宽度和高度必须是大于0的数字');
+          process.exit(1);
+        }
+        // 使用默认过滤尺寸
+        const filterSize: { width: number; height: number } | null = { width: 1200, height: 628 };
+        await splitAndStitchLongImage(inputPath, targetWidth, targetHeight, process.cwd(), filterSize);
+      } else if (command === 'rename') {
+        // 用法: npm run utils rename <路径>
+        // 示例: npm run utils rename "D:\path\to\folder"
+        if (args.length < 2) {
+          console.error('用法: npm run utils rename <路径>');
+          console.error('示例: npm run utils rename "D:\\path\\to\\folder"');
+          process.exit(1);
+        }
+        const folderPath = args[1];
+        await renameImagesByResolution(folderPath, process.cwd());
+      } else if (command) {
+        console.error(`未知命令: ${command}`);
+        console.error('可用命令:');
+        console.error('  split  - 将长图拼接成指定分辨率的上下结构组合图');
+        console.error('  rename - 重命名文件夹中的图片文件，根据分辨率自动分类命名');
+        process.exit(1);
+      } else {
+        console.log('可用命令:');
+        console.log('  split  - 将长图拼接成指定分辨率的上下结构组合图');
+        console.log('  用法: npm run utils split <路径> <尺寸>');
+        console.log('  尺寸格式: 宽度*高度 或 宽度x高度');
+        console.log('  示例: npm run utils split "D:\\path\\to\\folder" 1024*1024');
+        console.log('  示例: npm run utils split "D:\\path\\to\\folder" 960*1200');
+        console.log('');
+        console.log('  rename - 重命名文件夹中的图片文件，根据分辨率自动分类命名');
+        console.log('  用法: npm run utils rename <路径>');
+        console.log('  示例: npm run utils rename "D:\\path\\to\\folder"');
+      }
+    } catch (error) {
+      console.error('执行失败:', error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+  }
+
+  main();
+}
 

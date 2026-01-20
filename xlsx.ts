@@ -107,8 +107,9 @@ export async function promptXlsxToJson(
           }
         }
       });
+      const isCombinationMode = typeof record.batchFun === 'string' && record.batchFun.startsWith('combination');
       // 如果填写了 promptTmpFunName，则使用对应模板函数重新构建提示词（优先级高于 appName/lang 的默认逻辑）
-      if (record.batchFun !== 'combination' && record.promptTmpFunName && typeof record.promptTmpFunName === 'string') {
+      if (!isCombinationMode && record.promptTmpFunName && typeof record.promptTmpFunName === 'string') {
         const fn = (promptTemplates as any)[record.promptTmpFunName];
         if (typeof fn !== 'function') {
           throw new Error(`promptTmpFunName 指定的方法不存在或不是函数: ${record.promptTmpFunName}`);
@@ -117,7 +118,8 @@ export async function promptXlsxToJson(
           ...record,
           appName: record.appName ? String(record.appName) : '',
           lang: record.lang ? String(record.lang) : '',
-          prompt: record.prompt ? String(record.prompt) : ''
+          prompt: record.prompt ? String(record.prompt) : '',
+          aspectRatio: record.aspectRatio ? String(record.aspectRatio) : (record.imageConfig?.aspectRatio ? String(record.imageConfig.aspectRatio) : '')
         };
         record.prompt = fn(templateParams);
       }
@@ -127,6 +129,15 @@ export async function promptXlsxToJson(
           aspectRatio: '16:9',
           imageSize: '1k'
         };
+      }
+      const countKeyForSkip = Object.keys(record).find((k) => k.trim() === 'count' || k.replace(/[\u200B-\u200D\uFEFF]/g, '') === 'count');
+      const rawCountForSkip = countKeyForSkip ? (record as any)[countKeyForSkip] : undefined;
+      const numericCountForSkip =
+        rawCountForSkip !== undefined && rawCountForSkip !== null && !isNaN(Number(rawCountForSkip))
+          ? Math.floor(Number(rawCountForSkip))
+          : undefined;
+      if (numericCountForSkip !== undefined && numericCountForSkip <= 0) {
+        continue;
       }
       console.log(record);
       // 处理 batchFun 为 "batch" 的情况
@@ -169,6 +180,86 @@ export async function promptXlsxToJson(
           }
         } catch (error) {
           throw new Error(`batchFun 模式下读取 referenceImages 路径失败: ${refImagePath}, 错误: ${error}`);
+        }
+      } else if (record.batchFun === 'cut' && record.referenceImages && Array.isArray(record.referenceImages) && record.referenceImages.length > 0) {
+        const projectRoot = path.dirname(filePath);
+        const imageExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.tif'];
+        const allImages: string[] = [];
+        for (const ref of record.referenceImages) {
+          const refPath = (ref ?? '').toString().trim();
+          if (!refPath) continue;
+          const absRefPath = path.resolve(projectRoot, refPath);
+          const stat = await fs.stat(absRefPath).catch(() => null);
+          if (!stat) {
+            throw new Error(`cut 模式下 referenceImages 路径不存在: ${refPath}`);
+          }
+          if (stat.isDirectory()) {
+            const files = await fs.readdir(absRefPath);
+            const imageFiles = files
+              .filter(file => {
+                const ext = path.extname(file).toLowerCase();
+                return imageExts.includes(ext);
+              })
+              .sort();
+            for (const imageFile of imageFiles) {
+              allImages.push(path.join(refPath, imageFile));
+            }
+          } else if (stat.isFile()) {
+            const ext = path.extname(absRefPath).toLowerCase();
+            if (imageExts.includes(ext)) {
+              allImages.push(refPath);
+            }
+          }
+        }
+        if (allImages.length === 0) {
+          throw new Error(`cut 模式下未找到参考图片`);
+        }
+        const ratios: Array<{ ratio: string; outDirName: string }> = [
+          { ratio: '1:1', outDirName: '方竖' },
+          { ratio: '4:5', outDirName: '方竖' },
+        ];
+        const templateNames = ['getCutLogoFinalPrompt', 'getCutOtherFinalPrompt', 'getCutScaleFinalPrompt'];
+        const buildPromptByTemplate = (templateName: string, rec: any) => {
+          const fn = (promptTemplates as any)[templateName];
+          if (typeof fn !== 'function') {
+            throw new Error(`promptTmpFunName 指定的方法不存在或不是函数: ${templateName}`);
+          }
+          const templateParams = {
+            ...rec,
+            appName: rec.appName ? String(rec.appName) : '',
+            lang: rec.lang ? String(rec.lang) : '',
+            prompt: rec.prompt ? String(rec.prompt) : '',
+            aspectRatio: rec.aspectRatio ? String(rec.aspectRatio) : (rec.imageConfig?.aspectRatio ? String(rec.imageConfig.aspectRatio) : '')
+          };
+          return fn(templateParams);
+        };
+        for (const imgPath of allImages) {
+          const imageNameWithoutExt = path.parse(imgPath).name;
+          for (const { ratio, outDirName } of ratios) {
+            for (const templateName of templateNames) {
+              const newRecord: any = { ...record };
+              if (newRecord.imageConfig && typeof newRecord.imageConfig === 'object') {
+                newRecord.imageConfig = { ...newRecord.imageConfig };
+              }
+              newRecord.referenceImages = [imgPath];
+              if (!newRecord.imageConfig || typeof newRecord.imageConfig !== 'object') newRecord.imageConfig = {};
+              newRecord.imageConfig.aspectRatio = ratio;
+              if (!newRecord.imageConfig.imageSize) newRecord.imageConfig.imageSize = '1k';
+              newRecord.aspectRatio = ratio;
+              newRecord.promptTmpFunName = templateName;
+              newRecord.prompt = buildPromptByTemplate(templateName, newRecord);
+              if (newRecord.output) {
+                const outStr = String(newRecord.output);
+                const needsDir = !outStr.endsWith(outDirName);
+                newRecord.output = needsDir
+                  ? path.join(outStr, outDirName, imageNameWithoutExt)
+                  : path.join(outStr, imageNameWithoutExt);
+              } else {
+                newRecord.output = path.join(outDirName, imageNameWithoutExt);
+              }
+              processedItems.push(newRecord);
+            }
+          }
         }
       } else if (record.batchFun && typeof record.batchFun === 'string' && record.batchFun.startsWith('combination')) {
         const projectRoot = path.dirname(filePath);
@@ -253,7 +344,8 @@ export async function promptXlsxToJson(
               ...newRecord,
               appName: newRecord.appName ? String(newRecord.appName) : '',
               lang: newRecord.lang ? String(newRecord.lang) : '',
-              prompt: newRecord.prompt ? String(newRecord.prompt) : ''
+              prompt: newRecord.prompt ? String(newRecord.prompt) : '',
+              aspectRatio: newRecord.aspectRatio ? String(newRecord.aspectRatio) : (newRecord.imageConfig?.aspectRatio ? String(newRecord.imageConfig.aspectRatio) : '')
             };
             newRecord.promptTmpFunName = pair.templateName;
             newRecord.prompt = fn(templateParams);

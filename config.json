@@ -1,197 +1,302 @@
 [
   {
-    "prompt": "生成一张1:1的方图，适当调整构图使应用的图标战图比例变大在显眼位置",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
     "referenceImages": [
-      "referenceImages\\line\\jimeng-2026-01-16-6846-将图1中的文案改为使用图二.png"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\line方2\\jimeng-2026-01-16-6846-将图1中的文案改为使用图二",
-    "​count": 3,
-    "appName": "Gmail",
-    "lang": "jp",
-    "batchFun": "batch"
-  },
-  {
-    "prompt": "生成一张1:1的方图，适当调整构图使应用的图标战图比例变大在显眼位置",
-    "referenceImages": [
-      "referenceImages\\line\\jimeng-2026-01-16-7682-将图2中的文案改为使用图1.png"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\line方2\\jimeng-2026-01-16-7682-将图2中的文案改为使用图1",
-    "​count": 3,
-    "appName": "Gmail",
-    "lang": "jp",
-    "batchFun": "batch"
-  },
-  {
-    "prompt": "生成一张1:1的方图，适当调整构图使应用的图标战图比例变大在显眼位置",
-    "referenceImages": [
-      "referenceImages\\line\\jimeng-2026-01-16-8584-将图2中的文案改为使用图1.png"
-    ],
-    "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
-    },
-    "output": "D:\\mog素材\\待用素材库\\line方2\\jimeng-2026-01-16-8584-将图2中的文案改为使用图1",
-    "​count": 3,
-    "appName": "Gmail",
-    "lang": "jp",
-    "batchFun": "batch"
-  },
-  {
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，为了进一步推广产品，你需要制作更多的广告图片，你应该使用相同风格制作新的广告，但请注意新的广告与现有广告不应过度相似，需要调整背景以及构图。\n  2、图片将用于Gmail应用推广，所以参考图无论是什么应用图标一定要是Gmail的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言/字母。若出现任意非jp文字则视为失败，必须重新生成。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  6、按钮颜色不为红色。\n  7、要使用参考图的按钮类型的图标、简约风格，发挥创意\n  ",
-    "referenceImages": [
-      "referenceImages/Gmail"
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-1.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-12.jpg"
     ],
     "generationConfig": {
       "temperature": 1.1
     },
     "imageConfig": {
       "aspectRatio": "16:9",
-      "imageSize": "1k"
+      "imageSize": "1K"
     },
-    "output": "D:\\mog素材\\待用素材库\\谷歌邮箱",
-    "​count": 0,
-    "appName": "Gmail",
-    "lang": "jp",
-    "promptTmpFunName": "getAppDefaultPrompt"
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
   },
   {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
     "referenceImages": [
-      "referenceImages\\line\\jimeng-2026-01-16-6846-将图1中的文案改为使用图二.png"
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-1.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-14.jpg"
     ],
     "generationConfig": {
-      "temperature": 0.5
+      "temperature": 1.1
     },
     "imageConfig": {
-      "aspectRatio": "4:5",
-      "imageSize": "1k"
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
     },
-    "output": "D:\\mog素材\\待用素材库\\line竖2\\jimeng-2026-01-16-6846-将图1中的文案改为使用图二",
-    "​count": 0,
-    "appName": "line",
-    "lang": "jp",
-    "promptTmpFunName": "getCutLogoPrompt",
-    "batchFun": "batch",
-    "nextPromptFun": [
-      "getCentralPositionPrompt"
-    ],
-    "next": [
-      "getCentralPositionPrompt"
-    ],
-    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素以及字体可以丢弃掉。\n  2、背景保留裁剪部分背景的。\n  "
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
   },
   {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
     "referenceImages": [
-      "referenceImages\\line\\jimeng-2026-01-16-7682-将图2中的文案改为使用图1.png"
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-1.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807155693-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 0.5
+      "temperature": 1.1
     },
     "imageConfig": {
-      "aspectRatio": "4:5",
-      "imageSize": "1k"
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
     },
-    "output": "D:\\mog素材\\待用素材库\\line竖2\\jimeng-2026-01-16-7682-将图2中的文案改为使用图1",
-    "​count": 0,
-    "appName": "line",
-    "lang": "jp",
-    "promptTmpFunName": "getCutLogoPrompt",
-    "batchFun": "batch",
-    "nextPromptFun": [
-      "getCentralPositionPrompt"
-    ],
-    "next": [
-      "getCentralPositionPrompt"
-    ],
-    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素以及字体可以丢弃掉。\n  2、背景保留裁剪部分背景的。\n  "
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
   },
   {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
     "referenceImages": [
-      "referenceImages\\line\\jimeng-2026-01-16-8584-将图2中的文案改为使用图1.png"
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-1.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807160995-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 0.5
+      "temperature": 1.1
     },
     "imageConfig": {
-      "aspectRatio": "4:5",
-      "imageSize": "1k"
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
     },
-    "output": "D:\\mog素材\\待用素材库\\line竖2\\jimeng-2026-01-16-8584-将图2中的文案改为使用图1",
-    "​count": 0,
-    "appName": "line",
-    "lang": "jp",
-    "promptTmpFunName": "getCutLogoPrompt",
-    "batchFun": "batch",
-    "nextPromptFun": [
-      "getCentralPositionPrompt"
-    ],
-    "next": [
-      "getCentralPositionPrompt"
-    ],
-    "prompt": "1、找到参考图中的应用图标以及文字裁剪出来放到新图的中心位置适当缩放调整以适应新的构图，其他残缺元素以及字体可以丢弃掉。\n  2、背景保留裁剪部分背景的。\n  "
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
   },
   {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
     "referenceImages": [
-      "D:\\mog素材\\待用素材库\\YouTube方\\1768535732148-1200x628\\1768543870879-1024x1024.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-1.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807172021-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 0.5
+      "temperature": 1.1
     },
     "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
     },
-    "output": "D:\\mog素材\\待用素材库\\YouTube方\\1\\1768543870879-1024x1024",
-    "​count": 0,
-    "appName": "YouTube",
-    "lang": "us",
-    "promptTmpFunName": "getCentralPositionPrompt",
-    "batchFun": "batch",
-    "prompt": "1、将图中除了背景以外的所有元素缩小放到中心位置，图片边缘跟元素之间需要有一些内边距，残缺的文字、元素需要智能补全或者去掉。\n  2、logo元素放大需要显眼一些。\n  3、\n  "
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
   },
   {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
     "referenceImages": [
-      "D:\\mog素材\\待用素材库\\YouTube方\\1768535732148-1200x628\\1768544445506-1024x1024.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-12.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-14.jpg"
     ],
     "generationConfig": {
-      "temperature": 0.5
+      "temperature": 1.1
     },
     "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
     },
-    "output": "D:\\mog素材\\待用素材库\\YouTube方\\1\\1768544445506-1024x1024",
-    "​count": 0,
-    "appName": "YouTube",
-    "lang": "us",
-    "promptTmpFunName": "getCentralPositionPrompt",
-    "batchFun": "batch",
-    "prompt": "1、将图中除了背景以外的所有元素缩小放到中心位置，图片边缘跟元素之间需要有一些内边距，残缺的文字、元素需要智能补全或者去掉。\n  2、logo元素放大需要显眼一些。\n  3、\n  "
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
   },
   {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
     "referenceImages": [
-      "D:\\mog素材\\待用素材库\\YouTube方\\1768535732148-1200x628\\1768544446377-1024x1024.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-12.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807155693-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 0.5
+      "temperature": 1.1
     },
     "imageConfig": {
-      "aspectRatio": "1:1",
-      "imageSize": "1k"
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
     },
-    "output": "D:\\mog素材\\待用素材库\\YouTube方\\1\\1768544446377-1024x1024",
-    "​count": 0,
-    "appName": "YouTube",
-    "lang": "us",
-    "promptTmpFunName": "getCentralPositionPrompt",
-    "batchFun": "batch",
-    "prompt": "1、将图中除了背景以外的所有元素缩小放到中心位置，图片边缘跟元素之间需要有一些内边距，残缺的文字、元素需要智能补全或者去掉。\n  2、logo元素放大需要显眼一些。\n  3、\n  "
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
+  },
+  {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-12.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807160995-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
+  },
+  {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-12.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807172021-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
+  },
+  {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-14.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807155693-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
+  },
+  {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-14.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807160995-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
+  },
+  {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1-14.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807172021-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
+  },
+  {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807155693-1200x628.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807160995-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
+  },
+  {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807155693-1200x628.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807172021-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
+  },
+  {
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 背景与主体有对比色凸显主体但是要简洁一些。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简短参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言/字母。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、自然风景背景\n  ",
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807160995-1200x628.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-20\\naver\\自然风景\\1768807172021-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\mog素材\\待用素材库\\naver自然背景",
+    "​count": 1,
+    "appName": "naver",
+    "lang": "kr",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2"
   }
 ]
