@@ -54,7 +54,7 @@ export function getReferencePrompt({ appName, lang, prompt, aspectRatio }: { app
 
 // 2、如果参考图中有当地语言标志性建筑或者风景在翻译为其他语言的时候需要修改标志性建筑或者风景，但修改时应该尽量保持与原图相似：选择风格、类型、视觉效果相近的地标建筑或风景，保持原图的整体构图、色调、氛围和视觉风格，确保修改后的图片与原图差距尽可能小。
 export function getTextTranslatePrompt({ lang, prompt, aspectRatio }: { lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `1、生成一张新图片，将参考图中的文字翻译为${lang}语言,你只需要翻译图中的文字但是不添加其他文字。
+  return `1、生成一张新图片，将参考图中的文字翻译为${lang}语言,你只需要翻译图中的文字然后给一张新图。
   2、${prompt}
   `;
 }
@@ -95,13 +95,13 @@ function getRatioDesc(aspectRatio?: string): string {
 
 
 export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `生成一张${getRatioDesc(aspectRatio)}，提取${appName}应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。`;
+  return `生成一张${getRatioDesc(aspectRatio)}，提取${appName}应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。`;
 }
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appName}应用图标以外的一个关键占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。`;
+  return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appName}应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。`;
 }
 
 export function getCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `生成一张${getRatioDesc(aspectRatio)}，需要重新调整构图并且${appName}应用图标更加显眼需要保留背景。`;
+  return `生成一张${getRatioDesc(aspectRatio)}，需要重新调整构图适应新尺寸并且${appName}应用图标更加显眼需要保留背景。`;
 }

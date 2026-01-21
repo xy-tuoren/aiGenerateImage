@@ -1,6 +1,7 @@
 import fs from 'fs-extra';
 import * as path from 'path';
 import XLSX from 'xlsx';
+import sharp from 'sharp';
 import * as promptTemplates from './prompt.js';
 
 /**
@@ -104,7 +105,7 @@ export async function promptXlsxToJson(
             if (!isNaN(numValue)) {
               cur[lastKey] = numValue;
             }
-          }
+          } 
         }
       });
       const isCombinationMode = typeof record.batchFun === 'string' && record.batchFun.startsWith('combination');
@@ -180,6 +181,93 @@ export async function promptXlsxToJson(
           }
         } catch (error) {
           throw new Error(`batchFun 模式下读取 referenceImages 路径失败: ${refImagePath}, 错误: ${error}`);
+        }
+      } else if (record.batchFun === 'translate' && record.referenceImages && Array.isArray(record.referenceImages) && record.referenceImages.length > 0) {
+        const projectRoot = path.dirname(filePath);
+        const refImagePath = record.referenceImages[0];
+        const absRefPath = path.resolve(projectRoot, refImagePath);
+        try {
+          const stat = await fs.stat(absRefPath);
+          const imageExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.tif'];
+          const fn = (promptTemplates as any).getTextTranslatePrompt;
+          if (typeof fn !== 'function') {
+            throw new Error(`translate 模式需要 prompt.ts 中存在 getTextTranslatePrompt 模版函数`);
+          }
+          const detectAspectRatioByFixedSize = (width?: number, height?: number): string | undefined => {
+            if (!width || !height) return undefined;
+            if (width === 1200 && height === 628) return '16:9';
+            if (width === 1024 && height === 1024) return '1:1';
+            if (width === 960 && height === 1200) return '4:5';
+            return undefined;
+          };
+          const pushOne = async (imagePath: string, relWithinRoot: string) => {
+            const imageNameWithoutExt = path.parse(relWithinRoot).name;
+            const relDir = path.dirname(relWithinRoot);
+            const newRecord: any = { ...record };
+            newRecord.referenceImages = [imagePath];
+            newRecord.promptTmpFunName = 'getTextTranslatePrompt';
+            // 读取图片分辨率，自动补充/覆盖 aspectRatio
+            try {
+              const absImg = path.resolve(projectRoot, imagePath);
+              const m = await sharp(absImg).metadata();
+              const detected = detectAspectRatioByFixedSize(m.width, m.height);
+              if (detected) {
+                if (!newRecord.imageConfig || typeof newRecord.imageConfig !== 'object') newRecord.imageConfig = {};
+                newRecord.imageConfig.aspectRatio = detected;
+                newRecord.aspectRatio = detected;
+              }
+            } catch { }
+            const templateParams = {
+              ...newRecord,
+              lang: newRecord.lang ? String(newRecord.lang) : '',
+              prompt: newRecord.prompt ? String(newRecord.prompt) : '',
+              aspectRatio: newRecord.aspectRatio ? String(newRecord.aspectRatio) : (newRecord.imageConfig?.aspectRatio ? String(newRecord.imageConfig.aspectRatio) : '')
+            };
+            newRecord.prompt = fn(templateParams);
+            if (newRecord.output) {
+              const outStr = String(newRecord.output);
+              // 输出目录结构与输入目录结构保持一致：只拼接相对目录，不额外追加文件名目录
+              newRecord.output = relDir && relDir !== '.'
+                ? path.join(outStr, relDir)
+                : outStr;
+            } else if (relDir && relDir !== '.') {
+              newRecord.output = relDir;
+            }
+            processedItems.push(newRecord);
+          };
+          if (stat.isDirectory()) {
+            const collected: Array<{ imagePath: string; relWithinRoot: string }> = [];
+            const walk = async (curAbs: string) => {
+              const names = await fs.readdir(curAbs);
+              names.sort();
+              for (const name of names) {
+                const abs = path.join(curAbs, name);
+                const st = await fs.stat(abs).catch(() => null);
+                if (!st) continue;
+                if (st.isDirectory()) {
+                  await walk(abs);
+                } else if (st.isFile()) {
+                  const ext = path.extname(name).toLowerCase();
+                  if (!imageExts.includes(ext)) continue;
+                  const relWithinRoot = path.relative(absRefPath, abs);
+                  const imagePath = path.join(refImagePath, relWithinRoot);
+                  collected.push({ imagePath, relWithinRoot });
+                }
+              }
+            };
+            await walk(absRefPath);
+            if (collected.length === 0) {
+              throw new Error(`translate 模式下，referenceImages 文件夹中没有找到图片文件: ${refImagePath}`);
+            }
+            collected.sort((a, b) => (a.imagePath || '').localeCompare(b.imagePath || ''));
+            for (const it of collected) {
+              await pushOne(it.imagePath, it.relWithinRoot);
+            }
+          } else {
+            await pushOne(refImagePath, path.basename(refImagePath));
+          }
+        } catch (error) {
+          throw new Error(`translate 模式下读取 referenceImages 路径失败: ${refImagePath}, 错误: ${error}`);
         }
       } else if (record.batchFun === 'cut' && record.referenceImages && Array.isArray(record.referenceImages) && record.referenceImages.length > 0) {
         const projectRoot = path.dirname(filePath);

@@ -359,7 +359,8 @@ export async function splitAndStitchLongImage(
   targetWidth: number,
   targetHeight: number,
   projectRoot: string = process.cwd(),
-  filterSize: { width: number; height: number } | null = { width: 1200, height: 628 }
+  filterSize: { width: number; height: number } | null = { width: 1200, height: 628 },
+  outputDir?: string
 ): Promise<string[]> {
   const raw = (input || '').toString().trim();
   if (!raw) {
@@ -423,6 +424,12 @@ export async function splitAndStitchLongImage(
   const outputFiles: string[] = [];
 
   console.log(`找到 ${imageFiles.length} 个图片文件，开始处理...`);
+  const absOutputDir = outputDir
+    ? (path.isAbsolute(outputDir) ? outputDir : path.resolve(projectRoot, outputDir))
+    : undefined;
+  if (absOutputDir) {
+    await fs.ensureDir(absOutputDir);
+  }
 
   // 处理每个图片文件
   for (const imageFile of imageFiles) {
@@ -500,7 +507,7 @@ export async function splitAndStitchLongImage(
     const dir = path.dirname(absImagePath);
     const basename = path.basename(absImagePath, path.extname(absImagePath));
     const outputFileName = `${basename}_${targetWidth}x${targetHeight}${ext}`;
-    const outputPath = path.join(dir, outputFileName);
+    const outputPath = absOutputDir ? path.join(absOutputDir, outputFileName) : path.join(dir, outputFileName);
 
     // 保存文件
     await fs.writeFile(outputPath, finalBuffer);
@@ -714,6 +721,41 @@ export async function renameImagesByResolution(
   }
 
   console.log(`\n\n所有处理完成！`);
+}
+
+const cutStitchLocks = new Map<string, Promise<void>>();
+
+export async function ensureCutExtraStitchedImages(outputDir: string, meta: any): Promise<void> {
+  const batchFun = meta && typeof meta === 'object' ? meta.batchFun : undefined;
+  if (batchFun !== 'cut') return;
+  const refList = meta && typeof meta === 'object' && Array.isArray(meta.referenceImages) ? meta.referenceImages : [];
+  const refPath = refList.length ? String(refList[0] ?? '').trim() : '';
+  if (!refPath) return;
+
+  const key = outputDir;
+  const existing = cutStitchLocks.get(key);
+  if (existing) return existing;
+
+  const jobPromise = (async () => {
+    const refAbs = path.resolve(process.cwd(), refPath);
+    const ext = path.extname(refAbs);
+    const base = path.basename(refAbs, ext);
+    const out1024 = path.join(outputDir, `${base}_1024x1024${ext}`);
+    const out960 = path.join(outputDir, `${base}_960x1200${ext}`);
+    const needs1024 = !(await sharp(out1024).metadata().then(() => true).catch(() => false));
+    const needs960 = !(await sharp(out960).metadata().then(() => true).catch(() => false));
+    if (!needs1024 && !needs960) return;
+    const filterSize: { width: number; height: number } | null = { width: 1200, height: 628 };
+    const tasks: Promise<any>[] = [];
+    if (needs1024) tasks.push(splitAndStitchLongImage(refPath, 1024, 1024, process.cwd(), filterSize, outputDir));
+    if (needs960) tasks.push(splitAndStitchLongImage(refPath, 960, 1200, process.cwd(), filterSize, outputDir));
+    await Promise.all(tasks);
+  })().finally(() => {
+    cutStitchLocks.delete(key);
+  });
+
+  cutStitchLocks.set(key, jobPromise);
+  return jobPromise;
 }
 
 

@@ -3,7 +3,7 @@ import * as path from 'path';
 import async from 'async';
 import sharp from 'sharp';
 import { GeminiClient } from './gemini.js';
-import { mimeTypeToExt, readConfigJsonAsGeminiJobs, writeGeneratedImageFile, resizeImageByAspectRatio } from './utils.js';
+import { mimeTypeToExt, readConfigJsonAsGeminiJobs, writeGeneratedImageFile, resizeImageByAspectRatio, ensureCutExtraStitchedImages } from './utils.js';
 import * as promptTemplates from './prompt.js';
 
 async function runBatchFromConfig(configPath: string = path.resolve(process.cwd(), 'config.json')): Promise<void> {
@@ -90,6 +90,7 @@ async function runBatchFromConfig(configPath: string = path.resolve(process.cwd(
           nextRef = { data: nextImageData, mimeType: nextResult.mimeType };
         }
       }
+      await ensureCutExtraStitchedImages(outputDir, (job as any).meta);
     } catch (error) {
       console.error(`任务失败 [Job ${jobIndex + 1}, Task ${taskIndex + 1}]:`, error instanceof Error ? error.message : String(error));
     }
