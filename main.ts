@@ -36,8 +36,8 @@ async function runBatchFromConfig(configPath: string = path.resolve(process.cwd(
     }
   }
 
-  // 使用 async.eachLimit 限制最大并发数为 100
-  await async.eachLimit(tasks, 100, async (task: TaskItem) => {
+  // 使用 async.eachLimit 限制最大并发数为 80
+  await async.eachLimit(tasks, 50, async (task: TaskItem) => {
     const { jobIndex, taskIndex, job, outputDir } = task;
     try {
       const result = await client.generateImage(job.prompt, job.options);

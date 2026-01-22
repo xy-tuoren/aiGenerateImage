@@ -4,8 +4,7 @@ export function getAppDefaultPrompt({ appName, lang, prompt, aspectRatio }: { ap
   2、图片将用于${appName}应用推广，所以参考图无论是什么应用图标一定要是${appName}的图标。
   3、图片内出现的所有可见文字必须 100% 为${lang}语言，禁止出现任何其他语言/字母。若出现任意非${lang}文字则视为失败，必须重新生成。
   4、图片中只能出现一张图不能是多张图拼接而成的。
-  6、按钮颜色不为红色。
-  7、${prompt}
+  5、${prompt}
   `;
 }
 
@@ -28,7 +27,7 @@ export function getAppDefaultPrompt3({ appName, lang, prompt, aspectRatio }: { a
 export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   return `1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:
     - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。
-    - 背景与主体有对比色凸显主体但是要简洁一些。
+    - 背景与主体有对比色凸显主体。
     - 图片的元素层次要分明。
     - 文字要简明了图中所有文字加起来不能超过3条。
     - 单条文字长度必须简短参照参考图文字长度不能乱改。
