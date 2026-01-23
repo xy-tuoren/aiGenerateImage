@@ -148,36 +148,59 @@ export async function promptXlsxToJson(
         const absRefPath = path.resolve(projectRoot, refImagePath);
         try {
           const stat = await fs.stat(absRefPath);
-          if (stat.isDirectory()) {
-            // 读取文件夹下的所有图片文件
-            const imageExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.tif'];
-            const files = await fs.readdir(absRefPath);
-            const imageFiles = files
-              .filter(file => {
-                const ext = path.extname(file).toLowerCase();
-                return imageExts.includes(ext);
-              })
-              .sort();
-            if (imageFiles.length === 0) {
-              throw new Error(`batchFun 模式下，referenceImages 文件夹中没有找到图片文件: ${refImagePath}`);
-            }
-            // 为每张图片创建一个对象
-            for (const imageFile of imageFiles) {
-              const imagePath = path.join(refImagePath, imageFile);
-              const imageNameWithoutExt = path.parse(imageFile).name;
-              const newRecord = { ...record };
-              newRecord.referenceImages = [imagePath];
-              // 拼接output路径
-              if (newRecord.output) {
-                newRecord.output = path.join(newRecord.output, imageNameWithoutExt);
+          const imageExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.tif'];
+          const pushOne = async (imagePath: string, relWithinRoot: string) => {
+            const imageNameWithoutExt = path.parse(relWithinRoot).name;
+            const relDir = path.dirname(relWithinRoot);
+            const newRecord = { ...record };
+            newRecord.referenceImages = [imagePath];
+            // 拼接output路径，保持子文件夹结构
+            if (newRecord.output) {
+              const outStr = String(newRecord.output);
+              if (relDir && relDir !== '.') {
+                newRecord.output = path.join(outStr, relDir, imageNameWithoutExt);
+              } else {
+                newRecord.output = path.join(outStr, imageNameWithoutExt);
+              }
+            } else {
+              if (relDir && relDir !== '.') {
+                newRecord.output = path.join(relDir, imageNameWithoutExt);
               } else {
                 newRecord.output = imageNameWithoutExt;
               }
-              processedItems.push(newRecord);
+            }
+            processedItems.push(newRecord);
+          };
+          if (stat.isDirectory()) {
+            const collected: Array<{ imagePath: string; relWithinRoot: string }> = [];
+            const walk = async (curAbs: string) => {
+              const names = await fs.readdir(curAbs);
+              names.sort();
+              for (const name of names) {
+                const abs = path.join(curAbs, name);
+                const st = await fs.stat(abs).catch(() => null);
+                if (!st) continue;
+                if (st.isDirectory()) {
+                  await walk(abs);
+                } else if (st.isFile()) {
+                  const ext = path.extname(name).toLowerCase();
+                  if (!imageExts.includes(ext)) continue;
+                  const relWithinRoot = path.relative(absRefPath, abs);
+                  const imagePath = path.join(refImagePath, relWithinRoot);
+                  collected.push({ imagePath, relWithinRoot });
+                }
+              }
+            };
+            await walk(absRefPath);
+            if (collected.length === 0) {
+              throw new Error(`batchFun 模式下，referenceImages 文件夹中没有找到图片文件: ${refImagePath}`);
+            }
+            collected.sort((a, b) => (a.imagePath || '').localeCompare(b.imagePath || ''));
+            for (const it of collected) {
+              await pushOne(it.imagePath, it.relWithinRoot);
             }
           } else {
-            // 如果是文件，则只创建一个对象
-            processedItems.push(record);
+            await pushOne(refImagePath, path.basename(refImagePath));
           }
         } catch (error) {
           throw new Error(`batchFun 模式下读取 referenceImages 路径失败: ${refImagePath}, 错误: ${error}`);
@@ -272,7 +295,7 @@ export async function promptXlsxToJson(
       } else if (record.batchFun === 'cut' && record.referenceImages && Array.isArray(record.referenceImages) && record.referenceImages.length > 0) {
         const projectRoot = path.dirname(filePath);
         const imageExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.tif'];
-        const allImages: string[] = [];
+        const allImages: Array<{ imagePath: string; relWithinRoot: string }> = [];
         for (const ref of record.referenceImages) {
           const refPath = (ref ?? '').toString().trim();
           if (!refPath) continue;
@@ -282,26 +305,36 @@ export async function promptXlsxToJson(
             throw new Error(`cut 模式下 referenceImages 路径不存在: ${refPath}`);
           }
           if (stat.isDirectory()) {
-            const files = await fs.readdir(absRefPath);
-            const imageFiles = files
-              .filter(file => {
-                const ext = path.extname(file).toLowerCase();
-                return imageExts.includes(ext);
-              })
-              .sort();
-            for (const imageFile of imageFiles) {
-              allImages.push(path.join(refPath, imageFile));
-            }
+            const walk = async (curAbs: string, baseRefPath: string) => {
+              const names = await fs.readdir(curAbs);
+              names.sort();
+              for (const name of names) {
+                const abs = path.join(curAbs, name);
+                const st = await fs.stat(abs).catch(() => null);
+                if (!st) continue;
+                if (st.isDirectory()) {
+                  await walk(abs, baseRefPath);
+                } else if (st.isFile()) {
+                  const ext = path.extname(name).toLowerCase();
+                  if (!imageExts.includes(ext)) continue;
+                  const relWithinRoot = path.relative(absRefPath, abs);
+                  const imagePath = path.join(refPath, relWithinRoot);
+                  allImages.push({ imagePath, relWithinRoot });
+                }
+              }
+            };
+            await walk(absRefPath, refPath);
           } else if (stat.isFile()) {
             const ext = path.extname(absRefPath).toLowerCase();
             if (imageExts.includes(ext)) {
-              allImages.push(refPath);
+              allImages.push({ imagePath: refPath, relWithinRoot: path.basename(refPath) });
             }
           }
         }
         if (allImages.length === 0) {
           throw new Error(`cut 模式下未找到参考图片`);
         }
+        allImages.sort((a, b) => (a.imagePath || '').localeCompare(b.imagePath || ''));
         const ratios: Array<{ ratio: string; outDirName: string }> = [
           { ratio: '1:1', outDirName: '方竖' },
           { ratio: '4:5', outDirName: '方竖' },
@@ -321,15 +354,16 @@ export async function promptXlsxToJson(
           };
           return fn(templateParams);
         };
-        for (const imgPath of allImages) {
-          const imageNameWithoutExt = path.parse(imgPath).name;
+        for (const { imagePath, relWithinRoot } of allImages) {
+          const imageNameWithoutExt = path.parse(relWithinRoot).name;
+          const relDir = path.dirname(relWithinRoot);
           for (const { ratio, outDirName } of ratios) {
             for (const templateName of templateNames) {
               const newRecord: any = { ...record };
               if (newRecord.imageConfig && typeof newRecord.imageConfig === 'object') {
                 newRecord.imageConfig = { ...newRecord.imageConfig };
               }
-              newRecord.referenceImages = [imgPath];
+              newRecord.referenceImages = [imagePath];
               if (!newRecord.imageConfig || typeof newRecord.imageConfig !== 'object') newRecord.imageConfig = {};
               newRecord.imageConfig.aspectRatio = ratio;
               if (!newRecord.imageConfig.imageSize) newRecord.imageConfig.imageSize = '1k';
@@ -339,11 +373,21 @@ export async function promptXlsxToJson(
               if (newRecord.output) {
                 const outStr = String(newRecord.output);
                 const needsDir = !outStr.endsWith(outDirName);
-                newRecord.output = needsDir
-                  ? path.join(outStr, outDirName, imageNameWithoutExt)
-                  : path.join(outStr, imageNameWithoutExt);
+                if (relDir && relDir !== '.') {
+                  newRecord.output = needsDir
+                    ? path.join(outStr, outDirName, relDir, imageNameWithoutExt)
+                    : path.join(outStr, relDir, imageNameWithoutExt);
+                } else {
+                  newRecord.output = needsDir
+                    ? path.join(outStr, outDirName, imageNameWithoutExt)
+                    : path.join(outStr, imageNameWithoutExt);
+                }
               } else {
-                newRecord.output = path.join(outDirName, imageNameWithoutExt);
+                if (relDir && relDir !== '.') {
+                  newRecord.output = path.join(outDirName, relDir, imageNameWithoutExt);
+                } else {
+                  newRecord.output = path.join(outDirName, imageNameWithoutExt);
+                }
               }
               processedItems.push(newRecord);
             }
@@ -375,16 +419,25 @@ export async function promptXlsxToJson(
             throw new Error(`combination 模式下 referenceImages 路径不存在: ${refPath}`);
           }
           if (stat.isDirectory()) {
-            const files = await fs.readdir(absRefPath);
-            const imageFiles = files
-              .filter(file => {
-                const ext = path.extname(file).toLowerCase();
-                return imageExts.includes(ext);
-              })
-              .sort();
-            for (const imageFile of imageFiles) {
-              allImages.push(path.join(refPath, imageFile));
-            }
+            const walk = async (curAbs: string) => {
+              const names = await fs.readdir(curAbs);
+              names.sort();
+              for (const name of names) {
+                const abs = path.join(curAbs, name);
+                const st = await fs.stat(abs).catch(() => null);
+                if (!st) continue;
+                if (st.isDirectory()) {
+                  await walk(abs);
+                } else if (st.isFile()) {
+                  const ext = path.extname(name).toLowerCase();
+                  if (!imageExts.includes(ext)) continue;
+                  const relWithinRoot = path.relative(absRefPath, abs);
+                  const imagePath = path.join(refPath, relWithinRoot);
+                  allImages.push(imagePath);
+                }
+              }
+            };
+            await walk(absRefPath);
           } else if (stat.isFile()) {
             const ext = path.extname(absRefPath).toLowerCase();
             if (imageExts.includes(ext)) {

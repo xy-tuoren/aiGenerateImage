@@ -132,8 +132,7 @@ export async function getImageMaterialsWithAppsiteInfo(limit?: number): Promise<
         if (!Array.isArray(arr)) return [];
         return arr.map((item: any) => {
           const url = String(item ?? '').trim();
-          if (!url) return url;
-          return url.startsWith('http://') || url.startsWith('https://') ? url : domain + url;
+          return url;
         });
       };
 
@@ -175,19 +174,12 @@ async function downloadRefImages(): Promise<void> {
     return name.replace(/[<>:"/\\|?*]/g, '_').trim();
   };
 
-  const getFileExtension = (url: string): string => {
-    try {
-      const urlPath = new URL(url).pathname;
-      const ext = path.extname(urlPath);
-      return ext || '.jpg';
-    } catch {
-      const ext = path.extname(url);
-      return ext || '.jpg';
-    }
-  };
 
   let totalDownloaded = 0;
   let totalFailed = 0;
+
+  // 收集所有下载任务
+  const downloadTasks: Array<() => Promise<void>> = [];
 
   for (let i = 0; i < data.length; i++) {
     const item = data[i];
@@ -205,34 +197,124 @@ async function downloadRefImages(): Promise<void> {
     console.log(`处理应用: ${appName} (${i + 1}/${data.length})`);
 
     for (let j = 0; j < originLong.length; j++) {
-      const imageUrl = String(originLong[j] ?? '').trim();
-      if (!imageUrl) continue;
+      const originalUrl = String(originLong[j] ?? '').trim();
+      if (!originalUrl) continue;
 
-      try {
-        const response = await axios.get(imageUrl, {
-          responseType: 'arraybuffer',
-          timeout: 30000
-        });
-
-        const ext = getFileExtension(imageUrl);
-        const fileName = `${Date.now()}-${i}-${j}${ext}`;
-        const filePath = path.join(appDir, fileName);
-
-        await fs.writeFile(filePath, response.data);
-        totalDownloaded++;
-        console.log(`  下载成功: ${fileName}`);
-      } catch (error) {
-        totalFailed++;
-        console.error(`  下载失败 [${imageUrl}]:`, error instanceof Error ? error.message : String(error));
+      let imageUrl = originalUrl;
+      if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+        imageUrl = domain + imageUrl;
       }
+
+      downloadTasks.push(async () => {
+        try {
+          // 先用 HEAD 请求检查图片是否存在
+          try {
+            await axios.head(imageUrl, {
+              timeout: 10000,
+              validateStatus: (status) => status >= 200 && status < 400
+            });
+          } catch (headError: any) {
+            // 如果 HEAD 请求失败（如 404），直接跳过下载
+            if (headError?.response?.status === 404) {
+              console.log(`  跳过不存在: ${sanitizeFileName(originalUrl)}`);
+              return;
+            }
+            // 其他错误也跳过，避免下载不存在的资源
+            console.log(`  跳过检查失败: ${sanitizeFileName(originalUrl)}`);
+            return;
+          }
+
+          // HEAD 请求成功，进行下载
+          const response = await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000
+          });
+
+          const fileName = sanitizeFileName(originalUrl);
+          const filePath = path.join(appDir, fileName);
+
+          await fs.writeFile(filePath, response.data);
+          totalDownloaded++;
+          console.log(`  下载成功: ${fileName}`);
+        } catch (error) {
+          totalFailed++;
+          console.error(`  下载失败 [${imageUrl}]:`, error instanceof Error ? error.message : String(error));
+        }
+      });
     }
   }
+
+  // 并发控制：128并发
+  const concurrency = 128;
+  const executeWithConcurrency = async (tasks: Array<() => Promise<void>>, limit: number) => {
+    const executing: Promise<void>[] = [];
+    for (const task of tasks) {
+      const promise = task().then(() => {
+        executing.splice(executing.indexOf(promise), 1);
+      });
+      executing.push(promise);
+      if (executing.length >= limit) {
+        await Promise.race(executing);
+      }
+    }
+    await Promise.all(executing);
+  };
+
+  console.log(`开始下载，共 ${downloadTasks.length} 个任务，并发数: ${concurrency}`);
+  await executeWithConcurrency(downloadTasks, concurrency);
 
   console.log(`\n下载完成! 成功: ${totalDownloaded}, 失败: ${totalFailed}`);
 }
 
-// await getImageMaterialsWithAppsiteInfo();
-await downloadRefImages();
-// await closeMongo();
-process.exit(0);
+async function main() {
+  const args = process.argv.slice(2);
+  const command = args[0];
+
+  try {
+    if (command === 'download' || command === 'd') {
+      await downloadRefImages();
+    } else if (command === 'generate' || command === 'g') {
+      const limitArg = args.find(arg => arg.startsWith('--limit=') || arg.startsWith('-l='));
+      const limit = limitArg ? parseInt(limitArg.split('=')[1], 10) : undefined;
+      
+      if (limit !== undefined && (isNaN(limit) || limit <= 0)) {
+        console.error('limit 必须是正整数');
+        process.exit(1);
+      }
+      
+      await getImageMaterialsWithAppsiteInfo(limit);
+      await closeMongo();
+    } else if (command === 'all' || command === 'a') {
+      const limitArg = args.find(arg => arg.startsWith('--limit=') || arg.startsWith('-l='));
+      const limit = limitArg ? parseInt(limitArg.split('=')[1], 10) : undefined;
+      
+      if (limit !== undefined && (isNaN(limit) || limit <= 0)) {
+        console.error('limit 必须是正整数');
+        process.exit(1);
+      }
+      
+      await getImageMaterialsWithAppsiteInfo(limit);
+      await downloadRefImages();
+      await closeMongo();
+    } else {
+      console.log('使用方法:');
+      console.log('  tsx getRefImages.ts generate [--limit=N] 或 g [-l=N]  - 生成 refImages.json');
+      console.log('  tsx getRefImages.ts download 或 d                  - 下载图片');
+      console.log('  tsx getRefImages.ts all [--limit=N] 或 a [-l=N]    - 生成并下载');
+      console.log('');
+      console.log('示例:');
+      console.log('  tsx getRefImages.ts generate');
+      console.log('  tsx getRefImages.ts generate --limit=100');
+      console.log('  tsx getRefImages.ts download');
+      console.log('  tsx getRefImages.ts all --limit=50');
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error('执行出错:', error instanceof Error ? error.message : String(error));
+    await closeMongo();
+    process.exit(1);
+  }
+}
+
+main();
 

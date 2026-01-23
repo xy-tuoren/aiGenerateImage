@@ -1,7 +1,7 @@
 [
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769063866445-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150271630-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -10,18 +10,18 @@
       "imageSize": "1K",
       "aspectRatio": "1:1"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769063866445-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150271630-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "1:1",
     "promptTmpFunName": "getCutLogoFinalPrompt",
-    "prompt": "生成一张1:1的方图，提取谷歌邮箱应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张1:1的方图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769063866445-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150271630-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -30,18 +30,18 @@
       "imageSize": "1K",
       "aspectRatio": "1:1"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769063866445-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150271630-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "1:1",
     "promptTmpFunName": "getCutOtherFinalPrompt",
-    "prompt": "生成一张1:1的方图，提取除了谷歌邮箱应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张1:1的方图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769063866445-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150271630-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -50,18 +50,18 @@
       "imageSize": "1K",
       "aspectRatio": "1:1"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769063866445-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150271630-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "1:1",
     "promptTmpFunName": "getCutScaleFinalPrompt",
-    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且谷歌邮箱应用图标更加显眼需要保留背景。"
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769063866445-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150271630-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -70,18 +70,18 @@
       "imageSize": "1K",
       "aspectRatio": "4:5"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769063866445-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150271630-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "4:5",
     "promptTmpFunName": "getCutLogoFinalPrompt",
-    "prompt": "生成一张4:5的竖图，提取谷歌邮箱应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张4:5的竖图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769063866445-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150271630-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -90,18 +90,18 @@
       "imageSize": "1K",
       "aspectRatio": "4:5"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769063866445-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150271630-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "4:5",
     "promptTmpFunName": "getCutOtherFinalPrompt",
-    "prompt": "生成一张4:5的竖图，提取除了谷歌邮箱应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张4:5的竖图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769063866445-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150271630-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -110,18 +110,18 @@
       "imageSize": "1K",
       "aspectRatio": "4:5"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769063866445-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150271630-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "4:5",
     "promptTmpFunName": "getCutScaleFinalPrompt",
-    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且谷歌邮箱应用图标更加显眼需要保留背景。"
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069171185-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150277408-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -130,18 +130,18 @@
       "imageSize": "1K",
       "aspectRatio": "1:1"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069171185-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150277408-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "1:1",
     "promptTmpFunName": "getCutLogoFinalPrompt",
-    "prompt": "生成一张1:1的方图，提取谷歌邮箱应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张1:1的方图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069171185-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150277408-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -150,18 +150,18 @@
       "imageSize": "1K",
       "aspectRatio": "1:1"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069171185-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150277408-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "1:1",
     "promptTmpFunName": "getCutOtherFinalPrompt",
-    "prompt": "生成一张1:1的方图，提取除了谷歌邮箱应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张1:1的方图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069171185-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150277408-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -170,18 +170,18 @@
       "imageSize": "1K",
       "aspectRatio": "1:1"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069171185-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150277408-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "1:1",
     "promptTmpFunName": "getCutScaleFinalPrompt",
-    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且谷歌邮箱应用图标更加显眼需要保留背景。"
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069171185-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150277408-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -190,18 +190,18 @@
       "imageSize": "1K",
       "aspectRatio": "4:5"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069171185-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150277408-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "4:5",
     "promptTmpFunName": "getCutLogoFinalPrompt",
-    "prompt": "生成一张4:5的竖图，提取谷歌邮箱应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张4:5的竖图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069171185-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150277408-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -210,18 +210,18 @@
       "imageSize": "1K",
       "aspectRatio": "4:5"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069171185-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150277408-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "4:5",
     "promptTmpFunName": "getCutOtherFinalPrompt",
-    "prompt": "生成一张4:5的竖图，提取除了谷歌邮箱应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张4:5的竖图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069171185-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150277408-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -230,18 +230,18 @@
       "imageSize": "1K",
       "aspectRatio": "4:5"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069171185-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150277408-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "4:5",
     "promptTmpFunName": "getCutScaleFinalPrompt",
-    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且谷歌邮箱应用图标更加显眼需要保留背景。"
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069528365-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150295926-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -250,18 +250,18 @@
       "imageSize": "1K",
       "aspectRatio": "1:1"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069528365-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150295926-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "1:1",
     "promptTmpFunName": "getCutLogoFinalPrompt",
-    "prompt": "生成一张1:1的方图，提取谷歌邮箱应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张1:1的方图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069528365-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150295926-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -270,18 +270,18 @@
       "imageSize": "1K",
       "aspectRatio": "1:1"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069528365-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150295926-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "1:1",
     "promptTmpFunName": "getCutOtherFinalPrompt",
-    "prompt": "生成一张1:1的方图，提取除了谷歌邮箱应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张1:1的方图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069528365-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150295926-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -290,18 +290,18 @@
       "imageSize": "1K",
       "aspectRatio": "1:1"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069528365-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150295926-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "1:1",
     "promptTmpFunName": "getCutScaleFinalPrompt",
-    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且谷歌邮箱应用图标更加显眼需要保留背景。"
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069528365-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150295926-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -310,18 +310,18 @@
       "imageSize": "1K",
       "aspectRatio": "4:5"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069528365-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150295926-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "4:5",
     "promptTmpFunName": "getCutLogoFinalPrompt",
-    "prompt": "生成一张4:5的竖图，提取谷歌邮箱应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张4:5的竖图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069528365-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150295926-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -330,18 +330,18 @@
       "imageSize": "1K",
       "aspectRatio": "4:5"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069528365-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150295926-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "4:5",
     "promptTmpFunName": "getCutOtherFinalPrompt",
-    "prompt": "生成一张4:5的竖图，提取除了谷歌邮箱应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+    "prompt": "生成一张4:5的竖图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-22\\谷歌邮箱方竖\\1769069528365-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150295926-1200x628.jpg"
     ],
     "generationConfig": {
       "temperature": 0.5
@@ -350,13 +350,3853 @@
       "imageSize": "1K",
       "aspectRatio": "4:5"
     },
-    "output": "D:\\mog素材\\待用素材库\\0122谷歌邮箱方竖\\1769069528365-1200x628",
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150295926-1200x628",
     "​count": 3,
-    "appName": "谷歌邮箱",
+    "appName": "kakaotalk",
     "lang": "us",
     "batchFun": "cut",
     "aspectRatio": "4:5",
     "promptTmpFunName": "getCutScaleFinalPrompt",
-    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且谷歌邮箱应用图标更加显眼需要保留背景。"
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150507462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150507462-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150507462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150507462-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150507462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150507462-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150507462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150507462-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150507462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150507462-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150507462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150507462-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150515864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150515864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150515864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150515864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150515864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150515864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150515864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150515864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150515864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150515864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150515864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150515864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150522810-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150522810-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150522810-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150522810-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150522810-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150522810-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150522810-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150522810-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150522810-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150522810-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150522810-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150522810-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150934864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150934864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150934864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150934864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150934864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150934864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150934864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150934864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150934864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150934864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150934864-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150934864-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150953523-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150953523-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150953523-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150953523-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150953523-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150953523-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150953523-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150953523-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150953523-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150953523-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150953523-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150953523-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150960663-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150960663-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150960663-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150960663-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150960663-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150960663-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150960663-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150960663-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150960663-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150960663-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150960663-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150960663-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150969261-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150969261-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150969261-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150969261-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150969261-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150969261-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150969261-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150969261-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取kakaotalk应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150969261-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150969261-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了kakaotalk应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\kakaotalk方竖\\1769150969261-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123kakaotalk方竖\\1769150969261-1200x628",
+    "​count": 3,
+    "appName": "kakaotalk",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且kakaotalk应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150285744-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150285744-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150285744-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150285744-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150285744-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150285744-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150285744-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150285744-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150285744-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150285744-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150285744-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150285744-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150301593-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150301593-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150301593-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150301593-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150301593-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150301593-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150301593-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150301593-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150301593-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150301593-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150301593-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150301593-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150308263-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150308263-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150308263-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150308263-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150308263-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150308263-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150308263-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150308263-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150308263-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150308263-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150308263-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150308263-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150311412-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150311412-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150311412-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150311412-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150311412-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150311412-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150311412-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150311412-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150311412-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150311412-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150311412-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150311412-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150312688-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150312688-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150312688-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150312688-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150312688-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150312688-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150312688-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150312688-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150312688-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150312688-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150312688-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150312688-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150313166-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150313166-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150313166-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150313166-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150313166-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150313166-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150313166-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150313166-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150313166-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150313166-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150313166-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150313166-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150319604-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150319604-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150319604-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150319604-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150319604-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150319604-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150319604-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150319604-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150319604-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150319604-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150319604-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150319604-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150545650-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150545650-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150545650-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150545650-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150545650-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150545650-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150545650-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150545650-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150545650-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150545650-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150545650-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150545650-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969033-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969033-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969033-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969033-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969033-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969033-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969033-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969033-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969033-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969033-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969033-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969033-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969121-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969121-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969121-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969121-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969121-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969121-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969121-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969121-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969121-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969121-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\naver方竖\\1769150969121-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123naver方竖\\1769150969121-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152398105-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152398105-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152398105-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152398105-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152398105-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152398105-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152398105-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152398105-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152398105-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152398105-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152398105-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152398105-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152529437-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152529437-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152529437-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152529437-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152529437-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152529437-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152529437-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152529437-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152529437-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152529437-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152529437-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152529437-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152532504-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152532504-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152532504-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152532504-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152532504-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152532504-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152532504-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152532504-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152532504-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152532504-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152532504-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152532504-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152539514-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152539514-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152539514-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152539514-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152539514-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152539514-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152539514-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152539514-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152539514-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152539514-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152539514-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152539514-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152773098-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152773098-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152773098-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152773098-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152773098-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152773098-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152773098-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152773098-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152773098-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152773098-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\jp\\1769152773098-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\jp\\1769152773098-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150309133-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150309133-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150309133-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150309133-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150309133-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150309133-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150309133-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150309133-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150309133-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150309133-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150309133-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150309133-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150971907-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150971907-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150971907-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150971907-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150971907-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150971907-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150971907-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150971907-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150971907-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150971907-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150971907-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150971907-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150988460-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150988460-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150988460-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150988460-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150988460-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150988460-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150988460-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150988460-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150988460-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150988460-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769150988460-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769150988460-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152381691-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152381691-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152381691-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152381691-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152381691-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152381691-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152381691-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152381691-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152381691-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152381691-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152381691-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152381691-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152543176-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152543176-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152543176-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152543176-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152543176-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152543176-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152543176-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152543176-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取YouTube应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152543176-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152543176-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了YouTube应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube方竖\\us\\1769152543176-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0123YouTube方竖\\us\\1769152543176-1200x628",
+    "​count": 3,
+    "appName": "YouTube",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且YouTube应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "us",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\fa68bcced9b9d452c52700276f60a327.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\3001418422f0eb35e52a416ab0597bfc.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\b5890d49ed0b484b0f074dcecdaead23.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b7d0f414169185c6ef3d78e0dd7ddca.jpg",
+      "D:\\batchGenerateImage\\referenceImages\\1-23\\YouTube\\0b9f64f9f6790550cbad30759a89c6cc.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 1.1
+    },
+    "imageConfig": {
+      "aspectRatio": "16:9",
+      "imageSize": "1K"
+    },
+    "output": "D:\\batchGenerateImage\\data\\youtube\\jp",
+    "​count": 1,
+    "appName": "youtube",
+    "lang": "jp",
+    "promptTmpFunName": "getAppAdsDesignerPrompt",
+    "batchFun": "combination2",
+    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于youtube应用推广，所以参考图无论是什么应用图标一定要是youtube的图标。\n  3、图片内出现的所有可见文字必须 100% 为jp语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
   }
 ]

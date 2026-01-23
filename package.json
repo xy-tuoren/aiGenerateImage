@@ -7,9 +7,13 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsx main.ts",
     "main": "npm run xlsx2json && npm run start",
-    "utils": "tsx utils.ts",
     "xlsx2json": "tsx xlsx.ts",
-    "convert-jfif": "tsx convertJfif.ts"
+    "convert-jfif": "tsx convertJfif.ts",
+    "utils:split": "tsx utils.ts split",
+    "utils:rename": "tsx utils.ts rename",
+    "ref-images:generate": "tsx getRefImages.ts generate",
+    "ref-images:download": "tsx getRefImages.ts download",
+    "ref-images:all": "tsx getRefImages.ts all"
   },
   "keywords": [],
   "author": "",
