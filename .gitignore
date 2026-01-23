@@ -45,3 +45,6 @@ coverage/
 # 其他
 *.tsbuildinfo
 ~$config.xlsx
+data/
+refImageDatas/
+referenceImages/
