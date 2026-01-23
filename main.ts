@@ -3,6 +3,7 @@ import * as path from 'path';
 import async from 'async';
 import sharp from 'sharp';
 import { GeminiClient } from './gemini.js';
+import { getImageMaterialsWithAppsiteInfo } from './getRefImages.js';
 import { mimeTypeToExt, readConfigJsonAsGeminiJobs, writeGeneratedImageFile, resizeImageByAspectRatio, ensureCutExtraStitchedImages } from './utils.js';
 import * as promptTemplates from './prompt.js';
 
