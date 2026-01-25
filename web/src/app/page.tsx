@@ -1,54 +1,46 @@
 "use client";
 
-import { Layout, Typography, Space, Button, Card, message } from "antd";
-import { PlayCircleOutlined, ApiOutlined } from "@ant-design/icons";
+import { Layout, Typography, Menu } from "antd";
+import { HomeOutlined, SettingOutlined } from "@ant-design/icons";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-const { Header, Content } = Layout;
+const { Header, Content, Sider } = Layout;
 
 export default function Home() {
-  const [messageApi, contextHolder] = message.useMessage();
-
-  const callHealth = async () => {
-    const res = await fetch("/api/health", { method: "GET" });
-    const data = await res.json();
-    messageApi.success(`health: ${data?.ok ? "ok" : "fail"}`);
-  };
-
-  const runJob = async () => {
-    const res = await fetch("/api/run", { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) {
-      messageApi.error(data?.error || "run failed");
-      return;
-    }
-    messageApi.success(`已触发: ${data?.id || ""}`);
-  };
+  const pathname = usePathname();
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      {contextHolder}
-      <Header style={{ display: "flex", alignItems: "center" }}>
-        <Typography.Title level={4} style={{ color: "#fff", margin: 0 }}>
-          批量生成图片 - 内部后台
-        </Typography.Title>
-      </Header>
-      <Content style={{ padding: 24 }}>
-        <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-          <Card>
-            <Typography.Paragraph style={{ marginBottom: 0 }}>
-              这是最小版本：先提供 UI + HTTP API（health / run）。下一步再把 /api/run 接到你现有的批处理逻辑。
-            </Typography.Paragraph>
-          </Card>
-          <Space wrap>
-            <Button icon={<ApiOutlined />} onClick={callHealth}>
-              健康检查
-            </Button>
-            <Button type="primary" icon={<PlayCircleOutlined />} onClick={runJob}>
-              触发运行（占位）
-            </Button>
-          </Space>
-        </Space>
-      </Content>
+      <Sider width={200} style={{ background: "#fff" }}>
+        <Menu
+          mode="inline"
+          selectedKeys={[pathname || "/"]}
+          style={{ height: "100%", borderRight: 0 }}
+          items={[
+            {
+              key: "/",
+              icon: <HomeOutlined />,
+              label: <Link href="/">首页</Link>,
+            },
+            {
+              key: "/configs",
+              icon: <SettingOutlined />,
+              label: <Link href="/configs">配置管理</Link>,
+            },
+          ]}
+        />
+      </Sider>
+      <Layout>
+        <Header style={{ display: "flex", alignItems: "center", background: "#001529" }}>
+          <Typography.Title level={4} style={{ color: "#fff", margin: 0 }}>
+            批量生成图片 - 内部后台
+          </Typography.Title>
+        </Header>
+        <Content style={{ padding: 24 }}>
+          <Typography.Title level={2}>欢迎使用批量生成图片系统</Typography.Title>
+        </Content>
+      </Layout>
     </Layout>
   );
 }

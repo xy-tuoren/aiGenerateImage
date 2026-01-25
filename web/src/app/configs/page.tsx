@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button, Card, Drawer, Form, Input, InputNumber, Select, Space, Table, Typography, message } from "antd";
+import { Button, Card, Drawer, Form, Input, InputNumber, Layout, Menu, Select, Space, Table, Typography, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import { PlusOutlined, ReloadOutlined, HomeOutlined, SettingOutlined } from "@ant-design/icons";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 type ConfigItem = {
   id: string;
@@ -29,6 +31,7 @@ function splitLinesToList(input: string): string[] {
 }
 
 export default function ConfigsPage() {
+  const pathname = usePathname();
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ConfigItem[]>([]);
@@ -143,117 +146,147 @@ export default function ConfigsPage() {
     }
   };
 
+  const { Header, Content, Sider } = Layout;
+
   return (
-    <div style={{ padding: 24 }}>
-      {contextHolder}
-      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-        <Card>
-          <Space wrap>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              新增配置
-            </Button>
-            <Button icon={<ReloadOutlined />} onClick={fetchList} loading={loading}>
-              刷新
-            </Button>
+    <Layout style={{ minHeight: "100vh" }}>
+      <Sider width={200} style={{ background: "#fff" }}>
+        <Menu
+          mode="inline"
+          selectedKeys={[pathname || "/configs"]}
+          style={{ height: "100%", borderRight: 0 }}
+          items={[
+            {
+              key: "/",
+              icon: <HomeOutlined />,
+              label: <Link href="/">首页</Link>,
+            },
+            {
+              key: "/configs",
+              icon: <SettingOutlined />,
+              label: <Link href="/configs">配置管理</Link>,
+            },
+          ]}
+        />
+      </Sider>
+      <Layout>
+        <Header style={{ display: "flex", alignItems: "center", background: "#001529" }}>
+          <Typography.Title level={4} style={{ color: "#fff", margin: 0 }}>
+            批量生成图片 - 内部后台
+          </Typography.Title>
+        </Header>
+        <Content style={{ padding: 24 }}>
+          {contextHolder}
+          <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+            <Card>
+              <Space wrap>
+                <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                  新增配置
+                </Button>
+                <Button icon={<ReloadOutlined />} onClick={fetchList} loading={loading}>
+                  刷新
+                </Button>
+              </Space>
+            </Card>
+
+            <Card>
+              <Table rowKey="id" loading={loading} columns={columns} dataSource={items} pagination={{ pageSize: 20 }} />
+            </Card>
           </Space>
-        </Card>
 
-        <Card>
-          <Table rowKey="id" loading={loading} columns={columns} dataSource={items} pagination={{ pageSize: 20 }} />
-        </Card>
-      </Space>
-
-      <Drawer
-        title="新增生图配置（参考 config.json）"
-        open={open}
-        onClose={() => setOpen(false)}
-        width={720}
-        extra={
-          <Space>
-            <Button onClick={() => setOpen(false)}>取消</Button>
-            <Button type="primary" loading={submitting} onClick={submitCreate}>
-              保存
-            </Button>
-          </Space>
-        }
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="appName" label="appName">
-            <Input placeholder="例如：kakaotalk" />
-          </Form.Item>
-          <Form.Item name="lang" label="lang">
-            <Input placeholder="例如：us / jp / kr" />
-          </Form.Item>
-          <Form.Item name="batchFun" label="batchFun">
-            <Input placeholder="例如：cut / combination2" />
-          </Form.Item>
-          <Form.Item name="promptTmpFunName" label="promptTmpFunName">
-            <Input placeholder="例如：getCutLogoFinalPrompt" />
-          </Form.Item>
-          <Form.Item name="aspectRatio" label="aspectRatio（meta）">
-            <Select
-              options={[
-                { label: "1:1", value: "1:1" },
-                { label: "4:5", value: "4:5" },
-                { label: "16:9", value: "16:9" },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item name="count" label="count">
-            <InputNumber min={0} style={{ width: "100%" }} />
-          </Form.Item>
-          <Form.Item name="output" label="output（输出目录）">
-            <Input placeholder="例如：D:\\mog素材\\待用素材库\\xxx" />
-          </Form.Item>
-
-          <Form.Item
-            name="prompt"
-            label="prompt"
-            rules={[{ required: true, message: "prompt 不能为空" }]}
+          <Drawer
+            title="新增生图配置（参考 config.json）"
+            open={open}
+            onClose={() => setOpen(false)}
+            size={720}
+            extra={
+              <Space>
+                <Button onClick={() => setOpen(false)}>取消</Button>
+                <Button type="primary" loading={submitting} onClick={submitCreate}>
+                  保存
+                </Button>
+              </Space>
+            }
           >
-            <Input.TextArea rows={5} placeholder="描述要生成的图片" />
-          </Form.Item>
+            <Form form={form} layout="vertical">
+              <Form.Item name="appName" label="appName">
+                <Input placeholder="例如：kakaotalk" />
+              </Form.Item>
+              <Form.Item name="lang" label="lang">
+                <Input placeholder="例如：us / jp / kr" />
+              </Form.Item>
+              <Form.Item name="batchFun" label="batchFun">
+                <Input placeholder="例如：cut / combination2" />
+              </Form.Item>
+              <Form.Item name="promptTmpFunName" label="promptTmpFunName">
+                <Input placeholder="例如：getCutLogoFinalPrompt" />
+              </Form.Item>
+              <Form.Item name="aspectRatio" label="aspectRatio（meta）">
+                <Select
+                  options={[
+                    { label: "1:1", value: "1:1" },
+                    { label: "4:5", value: "4:5" },
+                    { label: "16:9", value: "16:9" },
+                  ]}
+                />
+              </Form.Item>
+              <Form.Item name="count" label="count">
+                <InputNumber min={0} style={{ width: "100%" }} />
+              </Form.Item>
+              <Form.Item name="output" label="output（输出目录）">
+                <Input placeholder="例如：D:\\mog素材\\待用素材库\\xxx" />
+              </Form.Item>
 
-          <Form.Item name="referenceImagesText" label="referenceImages（每行一个路径/URL）">
-            <Input.TextArea rows={4} placeholder="D:\\batchGenerateImage\\referenceImages\\...\nhttps://..." />
-          </Form.Item>
+              <Form.Item
+                name="prompt"
+                label="prompt"
+                rules={[{ required: true, message: "prompt 不能为空" }]}
+              >
+                <Input.TextArea rows={5} placeholder="描述要生成的图片" />
+              </Form.Item>
 
-          <Form.Item name="generationConfig_temperature" label="generationConfig.temperature">
-            <InputNumber step={0.1} style={{ width: "100%" }} />
-          </Form.Item>
+              <Form.Item name="referenceImagesText" label="referenceImages（每行一个路径/URL）">
+                <Input.TextArea rows={4} placeholder="D:\\batchGenerateImage\\referenceImages\\...\nhttps://..." />
+              </Form.Item>
 
-          <Form.Item name="imageConfig_imageSize" label="imageConfig.imageSize">
-            <Select
-              options={[
-                { label: "1K", value: "1K" },
-                { label: "2K", value: "2K" },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item name="imageConfig_aspectRatio" label="imageConfig.aspectRatio（Gemini）">
-            <Select
-              options={[
-                { label: "1:1", value: "1:1" },
-                { label: "4:5", value: "4:5" },
-                { label: "16:9", value: "16:9" },
-              ]}
-            />
-          </Form.Item>
+              <Form.Item name="generationConfig_temperature" label="generationConfig.temperature">
+                <InputNumber step={0.1} style={{ width: "100%" }} />
+              </Form.Item>
 
-          <Form.Item name="responseModalities" label="responseModalities">
-            <Select mode="multiple" options={[{ label: "IMAGE", value: "IMAGE" }]} />
-          </Form.Item>
+              <Form.Item name="imageConfig_imageSize" label="imageConfig.imageSize">
+                <Select
+                  options={[
+                    { label: "1K", value: "1K" },
+                    { label: "2K", value: "2K" },
+                  ]}
+                />
+              </Form.Item>
+              <Form.Item name="imageConfig_aspectRatio" label="imageConfig.aspectRatio（Gemini）">
+                <Select
+                  options={[
+                    { label: "1:1", value: "1:1" },
+                    { label: "4:5", value: "4:5" },
+                    { label: "16:9", value: "16:9" },
+                  ]}
+                />
+              </Form.Item>
 
-          <Form.Item name="nextPromptFunText" label="nextPromptFun（可选，每行一个函数名）">
-            <Input.TextArea rows={3} placeholder="例如：getCutLogoFinalPrompt" />
-          </Form.Item>
+              <Form.Item name="responseModalities" label="responseModalities">
+                <Select mode="multiple" options={[{ label: "IMAGE", value: "IMAGE" }]} />
+              </Form.Item>
 
-          <Form.Item name="extraJson" label="extra（可选，JSON 扩展字段）">
-            <Input.TextArea rows={6} placeholder='例如：{"anyKey":"anyValue"}' />
-          </Form.Item>
-        </Form>
-      </Drawer>
-    </div>
+              <Form.Item name="nextPromptFunText" label="nextPromptFun（可选，每行一个函数名）">
+                <Input.TextArea rows={3} placeholder="例如：getCutLogoFinalPrompt" />
+              </Form.Item>
+
+              <Form.Item name="extraJson" label="extra（可选，JSON 扩展字段）">
+                <Input.TextArea rows={6} placeholder='例如：{"anyKey":"anyValue"}' />
+              </Form.Item>
+            </Form>
+          </Drawer>
+        </Content>
+      </Layout>
+    </Layout>
   );
 }
 
