@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { getMongoDb } from "@/lib/mongodb";
+import { getMongoDb } from "@/lib/server/mongodb";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

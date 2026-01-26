@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
-import { getMongoDb } from "@/lib/mongodb";
-import { startBatchJob } from "@/lib/batchJobRunner";
+import { getMongoDb } from "@/lib/server/mongodb";
+import { startBatchJob } from "@/lib/server/batchJobRunner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

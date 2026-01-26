@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card, Drawer, Form, Input, InputNumber, Popconfirm, Select, Space, Table, Typography, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { PlusOutlined, ReloadOutlined, PictureOutlined, EditOutlined, CopyOutlined, DeleteOutlined } from "@ant-design/icons";
+import { PlusOutlined, PictureOutlined, EditOutlined, CopyOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { ASPECT_RATIO_OPTIONS, IMAGE_SIZE_OPTIONS, RESPONSE_MODALITIES_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
 import AdminShell from "@/app/_components/AdminShell";
@@ -40,6 +40,7 @@ export default function ConfigsPage() {
   const [items, setItems] = useState<ConfigItem[]>([]);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingBatch, setDeletingBatch] = useState(false);
   const [form] = Form.useForm();
   const [appNameOptions, setAppNameOptions] = useState<{ label: string; value: string }[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -115,6 +116,43 @@ export default function ConfigsPage() {
     }
   }, [editingId, fetchList, messageApi]);
 
+  const handleBatchDelete = useCallback(async () => {
+    if (!selectedRowKeys.length) return;
+    setDeletingBatch(true);
+    try {
+      const ids = [...selectedRowKeys];
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const res = await fetch(`/api/configs/${id}`, { method: "DELETE" });
+            const data = await res.json().catch(() => null);
+            const ok = Boolean(res.ok && data?.ok);
+            return { id, ok, error: ok ? "" : String(data?.error || "删除失败") };
+          } catch (e) {
+            return { id, ok: false, error: e instanceof Error ? e.message : String(e) };
+          }
+        })
+      );
+
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length) {
+        messageApi.error(`删除失败 ${failed.length}/${results.length}：${failed[0]?.id} ${failed[0]?.error || ""}`);
+      } else {
+        messageApi.success(`删除成功：${results.length} 条`);
+      }
+
+      const deletedIds = results.filter((r) => r.ok).map((r) => r.id);
+      setSelectedRowKeys((prev) => prev.filter((k) => !deletedIds.includes(k)));
+      if (editingId && deletedIds.includes(editingId)) {
+        setOpen(false);
+        setEditingId(null);
+      }
+      await fetchList();
+    } finally {
+      setDeletingBatch(false);
+    }
+  }, [editingId, fetchList, messageApi, selectedRowKeys]);
+
   const columns: ColumnsType<ConfigItem> = useMemo(
     () => [
       { title: "appName", dataIndex: "appName", key: "appName", width: 160, ellipsis: true, align: "center" },
@@ -127,7 +165,7 @@ export default function ConfigsPage() {
         title: "prompt",
         dataIndex: "prompt",
         key: "prompt",
-        width: 520,
+        width: 500,
         ellipsis: true,
         align: "center",
         render: (v) => (
@@ -307,9 +345,17 @@ export default function ConfigsPage() {
             >
               选择配置去生图
             </Button>
-            <Button icon={<ReloadOutlined />} onClick={fetchList} loading={loading}>
-              刷新
-            </Button>
+            <Popconfirm
+              title={`确认删除选中的 ${selectedRowKeys.length} 条配置？`}
+              okText="删除"
+              cancelText="取消"
+              onConfirm={handleBatchDelete}
+              disabled={!selectedRowKeys.length}
+            >
+              <Button danger icon={<DeleteOutlined />} disabled={!selectedRowKeys.length} loading={deletingBatch}>
+                删除
+              </Button>
+            </Popconfirm>
           </Space>
         </Card>
 

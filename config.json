@@ -1,702 +1,2402 @@
 [
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419625826-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419625826-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取谷歌地图应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419625826-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419625826-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了谷歌地图应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419625826-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419625826-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且谷歌地图应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419625826-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419625826-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取谷歌地图应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419625826-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419625826-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了谷歌地图应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419625826-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419625826-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且谷歌地图应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419653388-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419653388-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取谷歌地图应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419653388-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419653388-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了谷歌地图应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419653388-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419653388-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且谷歌地图应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419653388-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419653388-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取谷歌地图应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419653388-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419653388-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了谷歌地图应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419653388-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419653388-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且谷歌地图应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419874563-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419874563-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取谷歌地图应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419874563-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419874563-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了谷歌地图应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419874563-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419874563-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且谷歌地图应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419874563-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419874563-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取谷歌地图应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419874563-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419874563-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了谷歌地图应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419874563-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419874563-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且谷歌地图应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419887860-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419887860-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取谷歌地图应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419887860-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419887860-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了谷歌地图应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419887860-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419887860-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且谷歌地图应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419887860-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419887860-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取谷歌地图应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419887860-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419887860-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了谷歌地图应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769419887860-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769419887860-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且谷歌地图应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769420371469-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769420371469-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取谷歌地图应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769420371469-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769420371469-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了谷歌地图应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769420371469-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769420371469-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且谷歌地图应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769420371469-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769420371469-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取谷歌地图应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769420371469-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769420371469-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了谷歌地图应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图方竖\\1769420371469-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126谷歌地图方竖\\1769420371469-1200x628",
+    "​count": 3,
+    "appName": "谷歌地图",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且谷歌地图应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769412062246-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769412062246-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769412062246-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769412062246-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769412062246-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769412062246-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769412062246-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769412062246-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769412062246-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769412062246-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769412062246-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769412062246-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413779184-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413779184-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413779184-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413779184-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413779184-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413779184-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413779184-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413779184-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413779184-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413779184-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413779184-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413779184-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413957795-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413957795-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413957795-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413957795-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\c1695780879fa07bfadecd2980bcf4db.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver\\cc592e27e68e62c6b2b0a25bd85d17db.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413957795-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.5
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\naver",
-    "​count": 1,
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413957795-1200x628",
+    "​count": 3,
     "appName": "naver",
-    "lang": "kr",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于naver应用推广，所以参考图无论是什么应用图标一定要是naver的图标。\n  3、图片内出现的所有可见文字必须 100% 为kr语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\01ef105d76d330bcd01c231e4e77dcae.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768795801729-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413957795-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413957795-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\01ef105d76d330bcd01c231e4e77dcae.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768806852462-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413957795-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413957795-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\01ef105d76d330bcd01c231e4e77dcae.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\8335e451f5e74ae902feb1c85e74fe34.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413957795-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413957795-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\01ef105d76d330bcd01c231e4e77dcae.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\eee012fbb96ea272c725f2b4ed8cd150.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413962717-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413962717-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768795801729-1200x628.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768806852462-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413962717-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413962717-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768795801729-1200x628.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\8335e451f5e74ae902feb1c85e74fe34.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413962717-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413962717-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768795801729-1200x628.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\eee012fbb96ea272c725f2b4ed8cd150.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413962717-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413962717-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768806852462-1200x628.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\8335e451f5e74ae902feb1c85e74fe34.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413962717-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413962717-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768806852462-1200x628.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\eee012fbb96ea272c725f2b4ed8cd150.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769413962717-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769413962717-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\8335e451f5e74ae902feb1c85e74fe34.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\eee012fbb96ea272c725f2b4ed8cd150.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415853946-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415853946-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768795801729-1200x628.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\8335e451f5e74ae902feb1c85e74fe34.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415853946-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415853946-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\01ef105d76d330bcd01c231e4e77dcae.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\eee012fbb96ea272c725f2b4ed8cd150.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415853946-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415853946-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\01ef105d76d330bcd01c231e4e77dcae.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\eee012fbb96ea272c725f2b4ed8cd150.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415853946-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415853946-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\01ef105d76d330bcd01c231e4e77dcae.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\8335e451f5e74ae902feb1c85e74fe34.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415853946-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415853946-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768795801729-1200x628.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768806852462-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415853946-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415853946-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768795801729-1200x628.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\8335e451f5e74ae902feb1c85e74fe34.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415857547-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415857547-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\01ef105d76d330bcd01c231e4e77dcae.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768806852462-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415857547-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415857547-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\01ef105d76d330bcd01c231e4e77dcae.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768795801729-1200x628.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415857547-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415857547-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768795801729-1200x628.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\eee012fbb96ea272c725f2b4ed8cd150.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415857547-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415857547-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
   },
   {
     "referenceImages": [
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\1768795801729-1200x628.jpg",
-      "D:\\batchGenerateImage\\referenceImages\\1-26\\谷歌地图\\8335e451f5e74ae902feb1c85e74fe34.jpg"
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415857547-1200x628.jpg"
     ],
     "generationConfig": {
-      "temperature": 1.1
+      "temperature": 0.5
     },
     "imageConfig": {
-      "aspectRatio": "16:9",
-      "imageSize": "1K"
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
     },
-    "output": "D:\\batchGenerateImage\\data\\gmailMap",
-    "​count": 1,
-    "appName": "谷歌地图",
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415857547-1200x628",
+    "​count": 3,
+    "appName": "naver",
     "lang": "us",
-    "promptTmpFunName": "getAppAdsDesignerPrompt",
-    "batchFun": "combination2",
-    "prompt": "1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:\n    - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。\n    - 图片的元素层次要分明。\n    - 文字要简明了图中所有文字加起来不能超过3条。\n    - 单条文字长度必须简参照参考图文字长度不能乱改。\n  2、图片将用于谷歌地图应用推广，所以参考图无论是什么应用图标一定要是谷歌地图的图标。\n  3、图片内出现的所有可见文字必须 100% 为us语言，禁止出现任何其他语言。\n  4、图片中只能出现一张图不能是多张图拼接而成的。\n  5、生成一张16:9的长图的图片。\n  6、\n  "
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769415857547-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769415857547-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417255394-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417255394-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417255394-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417255394-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417255394-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417255394-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417255394-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417255394-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417255394-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417255394-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417255394-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417255394-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417263278-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417263278-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417263278-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417263278-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417263278-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417263278-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417263278-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417263278-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417263278-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417263278-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417263278-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417263278-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417266701-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417266701-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417266701-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417266701-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417266701-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417266701-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417266701-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417266701-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417266701-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417266701-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417266701-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417266701-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417282023-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417282023-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417282023-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417282023-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417282023-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417282023-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417282023-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417282023-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417282023-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417282023-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417282023-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417282023-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417644415-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417644415-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417644415-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417644415-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417644415-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417644415-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417644415-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417644415-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417644415-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417644415-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417644415-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417644415-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417658058-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417658058-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417658058-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417658058-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417658058-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417658058-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417658058-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417658058-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417658058-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417658058-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769417658058-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769417658058-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418364462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418364462-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418364462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418364462-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418364462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418364462-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418364462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418364462-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418364462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418364462-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418364462-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418364462-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418619642-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418619642-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418619642-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418619642-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418619642-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418619642-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418619642-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418619642-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418619642-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418619642-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769418619642-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769418619642-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769419913671-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769419913671-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769419913671-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769419913671-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张1:1的方图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769419913671-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "1:1"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769419913671-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "1:1",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张1:1的方图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769419913671-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769419913671-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutLogoFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取naver应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769419913671-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769419913671-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutOtherFinalPrompt",
+    "prompt": "生成一张4:5的竖图，提取除了naver应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。"
+  },
+  {
+    "referenceImages": [
+      "D:\\batchGenerateImage\\referenceImages\\1-26\\naver方竖\\1769419913671-1200x628.jpg"
+    ],
+    "generationConfig": {
+      "temperature": 0.5
+    },
+    "imageConfig": {
+      "imageSize": "1K",
+      "aspectRatio": "4:5"
+    },
+    "output": "D:\\mog素材\\待用素材库\\0126naver方竖\\1769419913671-1200x628",
+    "​count": 3,
+    "appName": "naver",
+    "lang": "us",
+    "batchFun": "cut",
+    "aspectRatio": "4:5",
+    "promptTmpFunName": "getCutScaleFinalPrompt",
+    "prompt": "生成一张4:5的竖图，需要重新调整构图适应新尺寸并且naver应用图标更加显眼需要保留背景。"
   }
 ]

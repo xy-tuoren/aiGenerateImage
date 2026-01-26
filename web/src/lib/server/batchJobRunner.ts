@@ -2,10 +2,10 @@ import * as asyncLib from "async";
 import * as fs from "fs-extra";
 import { join } from "path";
 import { ObjectId } from "mongodb";
-import { getMongoDb } from "@/lib/mongodb";
-import { GeminiClient } from "@/lib/gemini";
+import { getMongoDb } from "@/lib/server/mongodb";
+import { GeminiClient } from "@/lib/server/gemini";
 import * as promptFns from "@/common/prompt";
-import { resizeImageByAspectRatio } from "@/lib/utils";
+import { resizeImageByAspectRatio } from "@/lib/server/utils";
 
 type ImageConfigDoc = {
   _id: ObjectId;
@@ -86,9 +86,31 @@ type StartJobInput = {
 
 declare global {
   var __batchJobRunning: Map<string, Promise<void>> | undefined;
+  var __cutJobRunning: Map<string, Promise<void>> | undefined;
 }
 
 const runningMap = global.__batchJobRunning ?? (global.__batchJobRunning = new Map<string, Promise<void>>());
+const cutRunningMap = global.__cutJobRunning ?? (global.__cutJobRunning = new Map<string, Promise<void>>());
+
+type CutJobItemDoc = {
+  _id?: ObjectId;
+  jobId: ObjectId;
+  sourceUrl: string;
+  sourceAbsPath: string;
+  appName?: string;
+  lang?: string;
+  ratio: string;
+  templateName: string;
+  status: "queued" | "running" | "completed" | "failed";
+  total: number;
+  done: number;
+  error?: string;
+  outputUrl?: string;
+  outputFilePath?: string;
+  outputMimeType?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 function extFromMime(mimeType: string) {
   const t = (mimeType || "").toLowerCase();
@@ -131,18 +153,80 @@ function aspectRatioToken(aspectRatio: unknown) {
   return `${w}x${h}`;
 }
 
+function isImageFileName(name: string) {
+  const lower = String(name || "").toLowerCase();
+  return (
+    lower.endsWith(".png") ||
+    lower.endsWith(".webp") ||
+    lower.endsWith(".gif") ||
+    lower.endsWith(".jpg") ||
+    lower.endsWith(".jpeg") ||
+    lower.endsWith(".jfif")
+  );
+}
+
+async function collectImagesFromDirRecursive(dir: string): Promise<string[]> {
+  const root = String(dir || "").trim();
+  if (!root) return [];
+  const st = await fs.stat(root).catch(() => null);
+  if (!st) throw new Error(`参考图不存在: ${root}`);
+  if (!st.isDirectory()) throw new Error(`参考图不是目录: ${root}`);
+
+  const results: string[] = [];
+  const walk = async (d: string) => {
+    const names = await fs.readdir(d).catch(() => []);
+    const sorted = [...names].sort();
+    for (const name of sorted) {
+      const abs = join(d, name);
+      const s = await fs.stat(abs).catch(() => null);
+      if (!s) continue;
+      if (s.isDirectory()) {
+        await walk(abs);
+        continue;
+      }
+      if (s.isFile() && isImageFileName(name)) results.push(abs);
+    }
+  };
+
+  await walk(root);
+  return results;
+}
+
+async function expandReferenceToPaths(ref: string): Promise<string[]> {
+  const r = String(ref || "").trim();
+  if (!r) return [];
+  if (/^https?:\/\//i.test(r)) return [r];
+  const st = await fs.stat(r).catch(() => null);
+  if (!st) throw new Error(`参考图不存在: ${r}`);
+  if (st.isDirectory()) {
+    const files = await collectImagesFromDirRecursive(r);
+    if (!files.length) throw new Error(`参考图目录下没有图片文件: ${r}`);
+    return files;
+  }
+  if (!st.isFile()) throw new Error(`参考图不是文件: ${r}`);
+  return [r];
+}
+
 async function readReferenceImageToBase64(ref: string): Promise<{ data: string; mimeType: string }> {
-  const isHttp = /^https?:\/\//i.test(ref);
+  const r = String(ref || "").trim();
+  const isHttp = /^https?:\/\//i.test(r);
   if (isHttp) {
-    const res = await fetch(ref);
-    if (!res.ok) throw new Error(`下载参考图失败: ${ref}, status=${res.status}`);
+    const res = await fetch(r);
+    if (!res.ok) throw new Error(`下载参考图失败: ${r}, status=${res.status}`);
     const ab = await res.arrayBuffer();
     const buf = Buffer.from(ab);
     const mimeType = res.headers.get("content-type") || "image/jpeg";
     return { data: buf.toString("base64"), mimeType };
   }
-  const buf = await fs.readFile(ref);
-  return { data: buf.toString("base64"), mimeType: guessMimeFromPath(ref) };
+  const buf = await fs.readFile(r);
+  return { data: buf.toString("base64"), mimeType: guessMimeFromPath(r) };
+}
+
+async function readReferenceImagesToBase64(refs: string[]) {
+  const raw = Array.isArray(refs) ? refs.map((x) => String(x || "").trim()).filter(Boolean) : [];
+  const expanded: string[] = [];
+  for (const r of raw) expanded.push(...(await expandReferenceToPaths(r)));
+  return expanded.length ? await Promise.all(expanded.map((p) => readReferenceImageToBase64(p))) : [];
 }
 
 function buildPrompt(config: ImageConfigDoc): string {
@@ -167,6 +251,15 @@ export async function startBatchJob(input: StartJobInput) {
     runningMap.delete(jobId);
   });
   runningMap.set(jobId, p);
+}
+
+export async function startCutJob(input: { jobId: string; concurrency: number }) {
+  const { jobId, concurrency } = input;
+  if (cutRunningMap.has(jobId)) return;
+  const p = runCutJob({ jobId, concurrency }).finally(() => {
+    cutRunningMap.delete(jobId);
+  });
+  cutRunningMap.set(jobId, p);
 }
 
 async function runBatchJob(input: StartJobInput) {
@@ -199,9 +292,8 @@ async function runBatchJob(input: StartJobInput) {
     const prompt = buildPrompt(config);
     try {
       const referenceImagesRaw = Array.isArray(config.referenceImages) ? config.referenceImages : [];
-      const referenceImages = referenceImagesRaw.length
-        ? await Promise.all(referenceImagesRaw.map((r) => readReferenceImageToBase64(String(r))))
-        : undefined;
+      const refImgs = referenceImagesRaw.length ? await readReferenceImagesToBase64(referenceImagesRaw) : [];
+      const referenceImages = refImgs.length ? refImgs : undefined;
 
       const client = new GeminiClient({});
       const generated = await client.generateImage(prompt, {
@@ -352,3 +444,140 @@ async function runBatchJob(input: StartJobInput) {
   }
 }
 
+async function runCutJob(input: { jobId: string; concurrency: number }) {
+  const db = await getMongoDb();
+  const jobObjectId = new ObjectId(input.jobId);
+  const jobsCol = db.collection<BatchJobDoc>("batch_jobs");
+  const cutItemsCol = db.collection<CutJobItemDoc>("cut_job_items");
+
+  await jobsCol.updateOne(
+    { _id: jobObjectId },
+    { $set: { status: "running", updatedAt: new Date() } }
+  );
+
+  const items = await cutItemsCol.find({ jobId: jobObjectId }).toArray();
+  if (!items.length) {
+    await jobsCol.updateOne(
+      { _id: jobObjectId },
+      { $set: { status: "completed", updatedAt: new Date() } }
+    );
+    return;
+  }
+
+  const q = asyncLib.queue(async (task: { itemId: ObjectId }) => {
+    const item = await cutItemsCol.findOne({ _id: task.itemId });
+    if (!item) throw new Error(`裁图任务不存在: ${String(task.itemId)}`);
+
+    const now0 = new Date();
+    await cutItemsCol.updateOne(
+      { _id: task.itemId },
+      { $set: { status: "running", updatedAt: now0 } }
+    );
+
+    const baseArgs = {
+      appName: item.appName,
+      lang: item.lang,
+      prompt: "",
+      aspectRatio: item.ratio,
+      sourceType: "generated_image",
+      sourceUrl: item.sourceUrl,
+      cutRatio: item.ratio,
+      cutTemplate: item.templateName,
+    };
+    const fn = (promptFns as Record<string, unknown>)[item.templateName];
+    const prompt = typeof fn === "function" ? String((fn as (args: typeof baseArgs) => unknown)(baseArgs)) : "";
+
+    try {
+      const refImgs = await readReferenceImagesToBase64([String(item.sourceAbsPath)]);
+      const referenceImages = refImgs.length ? refImgs : undefined;
+      const client = new GeminiClient({});
+      const generated = await client.generateImage(prompt, {
+        responseModalities: ["IMAGE"],
+        imageConfig: { aspectRatio: item.ratio, imageSize: "1K" },
+        referenceImages,
+      });
+
+      const ext = extFromMime(generated.mimeType);
+      let imageBase64 = generated.data;
+      try {
+        imageBase64 = await resizeImageByAspectRatio(imageBase64, item.ratio);
+      } catch {
+      }
+
+      const ts = Date.now();
+      const ratioToken = aspectRatioToken(item.ratio);
+      const baseName = `${ts}-${ratioToken}.${ext}`;
+      const appNameSeg = safePathSegment(item.appName);
+      const langSeg = safePathSegment(item.lang);
+      const relDir = join("cut", appNameSeg, langSeg, String(jobObjectId));
+      const absDir = join(process.cwd(), "public", relDir);
+      await fs.ensureDir(absDir);
+
+      let filename = baseName;
+      let absFile = join(absDir, filename);
+      if (await fs.pathExists(absFile)) {
+        let i = 2;
+        while (true) {
+          filename = `${ts}-${ratioToken}-${i}.${ext}`;
+          absFile = join(absDir, filename);
+          if (!(await fs.pathExists(absFile))) break;
+          i += 1;
+        }
+      }
+      await fs.writeFile(absFile, Buffer.from(imageBase64, "base64"));
+      const url = `/${relDir.replaceAll("\\", "/")}/${filename}`;
+
+      const now = new Date();
+      await cutItemsCol.updateOne(
+        { _id: task.itemId },
+        {
+          $set: {
+            status: "completed",
+            done: 1,
+            updatedAt: now,
+            outputUrl: url,
+            outputFilePath: absFile,
+            outputMimeType: generated.mimeType,
+          },
+        }
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const now = new Date();
+      await cutItemsCol.updateOne(
+        { _id: task.itemId },
+        { $set: { status: "failed", error: msg, updatedAt: now } }
+      );
+      throw err;
+    }
+
+    await jobsCol.updateOne(
+      { _id: jobObjectId },
+      { $inc: { done: 1 }, $set: { updatedAt: new Date() } }
+    );
+  }, Math.max(1, Number(input.concurrency) || 1));
+
+  q.error(async (err) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    const now = new Date();
+    await jobsCol.updateOne(
+      { _id: jobObjectId },
+      { $set: { status: "failed", error: msg, updatedAt: now } }
+    );
+  });
+
+  const tasks = items.map((it) => ({ itemId: it._id! }));
+  const drained = new Promise<void>((resolve) => {
+    q.drain(() => resolve());
+  });
+  for (const t of tasks) q.push(t);
+  await drained;
+
+  const jobAfter = await jobsCol.findOne({ _id: jobObjectId });
+  if (jobAfter?.status !== "failed") {
+    await jobsCol.updateOne(
+      { _id: jobObjectId },
+      { $set: { status: "completed", updatedAt: new Date() } }
+    );
+  }
+}

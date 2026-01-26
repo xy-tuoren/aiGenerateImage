@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, Card, Form, InputNumber, Progress, Select, Space, Table, Typography, message, Image } from "antd";
+import { Button, Card, Form, InputNumber, Progress, Select, Space, Table, Tabs, Typography, message, Image, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { PlayCircleOutlined, ReloadOutlined } from "@ant-design/icons";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AdminShell from "@/app/_components/AdminShell";
 
 type ConfigItem = {
@@ -28,7 +28,18 @@ type Job = {
   updatedAt?: string;
 };
 
+type JobSummary = {
+  id: string;
+  status: string;
+  total: number;
+  done: number;
+  error?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 type JobItem = {
+  id?: string;
   configId: string;
   status: string;
   total: number;
@@ -64,19 +75,55 @@ type HistoryItem = {
 };
 
 export default function BatchPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [messageApi, contextHolder] = message.useMessage();
+  const lastJobIdKey = "batch:lastJobId";
+  const recentJobIdsKey = "batch:recentJobIds";
 
   const [configsLoading, setConfigsLoading] = useState(false);
   const [configs, setConfigs] = useState<ConfigItem[]>([]);
   const [job, setJob] = useState<Job | null>(null);
   const [items, setItems] = useState<JobItem[]>([]);
+  const [jobListLoading, setJobListLoading] = useState(false);
+  const [jobList, setJobList] = useState<JobSummary[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [activeTab, setActiveTab] = useState<"live" | "history">("live");
   const [starting, setStarting] = useState(false);
+  const [refreshingAll, setRefreshingAll] = useState(false);
   const [polling, setPolling] = useState(false);
   const pollTimer = useRef<any>(null);
   const [form] = Form.useForm();
+  const [livePage, setLivePage] = useState(1);
+  const [livePageSize, setLivePageSize] = useState(10);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(10);
+
+  const readRecentJobIds = () => {
+    try {
+      const raw = localStorage.getItem(recentJobIdsKey);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.map((x) => String(x || "").trim()).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const rememberJobId = (jobId: string) => {
+    const id = String(jobId || "").trim();
+    if (!id) return;
+    try {
+      localStorage.setItem(lastJobIdKey, id);
+    } catch {
+    }
+    try {
+      const prev = readRecentJobIds();
+      const next = [id, ...prev.filter((x) => x !== id)].slice(0, 50);
+      localStorage.setItem(recentJobIdsKey, JSON.stringify(next));
+    } catch {
+    }
+  };
 
   const fetchConfigs = async () => {
     setConfigsLoading(true);
@@ -92,6 +139,20 @@ export default function BatchPage() {
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {
       setConfigsLoading(false);
+    }
+  };
+
+  const fetchJobList = async () => {
+    setJobListLoading(true);
+    try {
+      const res = await fetch("/api/batch-jobs?limit=200", { method: "GET" });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "获取任务列表失败");
+      setJobList(Array.isArray(data.items) ? data.items : []);
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setJobListLoading(false);
     }
   };
 
@@ -127,6 +188,25 @@ export default function BatchPage() {
     pollTimer.current = setInterval(async () => {
       try {
         const j = await fetchJob(jobId);
+        setJobList((prev) => {
+          const next = Array.isArray(prev) ? [...prev] : [];
+          const idx = next.findIndex((x) => x.id === j?.id);
+          const patch = j
+            ? {
+                id: j.id,
+                status: j.status,
+                total: j.total,
+                done: j.done,
+                error: j.error,
+                createdAt: j.createdAt,
+                updatedAt: j.updatedAt,
+              }
+            : null;
+          if (!patch) return next;
+          if (idx >= 0) next[idx] = { ...next[idx], ...patch };
+          else next.unshift(patch);
+          return next;
+        });
         if (j?.status === "completed" || j?.status === "failed") {
           if (pollTimer.current) clearInterval(pollTimer.current);
           pollTimer.current = null;
@@ -138,9 +218,45 @@ export default function BatchPage() {
     }, 1200);
   };
 
+  const openJob = async (jobId: string) => {
+    const id = String(jobId || "").trim();
+    if (!id) return;
+    if (pollTimer.current) clearInterval(pollTimer.current);
+    pollTimer.current = null;
+    setPolling(false);
+    rememberJobId(id);
+    try {
+      const qs = new URLSearchParams();
+      qs.set("jobId", id);
+      router.replace(`/batch?${qs.toString()}`);
+    } catch {
+    }
+    try {
+      const j = await fetchJob(id);
+      if (j?.status !== "completed" && j?.status !== "failed") startPolling(id);
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   useEffect(() => {
     fetchConfigs();
     fetchHistory();
+    const jobIdFromQs = (searchParams.get("jobId") || "").trim();
+    const jobIdFromLocal = (() => {
+      try {
+        return (localStorage.getItem(lastJobIdKey) || "").trim();
+      } catch {
+        return "";
+      }
+    })();
+    fetchJobList();
+    const jobIdFromRecent = (() => {
+      const ids = readRecentJobIds();
+      return ids[0] || "";
+    })();
+    const jobId = jobIdFromQs || jobIdFromLocal || jobIdFromRecent;
+    if (jobId) openJob(jobId);
     const fromQs = (searchParams.get("configIds") || "").trim();
     const qsIds = fromQs ? fromQs.split(",").map((s) => s.trim()).filter(Boolean) : [];
     form.setFieldsValue({ concurrency: 64, configIds: qsIds });
@@ -311,8 +427,17 @@ export default function BatchPage() {
         return;
       }
       const jobId = String(data.jobId);
+      rememberJobId(jobId);
+      try {
+        const qs = new URLSearchParams();
+        qs.set("jobId", jobId);
+        qs.set("configIds", configIds.join(","));
+        router.replace(`/batch?${qs.toString()}`);
+      } catch {
+      }
       await fetchJob(jobId);
       startPolling(jobId);
+      fetchJobList();
       fetchHistory();
       messageApi.success(`已启动任务: ${jobId}`);
     } catch (e) {
@@ -322,83 +447,197 @@ export default function BatchPage() {
     }
   };
 
-  const onRefreshJob = async () => {
-    if (!job?.id) return;
+  const onRefreshAll = async () => {
+    setRefreshingAll(true);
     try {
-      await fetchJob(job.id);
+      const promises: Promise<any>[] = [];
+      promises.push(fetchConfigs());
+      promises.push(fetchJobList());
+      if (job?.id) promises.push(fetchJob(job.id));
+      await Promise.all(promises);
     } catch (e) {
       messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRefreshingAll(false);
     }
   };
 
   const overallPct = job?.total ? Math.round((Number(job.done || 0) / Number(job.total || 0)) * 100) : 0;
 
+  const jobOptions = useMemo(() => {
+    const list = Array.isArray(jobList) ? jobList : [];
+    const byId = new Map<string, JobSummary>(list.map((x) => [String(x.id), x]));
+    const recent = readRecentJobIds();
+    const merged: JobSummary[] = [];
+    for (const id of recent) {
+      const hit = byId.get(id);
+      if (hit) merged.push(hit);
+      else merged.push({ id, status: "unknown", total: 0, done: 0 });
+    }
+    for (const x of list) {
+      if (!recent.includes(String(x.id))) merged.push(x);
+    }
+    return merged.slice(0, 200).map((x) => {
+      const pct = x.total ? Math.round((Number(x.done || 0) / Number(x.total || 0)) * 100) : 0;
+      const label = `${x.status} ${pct}% ${x.done}/${x.total} ${x.id}`;
+      return { label, value: x.id };
+    });
+  }, [jobList]);
+
   return (
     <AdminShell defaultSelectedKey="/batch" headerTitle="批量生成图片 - 批量生图">
       {contextHolder}
-      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-        <Card>
-          <Form form={form} layout="inline">
-            <Form.Item name="configIds" label="选择配置" rules={[{ required: true, message: "请选择配置" }]}>
+      <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+        <Card styles={{ body: { padding: 12 } }}>
+          <Form form={form} layout="inline" size="small">
+            <Form.Item name="configIds" label="配置" rules={[{ required: true, message: "请选择配置" }]}>
               <Select
                 mode="multiple"
-                style={{ width: 300 }}
+                style={{ width: 260 }}
                 placeholder="可多选"
                 allowClear
                 loading={configsLoading}
                 options={configOptions}
                 showSearch={{ optionFilterProp: "label" }}
+                maxTagCount="responsive"
               />
             </Form.Item>
             <Form.Item name="concurrency" label="并发" rules={[{ required: true }]}>
-              <InputNumber min={1} max={99} />
+              <InputNumber min={1} max={99} style={{ width: 90 }} />
+            </Form.Item>
+            <Form.Item label="任务">
+              <Select
+                style={{ width: 360 }}
+                placeholder="选择任务"
+                value={job?.id || undefined}
+                options={jobOptions}
+                loading={jobListLoading}
+                showSearch={{ optionFilterProp: "label" }}
+                onChange={(v) => openJob(String(v))}
+                allowClear={false}
+              />
             </Form.Item>
             <Form.Item>
-              <Space>
-                <Button type="primary" icon={<PlayCircleOutlined />} onClick={onStart} loading={starting}>
-                  启动批量任务
-                </Button>
-                <Space wrap size={8}>
-                  <Typography.Text strong>任务状态：</Typography.Text>
-                  <Typography.Text>{job ? `${job.status}（${job.id}）` : "-"}</Typography.Text>
-                  {job?.error ? <Typography.Text type="danger">{job.error}</Typography.Text> : null}
-                  <Progress percent={overallPct} status={job?.status === "failed" ? "exception" : undefined} style={{ width: 160 }} />
-                  <Typography.Text type="secondary">{job ? `${job.done} / ${job.total}` : "-"}</Typography.Text>
-                  <Button onClick={onRefreshJob} disabled={!job?.id}>
+              <Space.Compact>
+                <Tooltip title="启动新的批量任务">
+                  <Button size="small" type="primary" icon={<PlayCircleOutlined />} onClick={onStart} loading={starting}>
+                    启动
+                  </Button>
+                </Tooltip>
+                <Tooltip title="一键刷新：配置 + 任务列表 + 当前任务">
+                  <Button
+                    size="small"
+                    icon={<ReloadOutlined />}
+                    onClick={onRefreshAll}
+                    loading={refreshingAll}
+                    disabled={configsLoading || jobListLoading || starting}
+                  >
                     刷新
                   </Button>
-                  <Typography.Text type="secondary">{polling ? "轮询中..." : ""}</Typography.Text>
-                </Space>
+                </Tooltip>
+              </Space.Compact>
+            </Form.Item>
+            <Form.Item>
+              <Space wrap size={8} align="center">
+                <Typography.Text type="secondary">{job ? job.status : "-"}</Typography.Text>
+                <Typography.Text
+                  type="secondary"
+                  style={{ maxWidth: 220 }}
+                  ellipsis
+                  copyable={job?.id ? { text: job.id } : false}
+                >
+                  {job?.id || ""}
+                </Typography.Text>
+                {job?.error ? <Typography.Text type="danger">{job.error}</Typography.Text> : null}
+                <Progress percent={overallPct} size="small" status={job?.status === "failed" ? "exception" : undefined} style={{ width: 140 }} />
+                <Typography.Text type="secondary">{job ? `${job.done}/${job.total}` : "-"}</Typography.Text>
+                {polling ? <Typography.Text type="secondary">轮询中</Typography.Text> : null}
               </Space>
             </Form.Item>
           </Form>
         </Card>
 
-        <Card>
-          <Table
-            rowKey="configId"
-            columns={columns}
-            dataSource={items}
-            pagination={{ pageSize: 20 }}
-          />
-        </Card>
-
-        <Card
-          title={
-            <Space>
-              <Typography.Text strong>历史记录</Typography.Text>
-              <Button icon={<ReloadOutlined />} onClick={fetchHistory} loading={historyLoading}>
-                刷新
-              </Button>
-            </Space>
-          }
-        >
-          <Table
-            rowKey={(row) => row.id || `${row.jobId}-${row.configId}-${row.index}-${row.createdAt || ""}`}
-            columns={historyColumns}
-            dataSource={history}
-            loading={historyLoading}
-            pagination={{ pageSize: 20 }}
+        <Card styles={{ body: { padding: 0 } }}>
+          <Tabs
+            activeKey={activeTab}
+            onChange={(k) => setActiveTab((k as any) || "live")}
+            tabBarStyle={{ paddingLeft: 12, paddingRight: 12, marginBottom: 0 }}
+            tabBarExtraContent={
+              activeTab === "history" ? (
+                <Button size="small" icon={<ReloadOutlined />} onClick={fetchHistory} loading={historyLoading}>
+                  刷新历史
+                </Button>
+              ) : (
+                <Typography.Text type="secondary" style={{ paddingRight: 8 }}>
+                  {job?.id ? `当前任务：${job.id}` : ""}
+                </Typography.Text>
+              )
+            }
+            items={[
+              {
+                key: "live",
+                label: "实时任务",
+                children: (
+                  <div style={{ padding: 12 }}>
+                    <Table
+                      rowKey={(row) => (row as any).id || (row as any).configId}
+                      columns={columns}
+                      dataSource={items}
+                      pagination={{
+                        current: livePage,
+                        pageSize: livePageSize,
+                        defaultPageSize: 10,
+                        showSizeChanger: true,
+                        pageSizeOptions: ["10", "20", "50", "100"],
+                        showTotal: (total) => {
+                          const pages = Math.max(1, Math.ceil((Number(total) || 0) / (Number(livePageSize) || 10)));
+                          return `${pages} 页/共 ${total} 条`;
+                        },
+                        onChange: (page, pageSize) => {
+                          setLivePage(page);
+                          if (pageSize !== livePageSize) {
+                            setLivePageSize(pageSize);
+                            setLivePage(1);
+                          }
+                        },
+                      }}
+                    />
+                  </div>
+                ),
+              },
+              {
+                key: "history",
+                label: "历史记录",
+                children: (
+                  <div style={{ padding: 12 }}>
+                    <Table
+                      rowKey={(row) => row.id || `${row.jobId}-${row.configId}-${row.index}-${row.createdAt || ""}`}
+                      columns={historyColumns}
+                      dataSource={history}
+                      loading={historyLoading}
+                      pagination={{
+                        current: historyPage,
+                        pageSize: historyPageSize,
+                        defaultPageSize: 10,
+                        showSizeChanger: true,
+                        pageSizeOptions: ["10", "20", "50", "100"],
+                        showTotal: (total) => {
+                          const pages = Math.max(1, Math.ceil((Number(total) || 0) / (Number(historyPageSize) || 10)));
+                          return `共 ${total} 条 / ${pages} 页`;
+                        },
+                        onChange: (page, pageSize) => {
+                          setHistoryPage(page);
+                          if (pageSize !== historyPageSize) {
+                            setHistoryPageSize(pageSize);
+                            setHistoryPage(1);
+                          }
+                        },
+                      }}
+                    />
+                  </div>
+                ),
+              },
+            ]}
           />
         </Card>
       </Space>

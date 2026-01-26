@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
-import { getMongoDb } from "@/lib/mongodb";
+import { getMongoDb } from "@/lib/server/mongodb";
 
 type ImageConfigDoc = {
   _id?: ObjectId;
@@ -39,9 +39,6 @@ export async function POST(req: NextRequest) {
   }
 
   const prompt = (body.prompt ?? "").toString().trim();
-  if (!prompt) {
-    return Response.json({ ok: false, error: "prompt 不能为空" }, { status: 400 });
-  }
 
   const ref = body.referenceImages;
   const referenceImages = Array.isArray(ref)
