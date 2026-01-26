@@ -2,6 +2,9 @@ import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/mongodb";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 type ImageConfigDoc = {
   _id?: ObjectId;
   prompt: string;
@@ -26,14 +29,24 @@ function toClient(doc: ImageConfigDoc) {
   return { id: _id ? String(_id) : undefined, ...rest };
 }
 
-export async function GET() {
+export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  if (!id || !ObjectId.isValid(id)) {
+    return Response.json({ ok: false, error: "id 非法" }, { status: 400 });
+  }
   const db = await getMongoDb();
   const col = db.collection<ImageConfigDoc>("image_configs");
-  const docs = await col.find({}, { sort: { createdAt: -1 } }).limit(500).toArray();
-  return Response.json({ ok: true, items: docs.map(toClient) });
+  const doc = await col.findOne({ _id: new ObjectId(id) });
+  if (!doc) return Response.json({ ok: false, error: "配置不存在" }, { status: 404 });
+  return Response.json({ ok: true, item: toClient(doc) });
 }
 
-export async function POST(req: NextRequest) {
+export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  if (!id || !ObjectId.isValid(id)) {
+    return Response.json({ ok: false, error: "id 非法" }, { status: 400 });
+  }
+
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
@@ -53,7 +66,7 @@ export async function POST(req: NextRequest) {
   const countNum = countRaw === undefined || countRaw === null || countRaw === "" ? undefined : Number(countRaw);
 
   const now = new Date();
-  const doc: ImageConfigDoc = {
+  const patch: Partial<ImageConfigDoc> = {
     prompt,
     referenceImages,
     generationConfig: body.generationConfig && typeof body.generationConfig === "object" ? body.generationConfig : undefined,
@@ -67,13 +80,30 @@ export async function POST(req: NextRequest) {
     aspectRatio: body.aspectRatio ? String(body.aspectRatio) : undefined,
     promptTmpFunName: body.promptTmpFunName ? String(body.promptTmpFunName) : undefined,
     extra: body.extra && typeof body.extra === "object" ? body.extra : undefined,
-    createdAt: now,
     updatedAt: now,
   };
 
   const db = await getMongoDb();
   const col = db.collection<ImageConfigDoc>("image_configs");
-  const result = await col.insertOne(doc);
-  return Response.json({ ok: true, item: { ...toClient({ ...doc, _id: result.insertedId }) } });
+  const _id = new ObjectId(id);
+  const old = await col.findOne({ _id });
+  if (!old) return Response.json({ ok: false, error: "配置不存在" }, { status: 404 });
+
+  await col.updateOne({ _id }, { $set: patch });
+  const next = await col.findOne({ _id });
+  return Response.json({ ok: true, item: toClient(next as any) });
 }
 
+export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  if (!id || !ObjectId.isValid(id)) {
+    return Response.json({ ok: false, error: "id 非法" }, { status: 400 });
+  }
+  const db = await getMongoDb();
+  const col = db.collection<ImageConfigDoc>("image_configs");
+  const _id = new ObjectId(id);
+  const old = await col.findOne({ _id });
+  if (!old) return Response.json({ ok: false, error: "配置不存在" }, { status: 404 });
+  await col.deleteOne({ _id });
+  return Response.json({ ok: true });
+}

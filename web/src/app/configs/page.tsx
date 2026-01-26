@@ -1,25 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Button, Card, Drawer, Form, Input, InputNumber, Layout, Menu, Select, Space, Table, Typography, message } from "antd";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, Card, Drawer, Form, Input, InputNumber, Popconfirm, Select, Space, Table, Typography, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { PlusOutlined, ReloadOutlined, HomeOutlined, SettingOutlined } from "@ant-design/icons";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { PlusOutlined, ReloadOutlined, PictureOutlined, EditOutlined, CopyOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useRouter } from "next/navigation";
+import { ASPECT_RATIO_OPTIONS, IMAGE_SIZE_OPTIONS, RESPONSE_MODALITIES_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
+import AdminShell from "@/app/_components/AdminShell";
 
 type ConfigItem = {
   id: string;
   prompt: string;
   referenceImages?: string[];
-  generationConfig?: { temperature?: number; [k: string]: any };
-  imageConfig?: { imageSize?: string; aspectRatio?: string; [k: string]: any };
-  output?: string;
+  generationConfig?: { temperature?: number; [k: string]: unknown };
+  imageConfig?: { imageSize?: string; aspectRatio?: string; [k: string]: unknown };
+  responseModalities?: string[];
   count?: number;
+  nextPromptFun?: string[];
   appName?: string;
   lang?: string;
   batchFun?: string;
   aspectRatio?: string;
   promptTmpFunName?: string;
+  extra?: Record<string, unknown>;
   createdAt?: string;
 };
 
@@ -31,34 +34,18 @@ function splitLinesToList(input: string): string[] {
 }
 
 export default function ConfigsPage() {
-  const pathname = usePathname();
+  const router = useRouter();
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ConfigItem[]>([]);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
+  const [appNameOptions, setAppNameOptions] = useState<{ label: string; value: string }[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
-  const columns: ColumnsType<ConfigItem> = useMemo(
-    () => [
-      { title: "appName", dataIndex: "appName", key: "appName", width: 120 },
-      { title: "lang", dataIndex: "lang", key: "lang", width: 90 },
-      { title: "batchFun", dataIndex: "batchFun", key: "batchFun", width: 140 },
-      { title: "aspectRatio", dataIndex: "aspectRatio", key: "aspectRatio", width: 110 },
-      { title: "count", dataIndex: "count", key: "count", width: 80 },
-      {
-        title: "prompt",
-        dataIndex: "prompt",
-        key: "prompt",
-        ellipsis: true,
-        render: (v) => <Typography.Text title={String(v || "")}>{String(v || "")}</Typography.Text>,
-      },
-      { title: "output", dataIndex: "output", key: "output", ellipsis: true },
-    ],
-    [],
-  );
-
-  const fetchList = async () => {
+  const fetchList = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/configs", { method: "GET" });
@@ -73,10 +60,157 @@ export default function ConfigsPage() {
     } finally {
       setLoading(false);
     }
+  }, [messageApi]);
+
+  const handleCopy = useCallback(async (row: ConfigItem) => {
+    try {
+      const payload = {
+        prompt: row.prompt,
+        count: row.count ?? undefined,
+        appName: row.appName || undefined,
+        lang: row.lang || undefined,
+        batchFun: row.batchFun || undefined,
+        promptTmpFunName: row.promptTmpFunName || undefined,
+        referenceImages: Array.isArray(row.referenceImages) && row.referenceImages.length ? row.referenceImages : undefined,
+        nextPromptFun: Array.isArray(row.nextPromptFun) && row.nextPromptFun.length ? row.nextPromptFun : undefined,
+        responseModalities: Array.isArray(row.responseModalities) && row.responseModalities.length ? row.responseModalities : undefined,
+        generationConfig: row.generationConfig && typeof row.generationConfig === "object" ? row.generationConfig : undefined,
+        imageConfig: row.imageConfig && typeof row.imageConfig === "object" ? { ...row.imageConfig, aspectRatio: row.imageConfig?.aspectRatio ?? row.aspectRatio } : undefined,
+        extra: row.extra && typeof row.extra === "object" ? row.extra : undefined,
+      };
+      const res = await fetch("/api/configs", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        messageApi.error(data?.error || "复制失败");
+        return;
+      }
+      messageApi.success("复制成功");
+      await fetchList();
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    }
+  }, [fetchList, messageApi]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/configs/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        messageApi.error(data?.error || "删除失败");
+        return;
+      }
+      messageApi.success("删除成功");
+      setSelectedRowKeys((prev) => prev.filter((k) => k !== id));
+      if (editingId === id) {
+        setOpen(false);
+        setEditingId(null);
+      }
+      await fetchList();
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    }
+  }, [editingId, fetchList, messageApi]);
+
+  const columns: ColumnsType<ConfigItem> = useMemo(
+    () => [
+      { title: "appName", dataIndex: "appName", key: "appName", width: 160, ellipsis: true, align: "center" },
+      { title: "lang", dataIndex: "lang", key: "lang", width: 90, ellipsis: true, align: "center" },
+      { title: "batchFun", dataIndex: "batchFun", key: "batchFun", width: 160, ellipsis: true, align: "center" },
+      { title: "promptTmpFunName", dataIndex: "promptTmpFunName", key: "promptTmpFunName", width: 180, ellipsis: true, align: "center" },
+      { title: "aspectRatio", dataIndex: ["imageConfig", "aspectRatio"], key: "aspectRatio", width: 110, ellipsis: true, align: "center" },
+      { title: "count", dataIndex: "count", key: "count", width: 80, align: "center" },
+      {
+        title: "prompt",
+        dataIndex: "prompt",
+        key: "prompt",
+        width: 520,
+        ellipsis: true,
+        align: "center",
+        render: (v) => (
+          <Typography.Text title={String(v || "")} style={{ cursor: "pointer" }}>
+            {String(v || "")}
+          </Typography.Text>
+        ),
+      },
+      {
+        title: "操作",
+        key: "actions",
+        width: 220,
+        fixed: "right",
+        align: "center",
+        render: (_v, row) => (
+          <Space>
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => {
+                form.resetFields();
+                form.setFieldsValue({
+                  appName: row.appName,
+                  lang: row.lang,
+                  batchFun: row.batchFun,
+                  promptTmpFunName: row.promptTmpFunName,
+                  count: row.count ?? 1,
+                  prompt: row.prompt,
+                  referenceImagesText: Array.isArray(row.referenceImages) ? row.referenceImages.join("\n") : "",
+                  generationConfig_temperature: row.generationConfig?.temperature ?? 0.5,
+                  imageConfig_imageSize: row.imageConfig?.imageSize ?? "1K",
+                  imageConfig_aspectRatio: row.imageConfig?.aspectRatio ?? row.aspectRatio ?? "1:1",
+                  responseModalities: Array.isArray(row.responseModalities) ? row.responseModalities : ["IMAGE"],
+                  nextPromptFunText: Array.isArray(row.nextPromptFun) ? row.nextPromptFun.join("\n") : "",
+                  extraJson: row.extra ? (() => {
+                    try {
+                      return JSON.stringify(row.extra);
+                    } catch {
+                      return "";
+                    }
+                  })() : "",
+                });
+                setEditingId(row.id);
+                setOpen(true);
+              }}
+            >
+              编辑
+            </Button>
+            <Button size="small" icon={<CopyOutlined />} onClick={() => handleCopy(row)}>
+              复制
+            </Button>
+            <Popconfirm
+              title="确认删除该配置？"
+              okText="删除"
+              cancelText="取消"
+              onConfirm={() => handleDelete(row.id)}
+            >
+              <Button size="small" danger icon={<DeleteOutlined />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    [form, handleCopy, handleDelete],
+  );
+
+  const fetchAppNameOptions = async () => {
+    try {
+      const res = await fetch("/api/app-names", { method: "GET" });
+      const data = await res.json();
+      if (res.ok && data?.ok && Array.isArray(data.items)) {
+        setAppNameOptions(data.items.map((name: string) => ({ label: name, value: name })));
+      }
+    } catch (e) {
+      console.error("获取 appName 选项失败:", e);
+    }
   };
 
   useEffect(() => {
     fetchList();
+    fetchAppNameOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -84,12 +218,12 @@ export default function ConfigsPage() {
     form.resetFields();
     form.setFieldsValue({
       count: 1,
-      aspectRatio: "1:1",
       imageConfig_aspectRatio: "1:1",
       imageConfig_imageSize: "1K",
       generationConfig_temperature: 0.5,
       responseModalities: ["IMAGE"],
     });
+    setEditingId(null);
     setOpen(true);
   };
 
@@ -100,12 +234,10 @@ export default function ConfigsPage() {
 
     const payload = {
       prompt: values.prompt,
-      output: values.output || undefined,
       count: values.count ?? undefined,
       appName: values.appName || undefined,
       lang: values.lang || undefined,
       batchFun: values.batchFun || undefined,
-      aspectRatio: values.aspectRatio || undefined,
       promptTmpFunName: values.promptTmpFunName || undefined,
       referenceImages: referenceImages.length ? referenceImages : undefined,
       nextPromptFun: nextPromptFun.length ? nextPromptFun : undefined,
@@ -128,165 +260,150 @@ export default function ConfigsPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/configs", {
-        method: "POST",
+      const isEdit = Boolean(editingId);
+      const url = isEdit ? `/api/configs/${editingId}` : "/api/configs";
+      const res = await fetch(url, {
+        method: isEdit ? "PUT" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
-        messageApi.error(data?.error || "新增失败");
+        messageApi.error(data?.error || (isEdit ? "更新失败" : "新增失败"));
         return;
       }
-      messageApi.success("新增成功");
+      messageApi.success(isEdit ? "更新成功" : "新增成功");
       setOpen(false);
+      setEditingId(null);
       await fetchList();
     } finally {
       setSubmitting(false);
     }
   };
 
-  const { Header, Content, Sider } = Layout;
-
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      <Sider width={200} style={{ background: "#fff" }}>
-        <Menu
-          mode="inline"
-          selectedKeys={[pathname || "/configs"]}
-          style={{ height: "100%", borderRight: 0 }}
-          items={[
-            {
-              key: "/",
-              icon: <HomeOutlined />,
-              label: <Link href="/">首页</Link>,
-            },
-            {
-              key: "/configs",
-              icon: <SettingOutlined />,
-              label: <Link href="/configs">配置管理</Link>,
-            },
-          ]}
-        />
-      </Sider>
-      <Layout>
-        <Header style={{ display: "flex", alignItems: "center", background: "#001529" }}>
-          <Typography.Title level={4} style={{ color: "#fff", margin: 0 }}>
-            批量生成图片 - 内部后台
-          </Typography.Title>
-        </Header>
-        <Content style={{ padding: 24 }}>
-          {contextHolder}
-          <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-            <Card>
-              <Space wrap>
-                <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                  新增配置
-                </Button>
-                <Button icon={<ReloadOutlined />} onClick={fetchList} loading={loading}>
-                  刷新
-                </Button>
-              </Space>
-            </Card>
-
-            <Card>
-              <Table rowKey="id" loading={loading} columns={columns} dataSource={items} pagination={{ pageSize: 20 }} />
-            </Card>
+    <AdminShell defaultSelectedKey="/configs">
+      {contextHolder}
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+        <Card>
+          <Space wrap>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+              新增配置
+            </Button>
+            <Button
+              icon={<PictureOutlined />}
+              disabled={!selectedRowKeys.length}
+              onClick={() => {
+                const qs = encodeURIComponent(selectedRowKeys.join(","));
+                router.push(`/batch?configIds=${qs}`);
+              }}
+            >
+              选择配置去生图
+            </Button>
+            <Button icon={<ReloadOutlined />} onClick={fetchList} loading={loading}>
+              刷新
+            </Button>
           </Space>
+        </Card>
 
-          <Drawer
-            title="新增生图配置（参考 config.json）"
-            open={open}
-            onClose={() => setOpen(false)}
-            size={720}
-            extra={
-              <Space>
-                <Button onClick={() => setOpen(false)}>取消</Button>
-                <Button type="primary" loading={submitting} onClick={submitCreate}>
-                  保存
-                </Button>
-              </Space>
-            }
+        <Card>
+          <Table
+            rowKey="id"
+            loading={loading}
+            columns={columns}
+            dataSource={items}
+            tableLayout="fixed"
+            scroll={{ x: 1600 }}
+            pagination={{ pageSize: 20 }}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (keys) => setSelectedRowKeys(keys as string[]),
+            }}
+          />
+        </Card>
+      </Space>
+
+      <Drawer
+        title={editingId ? "编辑生图配置" : "新增生图配置"}
+        open={open}
+        onClose={() => setOpen(false)}
+        size={720}
+        extra={
+          <Space>
+            <Button onClick={() => setOpen(false)}>取消</Button>
+            <Button type="primary" loading={submitting} onClick={submitCreate}>
+              保存
+            </Button>
+          </Space>
+        }
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="appName" label="appName">
+            <Select
+              showSearch
+              allowClear
+              placeholder="请选择或输入 appName"
+              options={appNameOptions}
+            />
+          </Form.Item>
+          <Form.Item name="lang" label="lang">
+            <Select
+              showSearch
+              allowClear
+              placeholder="请选择或输入语言代码"
+              options={SUPPORTED_LANGUAGES.map((lang) => ({ label: lang, value: lang }))}
+            />
+          </Form.Item>
+          <Form.Item name="batchFun" label="batchFun">
+            <Input placeholder="例如：cut / combination2" />
+          </Form.Item>
+          <Form.Item name="promptTmpFunName" label="promptTmpFunName">
+            <Input placeholder="例如：getCutLogoFinalPrompt" />
+          </Form.Item>
+          <Form.Item name="count" label="count">
+            <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item
+            name="prompt"
+            label="prompt"
+            rules={[{ required: true, message: "prompt 不能为空" }]}
           >
-            <Form form={form} layout="vertical">
-              <Form.Item name="appName" label="appName">
-                <Input placeholder="例如：kakaotalk" />
-              </Form.Item>
-              <Form.Item name="lang" label="lang">
-                <Input placeholder="例如：us / jp / kr" />
-              </Form.Item>
-              <Form.Item name="batchFun" label="batchFun">
-                <Input placeholder="例如：cut / combination2" />
-              </Form.Item>
-              <Form.Item name="promptTmpFunName" label="promptTmpFunName">
-                <Input placeholder="例如：getCutLogoFinalPrompt" />
-              </Form.Item>
-              <Form.Item name="aspectRatio" label="aspectRatio（meta）">
-                <Select
-                  options={[
-                    { label: "1:1", value: "1:1" },
-                    { label: "4:5", value: "4:5" },
-                    { label: "16:9", value: "16:9" },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item name="count" label="count">
-                <InputNumber min={0} style={{ width: "100%" }} />
-              </Form.Item>
-              <Form.Item name="output" label="output（输出目录）">
-                <Input placeholder="例如：D:\\mog素材\\待用素材库\\xxx" />
-              </Form.Item>
+            <Input.TextArea rows={5} placeholder="描述要生成的图片" />
+          </Form.Item>
 
-              <Form.Item
-                name="prompt"
-                label="prompt"
-                rules={[{ required: true, message: "prompt 不能为空" }]}
-              >
-                <Input.TextArea rows={5} placeholder="描述要生成的图片" />
-              </Form.Item>
+          <Form.Item name="referenceImagesText" label="referenceImages（每行一个路径/URL）">
+            <Input.TextArea rows={4} placeholder="D:\\batchGenerateImage\\referenceImages\\...\nhttps://..." />
+          </Form.Item>
 
-              <Form.Item name="referenceImagesText" label="referenceImages（每行一个路径/URL）">
-                <Input.TextArea rows={4} placeholder="D:\\batchGenerateImage\\referenceImages\\...\nhttps://..." />
-              </Form.Item>
+          <Form.Item name="generationConfig_temperature" label="generationConfig.temperature">
+            <InputNumber step={0.1} style={{ width: "100%" }} />
+          </Form.Item>
 
-              <Form.Item name="generationConfig_temperature" label="generationConfig.temperature">
-                <InputNumber step={0.1} style={{ width: "100%" }} />
-              </Form.Item>
+          <Form.Item name="imageConfig_imageSize" label="imageConfig.imageSize">
+            <Select
+              options={IMAGE_SIZE_OPTIONS}
+            />
+          </Form.Item>
+          <Form.Item name="imageConfig_aspectRatio" label="imageConfig.aspectRatio">
+            <Select
+              options={ASPECT_RATIO_OPTIONS}
+            />
+          </Form.Item>
 
-              <Form.Item name="imageConfig_imageSize" label="imageConfig.imageSize">
-                <Select
-                  options={[
-                    { label: "1K", value: "1K" },
-                    { label: "2K", value: "2K" },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item name="imageConfig_aspectRatio" label="imageConfig.aspectRatio（Gemini）">
-                <Select
-                  options={[
-                    { label: "1:1", value: "1:1" },
-                    { label: "4:5", value: "4:5" },
-                    { label: "16:9", value: "16:9" },
-                  ]}
-                />
-              </Form.Item>
+          <Form.Item name="responseModalities" label="responseModalities">
+            <Select mode="multiple" options={RESPONSE_MODALITIES_OPTIONS} />
+          </Form.Item>
 
-              <Form.Item name="responseModalities" label="responseModalities">
-                <Select mode="multiple" options={[{ label: "IMAGE", value: "IMAGE" }]} />
-              </Form.Item>
+          <Form.Item name="nextPromptFunText" label="nextPromptFun（可选，每行一个函数名）">
+            <Input.TextArea rows={3} placeholder="例如：getCutLogoFinalPrompt" />
+          </Form.Item>
 
-              <Form.Item name="nextPromptFunText" label="nextPromptFun（可选，每行一个函数名）">
-                <Input.TextArea rows={3} placeholder="例如：getCutLogoFinalPrompt" />
-              </Form.Item>
-
-              <Form.Item name="extraJson" label="extra（可选，JSON 扩展字段）">
-                <Input.TextArea rows={6} placeholder='例如：{"anyKey":"anyValue"}' />
-              </Form.Item>
-            </Form>
-          </Drawer>
-        </Content>
-      </Layout>
-    </Layout>
+          <Form.Item name="extraJson" label="extra（可选，JSON 扩展字段）">
+            <Input.TextArea rows={6} placeholder='例如：{"anyKey":"anyValue"}' />
+          </Form.Item>
+        </Form>
+      </Drawer>
+    </AdminShell>
   );
 }
 

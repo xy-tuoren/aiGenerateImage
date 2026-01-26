@@ -1,0 +1,43 @@
+// 支持的语言配置
+export const SUPPORTED_LANGUAGES = [
+  "US",
+  "AR",
+  "DE",
+  "ES",
+  "FR",
+  "ID",
+  "IT",
+  "JP",
+  "KR",
+  "RO",
+  "NL",
+  "PL",
+  "TH",
+  "TR",
+  "TW",
+  "VN",
+  "RU",
+  "PT",
+  "SV",
+  "FI",
+  "MS",
+  "HI",
+  "BN"
+];
+
+export const IMAGE_SIZE_OPTIONS = [
+  { label: "1K", value: "1K" },
+  { label: "2K", value: "2K" },
+  { label: "4K", value: "4K" },
+];
+
+export const ASPECT_RATIO_OPTIONS = [
+  { label: "1:1", value: "1:1" },
+  { label: "4:5", value: "4:5" },
+  { label: "16:9", value: "16:9" },
+  { label: "9:16", value: "9:16" }
+];
+
+export const RESPONSE_MODALITIES_OPTIONS = [
+  { label: "IMAGE", value: "IMAGE" }
+];

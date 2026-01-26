@@ -1,7 +1,7 @@
 import { MongoClient } from "mongodb";
 
-const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
-const dbName = process.env.MONGO_DB || process.env.MONGODB_DB || "batchGenerateImage";
+const uri = process.env.MONGODB_URI;
+const dbName =process.env.MONGODB_DB;
 
 if (!uri) {
   throw new Error("MongoDB 未配置：请设置环境变量 MONGO_URI（或 MONGODB_URI）");
