@@ -12,7 +12,7 @@ type ConfigItem = {
   appName?: string;
   lang?: string;
   batchFun?: string;
-  aspectRatio?: string;
+  imageConfig?: { aspectRatio?: string; [k: string]: any };
   prompt?: string;
   count?: number;
 };
@@ -44,6 +44,25 @@ type JobItem = {
   images: Array<{ url: string; index: number; createdAt?: string; mimeType?: string }>;
 };
 
+type HistoryItem = {
+  id?: string;
+  jobId: string;
+  configId: string;
+  index: number;
+  status: string;
+  prompt?: string;
+  error?: string;
+  url?: string;
+  createdAt?: string;
+  configMeta?: {
+    appName?: string;
+    lang?: string;
+    batchFun?: string;
+    aspectRatio?: string;
+    prompt?: string;
+  };
+};
+
 export default function BatchPage() {
   const searchParams = useSearchParams();
   const [messageApi, contextHolder] = message.useMessage();
@@ -52,6 +71,8 @@ export default function BatchPage() {
   const [configs, setConfigs] = useState<ConfigItem[]>([]);
   const [job, setJob] = useState<Job | null>(null);
   const [items, setItems] = useState<JobItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [starting, setStarting] = useState(false);
   const [polling, setPolling] = useState(false);
   const pollTimer = useRef<any>(null);
@@ -83,6 +104,23 @@ export default function BatchPage() {
     return data.job as Job;
   };
 
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch("/api/generation-records?limit=200", { method: "GET" });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        messageApi.error(data?.error || "获取历史记录失败");
+        return;
+      }
+      setHistory(Array.isArray(data.items) ? data.items : []);
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   const startPolling = (jobId: string) => {
     if (pollTimer.current) clearInterval(pollTimer.current);
     setPolling(true);
@@ -93,6 +131,7 @@ export default function BatchPage() {
           if (pollTimer.current) clearInterval(pollTimer.current);
           pollTimer.current = null;
           setPolling(false);
+          fetchHistory();
         }
       } catch {
       }
@@ -101,6 +140,7 @@ export default function BatchPage() {
 
   useEffect(() => {
     fetchConfigs();
+    fetchHistory();
     const fromQs = (searchParams.get("configIds") || "").trim();
     const qsIds = fromQs ? fromQs.split(",").map((s) => s.trim()).filter(Boolean) : [];
     form.setFieldsValue({ concurrency: 64, configIds: qsIds });
@@ -112,7 +152,7 @@ export default function BatchPage() {
 
   const configOptions = useMemo(() => {
     return configs.map((c) => {
-      const label = `${c.appName || "-"} | ${c.lang || "-"} | ${c.batchFun || "-"} | ${c.aspectRatio || "-"} | ${c.count ?? "-"}`;
+      const label = `${c.appName || ""}/${c.lang || ""}/${c.imageConfig?.aspectRatio || ""}/${c.count ?? ""}/${c.batchFun || ""}`;
       return { label, value: c.id };
     });
   }, [configs]);
@@ -178,6 +218,76 @@ export default function BatchPage() {
     [],
   );
 
+  const historyColumns: ColumnsType<HistoryItem> = useMemo(
+    () => [
+      {
+        title: "时间",
+        dataIndex: "createdAt",
+        key: "createdAt",
+        width: 190,
+        render: (v) => {
+          const s = v ? String(v) : "";
+          if (!s) return <Typography.Text type="secondary">-</Typography.Text>;
+          const d = new Date(s);
+          return <Typography.Text>{Number.isNaN(d.getTime()) ? s : d.toLocaleString()}</Typography.Text>;
+        },
+      },
+      {
+        title: "状态",
+        dataIndex: "status",
+        key: "status",
+        width: 110,
+        render: (v) => {
+          const s = String(v || "-");
+          if (s === "failed") return <Typography.Text type="danger">failed</Typography.Text>;
+          if (s === "completed") return <Typography.Text type="success">completed</Typography.Text>;
+          return <Typography.Text>{s}</Typography.Text>;
+        },
+      },
+      {
+        title: "配置",
+        key: "config",
+        width: 320,
+        render: (_v, row) => {
+          const m = row.configMeta;
+          const idx = Number(row.index);
+          const idxText = Number.isFinite(idx) && idx >= 0 ? `#${idx + 1}` : "-";
+          return (
+            <Space orientation="vertical" size={0}>
+              <Typography.Text strong>
+                {(m?.appName || "-")} / {(m?.lang || "-")} / {(m?.batchFun || "-")}
+              </Typography.Text>
+              <Typography.Text type="secondary">
+                {row.configId} / {idxText}
+              </Typography.Text>
+            </Space>
+          );
+        },
+      },
+      {
+        title: "提示词（实际）",
+        dataIndex: "prompt",
+        key: "prompt",
+        render: (v) => {
+          const s = v ? String(v) : "";
+          if (!s) return <Typography.Text type="secondary">-</Typography.Text>;
+          return <Typography.Paragraph style={{ margin: 0 }} ellipsis={{ rows: 3, expandable: true, symbol: "展开" }}>{s}</Typography.Paragraph>;
+        },
+      },
+      {
+        title: "结果",
+        key: "result",
+        width: 240,
+        render: (_v, row) => {
+          if (row.url) return <Image width={80} height={80} style={{ objectFit: "cover" }} src={row.url} alt={row.url} />;
+          if (row.error) return <Typography.Text type="danger">{row.error}</Typography.Text>;
+          return <Typography.Text type="secondary">-</Typography.Text>;
+        },
+      },
+    ],
+    [],
+  );
+
   const onStart = async () => {
     const values = await form.validateFields();
     const configIds = Array.isArray(values.configIds) ? values.configIds : [];
@@ -203,6 +313,7 @@ export default function BatchPage() {
       const jobId = String(data.jobId);
       await fetchJob(jobId);
       startPolling(jobId);
+      fetchHistory();
       messageApi.success(`已启动任务: ${jobId}`);
     } catch (e) {
       messageApi.error(e instanceof Error ? e.message : String(e));
@@ -231,8 +342,9 @@ export default function BatchPage() {
             <Form.Item name="configIds" label="选择配置" rules={[{ required: true, message: "请选择配置" }]}>
               <Select
                 mode="multiple"
-                style={{ width: 520 }}
+                style={{ width: 300 }}
                 placeholder="可多选"
+                allowClear
                 loading={configsLoading}
                 options={configOptions}
                 showSearch={{ optionFilterProp: "label" }}
@@ -246,30 +358,20 @@ export default function BatchPage() {
                 <Button type="primary" icon={<PlayCircleOutlined />} onClick={onStart} loading={starting}>
                   启动批量任务
                 </Button>
-                <Button icon={<ReloadOutlined />} onClick={fetchConfigs} loading={configsLoading}>
-                  刷新配置
-                </Button>
+                <Space wrap size={8}>
+                  <Typography.Text strong>任务状态：</Typography.Text>
+                  <Typography.Text>{job ? `${job.status}（${job.id}）` : "-"}</Typography.Text>
+                  {job?.error ? <Typography.Text type="danger">{job.error}</Typography.Text> : null}
+                  <Progress percent={overallPct} status={job?.status === "failed" ? "exception" : undefined} style={{ width: 160 }} />
+                  <Typography.Text type="secondary">{job ? `${job.done} / ${job.total}` : "-"}</Typography.Text>
+                  <Button onClick={onRefreshJob} disabled={!job?.id}>
+                    刷新
+                  </Button>
+                  <Typography.Text type="secondary">{polling ? "轮询中..." : ""}</Typography.Text>
+                </Space>
               </Space>
             </Form.Item>
           </Form>
-        </Card>
-
-        <Card>
-          <Space orientation="vertical" style={{ width: "100%" }} size={8}>
-            <Space wrap>
-              <Typography.Text strong>任务状态：</Typography.Text>
-              <Typography.Text>{job ? `${job.status}（${job.id}）` : "-"}</Typography.Text>
-              {job?.error ? <Typography.Text type="danger">{job.error}</Typography.Text> : null}
-            </Space>
-            <Space wrap>
-              <Progress percent={overallPct} status={job?.status === "failed" ? "exception" : undefined} style={{ width: 360 }} />
-              <Typography.Text type="secondary">{job ? `${job.done} / ${job.total}` : "-"}</Typography.Text>
-              <Button onClick={onRefreshJob} disabled={!job?.id}>
-                刷新
-              </Button>
-              <Typography.Text type="secondary">{polling ? "轮询中..." : ""}</Typography.Text>
-            </Space>
-          </Space>
         </Card>
 
         <Card>
@@ -277,6 +379,25 @@ export default function BatchPage() {
             rowKey="configId"
             columns={columns}
             dataSource={items}
+            pagination={{ pageSize: 20 }}
+          />
+        </Card>
+
+        <Card
+          title={
+            <Space>
+              <Typography.Text strong>历史记录</Typography.Text>
+              <Button icon={<ReloadOutlined />} onClick={fetchHistory} loading={historyLoading}>
+                刷新
+              </Button>
+            </Space>
+          }
+        >
+          <Table
+            rowKey={(row) => row.id || `${row.jobId}-${row.configId}-${row.index}-${row.createdAt || ""}`}
+            columns={historyColumns}
+            dataSource={history}
+            loading={historyLoading}
             pagination={{ pageSize: 20 }}
           />
         </Card>

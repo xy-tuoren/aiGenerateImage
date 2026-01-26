@@ -26,7 +26,7 @@ export async function GET(
   const jobConfigs = await jobConfigsCol.find({ jobId: _id }).toArray();
   const configIds = jobConfigs.map((c: any) => c.configId).filter(Boolean);
   const configs = await configsCol
-    .find({ _id: { $in: configIds } }, { projection: { prompt: 1, appName: 1, lang: 1, batchFun: 1, aspectRatio: 1 } as any })
+    .find({ _id: { $in: configIds } }, { projection: { prompt: 1, appName: 1, lang: 1, batchFun: 1, imageConfig: 1 } as any })
     .toArray();
   const configMap = new Map<string, any>(configs.map((c: any) => [String(c._id), c]));
 
@@ -54,7 +54,7 @@ export async function GET(
             appName: cfg.appName,
             lang: cfg.lang,
             batchFun: cfg.batchFun,
-            aspectRatio: cfg.aspectRatio,
+            aspectRatio: cfg.imageConfig?.aspectRatio,
             prompt: cfg.prompt,
           }
         : undefined,

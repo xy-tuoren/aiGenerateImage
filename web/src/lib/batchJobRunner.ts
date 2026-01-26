@@ -4,7 +4,8 @@ import { join } from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/mongodb";
 import { GeminiClient } from "@/lib/gemini";
-import * as promptFns from "@/lib/prompt";
+import * as promptFns from "@/common/prompt";
+import { resizeImageByAspectRatio } from "@/lib/utils";
 
 type ImageConfigDoc = {
   _id: ObjectId;
@@ -19,7 +20,6 @@ type ImageConfigDoc = {
   appName?: string;
   lang?: string;
   batchFun?: string;
-  aspectRatio?: string;
   promptTmpFunName?: string;
   extra?: Record<string, unknown>;
 };
@@ -57,6 +57,25 @@ type GeneratedImageDoc = {
   mimeType: string;
   createdAt: Date;
   prompt: string;
+  appName?: string;
+  lang?: string;
+  referenceImages?: string[];
+};
+
+type GenerationRecordDoc = {
+  _id?: ObjectId;
+  jobId: ObjectId;
+  configId: ObjectId;
+  index: number;
+  status: "completed" | "failed";
+  prompt: string;
+  error?: string;
+  url?: string;
+  mimeType?: string;
+  createdAt: Date;
+  appName?: string;
+  lang?: string;
+  referenceImages?: string[];
 };
 
 type StartJobInput = {
@@ -89,6 +108,29 @@ function guessMimeFromPath(p: string) {
   return "image/jpeg";
 }
 
+function safePathSegment(input: unknown) {
+  const s = String(input ?? "").trim();
+  const cleaned = s.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_").replace(/\s+/g, " ").trim();
+  return cleaned || "unknown";
+}
+
+function parseAspectRatio(aspectRatio: unknown): { w: number; h: number } | null {
+  const s = String(aspectRatio ?? "").trim();
+  const m = s.match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+  if (!m) return null;
+  const w = Number(m[1]);
+  const h = Number(m[2]);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return null;
+  return { w, h };
+}
+
+function aspectRatioToken(aspectRatio: unknown) {
+  const r = parseAspectRatio(aspectRatio) || { w: 1, h: 1 };
+  const w = Number.isInteger(r.w) ? String(r.w) : String(r.w).replaceAll(".", "_");
+  const h = Number.isInteger(r.h) ? String(r.h) : String(r.h).replaceAll(".", "_");
+  return `${w}x${h}`;
+}
+
 async function readReferenceImageToBase64(ref: string): Promise<{ data: string; mimeType: string }> {
   const isHttp = /^https?:\/\//i.test(ref);
   if (isHttp) {
@@ -105,11 +147,12 @@ async function readReferenceImageToBase64(ref: string): Promise<{ data: string; 
 
 function buildPrompt(config: ImageConfigDoc): string {
   const fnName = (config.promptTmpFunName || "").trim();
+  const aspectRatio = (config.imageConfig as any)?.aspectRatio;
   const baseArgs = {
     appName: config.appName,
     lang: config.lang,
     prompt: config.prompt,
-    aspectRatio: config.aspectRatio,
+    aspectRatio,
     ...(config.extra || {}),
   };
   const fn = fnName ? (promptFns as Record<string, unknown>)[fnName] : undefined;
@@ -133,6 +176,7 @@ async function runBatchJob(input: StartJobInput) {
   const jobConfigsCol = db.collection<BatchJobConfigDoc>("batch_job_configs");
   const configsCol = db.collection<ImageConfigDoc>("image_configs");
   const imagesCol = db.collection<GeneratedImageDoc>("generated_images");
+  const recordsCol = db.collection<GenerationRecordDoc>("generation_records");
 
   await jobsCol.updateOne(
     { _id: jobObjectId },
@@ -153,38 +197,92 @@ async function runBatchJob(input: StartJobInput) {
     );
 
     const prompt = buildPrompt(config);
-    const referenceImagesRaw = Array.isArray(config.referenceImages) ? config.referenceImages : [];
-    const referenceImages = referenceImagesRaw.length
-      ? await Promise.all(referenceImagesRaw.map((r) => readReferenceImageToBase64(String(r))))
-      : undefined;
+    try {
+      const referenceImagesRaw = Array.isArray(config.referenceImages) ? config.referenceImages : [];
+      const referenceImages = referenceImagesRaw.length
+        ? await Promise.all(referenceImagesRaw.map((r) => readReferenceImageToBase64(String(r))))
+        : undefined;
 
-    const client = new GeminiClient({});
-    const generated = await client.generateImage(prompt, {
-      responseModalities: Array.isArray(config.responseModalities) ? config.responseModalities : ["IMAGE"],
-      imageConfig: config.imageConfig,
-      generationConfig: config.generationConfig,
-      referenceImages,
-    });
+      const client = new GeminiClient({});
+      const generated = await client.generateImage(prompt, {
+        responseModalities: Array.isArray(config.responseModalities) ? config.responseModalities : ["IMAGE"],
+        imageConfig: config.imageConfig,
+        generationConfig: config.generationConfig,
+        referenceImages,
+      });
 
-    const ext = extFromMime(generated.mimeType);
-    const filename = `${task.index + 1}-${Date.now()}.${ext}`;
-    const relDir = join("generated", String(jobObjectId), String(config._id));
-    const absDir = join(process.cwd(), "public", relDir);
-    await fs.ensureDir(absDir);
-    const absFile = join(absDir, filename);
-    await fs.writeFile(absFile, Buffer.from(generated.data, "base64"));
+      const ext = extFromMime(generated.mimeType);
+      let imageBase64 = generated.data;
+      try {
+        const ar = String((config.imageConfig as any)?.aspectRatio || "");
+        imageBase64 = await resizeImageByAspectRatio(imageBase64, ar);
+      } catch {
+      }
+      const ts = Date.now();
+      const ratio = aspectRatioToken((config.imageConfig as any)?.aspectRatio);
+      const baseName = `${ts}-${ratio}.${ext}`;
+      const appNameSeg = safePathSegment(config.appName);
+      const langSeg = safePathSegment(config.lang);
+      const relDir = join("generated", appNameSeg, langSeg, String(jobObjectId));
+      const absDir = join(process.cwd(), "public", relDir);
+      await fs.ensureDir(absDir);
+      let filename = baseName;
+      let absFile = join(absDir, filename);
+      if (await fs.pathExists(absFile)) {
+        let i = 2;
+        while (true) {
+          filename = `${ts}-${ratio}-${i}.${ext}`;
+          absFile = join(absDir, filename);
+          if (!(await fs.pathExists(absFile))) break;
+          i += 1;
+        }
+      }
+      await fs.writeFile(absFile, Buffer.from(imageBase64, "base64"));
 
-    const url = `/${relDir.replaceAll("\\", "/")}/${filename}`;
-    await imagesCol.insertOne({
-      jobId: jobObjectId,
-      configId: config._id,
-      index: task.index,
-      url,
-      filePath: absFile,
-      mimeType: generated.mimeType,
-      createdAt: new Date(),
-      prompt,
-    });
+      const url = `/${relDir.replaceAll("\\", "/")}/${filename}`;
+      const now = new Date();
+      await imagesCol.insertOne({
+        jobId: jobObjectId,
+        configId: config._id,
+        index: task.index,
+        url,
+        filePath: absFile,
+        mimeType: generated.mimeType,
+        createdAt: now,
+        prompt,
+        appName: config.appName,
+        lang: config.lang,
+        referenceImages: config.referenceImages,
+      });
+      await recordsCol.insertOne({
+        jobId: jobObjectId,
+        configId: config._id,
+        index: task.index,
+        status: "completed",
+        prompt,
+        url,
+        mimeType: generated.mimeType,
+        createdAt: now,
+        appName: config.appName,
+        lang: config.lang,
+        referenceImages: config.referenceImages,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await recordsCol.insertOne({
+        jobId: jobObjectId,
+        configId: config._id,
+        index: task.index,
+        status: "failed",
+        prompt,
+        error: msg,
+        createdAt: new Date(),
+        appName: config.appName,
+        lang: config.lang,
+        referenceImages: config.referenceImages,
+      });
+      throw err;
+    }
 
     await jobsCol.updateOne(
       { _id: jobObjectId },

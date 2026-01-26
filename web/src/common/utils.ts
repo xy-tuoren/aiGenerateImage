@@ -1,7 +1,3 @@
-export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms || 0)));
-}
-
 export function getRatioDesc(aspectRatio?: string): string {
   if (!aspectRatio) return '';
   const ratio = aspectRatio.trim();
@@ -11,5 +7,3 @@ export function getRatioDesc(aspectRatio?: string): string {
   if (ratio === '9:16') return '9:16的竖图';
   return `${ratio}比例的图片`;
 }
-
-

@@ -27,6 +27,7 @@ export default function AdminShell({ children, defaultSelectedKey, headerTitle }
             { key: "/", icon: <HomeOutlined />, label: <Link href="/">首页</Link> },
             { key: "/configs", icon: <SettingOutlined />, label: <Link href="/configs">配置管理</Link> },
             { key: "/batch", icon: <PictureOutlined />, label: <Link href="/batch">批量生图</Link> },
+            { key: "/gallery", icon: <PictureOutlined />, label: <Link href="/gallery">图片展示</Link> },
           ]}
         />
       </Sider>

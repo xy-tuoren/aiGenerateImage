@@ -17,7 +17,6 @@ type ImageConfigDoc = {
   appName?: string;
   lang?: string;
   batchFun?: string;
-  aspectRatio?: string;
   promptTmpFunName?: string;
   extra?: Record<string, any>;
   createdAt?: Date;
@@ -77,7 +76,6 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     appName: body.appName ? String(body.appName) : undefined,
     lang: body.lang ? String(body.lang) : undefined,
     batchFun: body.batchFun ? String(body.batchFun) : undefined,
-    aspectRatio: body.aspectRatio ? String(body.aspectRatio) : undefined,
     promptTmpFunName: body.promptTmpFunName ? String(body.promptTmpFunName) : undefined,
     extra: body.extra && typeof body.extra === "object" ? body.extra : undefined,
     updatedAt: now,

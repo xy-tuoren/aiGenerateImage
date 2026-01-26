@@ -7,6 +7,7 @@ import { PlusOutlined, ReloadOutlined, PictureOutlined, EditOutlined, CopyOutlin
 import { useRouter } from "next/navigation";
 import { ASPECT_RATIO_OPTIONS, IMAGE_SIZE_OPTIONS, RESPONSE_MODALITIES_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
 import AdminShell from "@/app/_components/AdminShell";
+import * as promptFns from "@/common/prompt";
 
 type ConfigItem = {
   id: string;
@@ -20,7 +21,6 @@ type ConfigItem = {
   appName?: string;
   lang?: string;
   batchFun?: string;
-  aspectRatio?: string;
   promptTmpFunName?: string;
   extra?: Record<string, unknown>;
   createdAt?: string;
@@ -75,7 +75,7 @@ export default function ConfigsPage() {
         nextPromptFun: Array.isArray(row.nextPromptFun) && row.nextPromptFun.length ? row.nextPromptFun : undefined,
         responseModalities: Array.isArray(row.responseModalities) && row.responseModalities.length ? row.responseModalities : undefined,
         generationConfig: row.generationConfig && typeof row.generationConfig === "object" ? row.generationConfig : undefined,
-        imageConfig: row.imageConfig && typeof row.imageConfig === "object" ? { ...row.imageConfig, aspectRatio: row.imageConfig?.aspectRatio ?? row.aspectRatio } : undefined,
+        imageConfig: row.imageConfig && typeof row.imageConfig === "object" ? row.imageConfig : undefined,
         extra: row.extra && typeof row.extra === "object" ? row.extra : undefined,
       };
       const res = await fetch("/api/configs", {
@@ -159,7 +159,7 @@ export default function ConfigsPage() {
                   referenceImagesText: Array.isArray(row.referenceImages) ? row.referenceImages.join("\n") : "",
                   generationConfig_temperature: row.generationConfig?.temperature ?? 0.5,
                   imageConfig_imageSize: row.imageConfig?.imageSize ?? "1K",
-                  imageConfig_aspectRatio: row.imageConfig?.aspectRatio ?? row.aspectRatio ?? "1:1",
+                  imageConfig_aspectRatio: row.imageConfig?.aspectRatio ?? "1:1",
                   responseModalities: Array.isArray(row.responseModalities) ? row.responseModalities : ["IMAGE"],
                   nextPromptFunText: Array.isArray(row.nextPromptFun) ? row.nextPromptFun.join("\n") : "",
                   extraJson: row.extra ? (() => {
@@ -207,6 +207,13 @@ export default function ConfigsPage() {
       console.error("获取 appName 选项失败:", e);
     }
   };
+
+  const promptTmpFunNameOptions = useMemo(() => {
+    return Object.keys(promptFns)
+      .filter((k) => typeof (promptFns as any)[k] === "function")
+      .sort()
+      .map((k) => ({ label: k, value: k }));
+  }, []);
 
   useEffect(() => {
     fetchList();
@@ -358,7 +365,12 @@ export default function ConfigsPage() {
             <Input placeholder="例如：cut / combination2" />
           </Form.Item>
           <Form.Item name="promptTmpFunName" label="promptTmpFunName">
-            <Input placeholder="例如：getCutLogoFinalPrompt" />
+            <Select
+              showSearch
+              allowClear
+              placeholder="请选择或搜索 prompt 函数"
+              options={promptTmpFunNameOptions}
+            />
           </Form.Item>
           <Form.Item name="count" label="count">
             <InputNumber min={0} style={{ width: "100%" }} />
@@ -366,7 +378,6 @@ export default function ConfigsPage() {
           <Form.Item
             name="prompt"
             label="prompt"
-            rules={[{ required: true, message: "prompt 不能为空" }]}
           >
             <Input.TextArea rows={5} placeholder="描述要生成的图片" />
           </Form.Item>
