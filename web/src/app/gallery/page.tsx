@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Image, Select, Space, Typography, message } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
@@ -56,6 +56,10 @@ export default function GalleryPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [creatingCut, setCreatingCut] = useState(false);
+  const gridWrapRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{ active: boolean; moved: boolean; startX: number; startY: number; curX: number; curY: number }>({ active: false, moved: false, startX: 0, startY: 0, curX: 0, curY: 0 });
+  const suppressClickRef = useRef(false);
+  const [dragBox, setDragBox] = useState<{ active: boolean; x: number; y: number; w: number; h: number }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
 
@@ -179,6 +183,16 @@ export default function GalleryPage() {
     });
   }, []);
 
+  const addPicks = useCallback((keys: string[]) => {
+    const arr = Array.isArray(keys) ? keys.map((x) => String(x || "").trim()).filter(Boolean) : [];
+    if (!arr.length) return;
+    setSelectedKeys((prev) => {
+      const set = new Set(prev);
+      for (const k of arr) set.add(k);
+      return Array.from(set);
+    });
+  }, []);
+
   useEffect(() => {
     setSelectMode(selectedKeys.length > 0);
   }, [selectedKeys]);
@@ -234,6 +248,59 @@ export default function GalleryPage() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [previewOpen, previewIndex, togglePick, visibleGridImages]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const st = dragStateRef.current;
+      if (!st.active) return;
+      const wrap = gridWrapRef.current;
+      if (!wrap) return;
+      const rect = wrap.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      st.curX = x;
+      st.curY = y;
+      const dx = x - st.startX;
+      const dy = y - st.startY;
+      if (!st.moved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+        st.moved = true;
+        suppressClickRef.current = true;
+      }
+      setDragBox({ active: true, x: st.startX, y: st.startY, w: dx, h: dy });
+    };
+    const onUp = () => {
+      const st = dragStateRef.current;
+      if (!st.active) return;
+      st.active = false;
+      const wrap = gridWrapRef.current;
+      const moved = st.moved;
+      const sx = st.startX, sy = st.startY, ex = st.curX, ey = st.curY;
+      setDragBox((prev) => ({ ...prev, active: false }));
+      if (!wrap) return;
+      if (!moved) return;
+      const rect = wrap.getBoundingClientRect();
+      const left = rect.left + Math.min(sx, ex);
+      const right = rect.left + Math.max(sx, ex);
+      const top = rect.top + Math.min(sy, ey);
+      const bottom = rect.top + Math.max(sy, ey);
+      const nodes = Array.from(wrap.querySelectorAll("[data-grid-key]")) as HTMLElement[];
+      const picked: string[] = [];
+      for (const el of nodes) {
+        const k = el.getAttribute("data-grid-key") || "";
+        if (!k) continue;
+        const r = el.getBoundingClientRect();
+        const hit = !(r.right < left || r.left > right || r.bottom < top || r.top > bottom);
+        if (hit) picked.push(k);
+      }
+      if (picked.length) addPicks(picked);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [addPicks]);
 
   const onCreateCut = async () => {
     if (!selectedKeys.length) {
@@ -362,16 +429,55 @@ export default function GalleryPage() {
             onChange: (cur) => setPreviewIndex(Number(cur) || 0),
           }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 12, width: "100%" }}>
+          <div
+            ref={gridWrapRef}
+            style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 12, width: "100%", userSelect: dragBox.active ? "none" : undefined }}
+            onMouseDown={(e) => {
+              if (e.button !== 0) return;
+              if (previewOpen) return;
+              const wrap = gridWrapRef.current;
+              if (!wrap) return;
+              const rect = wrap.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const y = e.clientY - rect.top;
+              dragStateRef.current = { active: true, moved: false, startX: x, startY: y, curX: x, curY: y };
+              suppressClickRef.current = false;
+              setDragBox({ active: true, x, y, w: 0, h: 0 });
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            {dragBox.active ? (
+              <div
+                style={{
+                  position: "absolute",
+                  left: Math.min(dragBox.x, dragBox.x + dragBox.w),
+                  top: Math.min(dragBox.y, dragBox.y + dragBox.h),
+                  width: Math.abs(dragBox.w),
+                  height: Math.abs(dragBox.h),
+                  background: "rgba(22,119,255,0.16)",
+                  border: "1px solid rgba(22,119,255,0.65)",
+                  boxShadow: "0 0 0 1px rgba(255,255,255,0.7) inset",
+                  borderRadius: 6,
+                  pointerEvents: "none",
+                  zIndex: 10,
+                }}
+              />
+            ) : null}
             {visibleGridImages.map((img) => (
               <div
                 key={img.key}
+                data-grid-key={img.key}
                 style={{ position: "relative", cursor: "default", width: "100%", aspectRatio: "16 / 9", overflow: "hidden", borderRadius: 10, border: selectedKeySet.has(img.key) ? "3px solid #1677ff" : "1px solid rgba(0,0,0,0.06)", boxShadow: selectedKeySet.has(img.key) ? "0 0 0 3px rgba(22,119,255,0.22)" : undefined }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   togglePick(img.key);
                 }}
                 onClick={() => {
+                  if (suppressClickRef.current) {
+                    suppressClickRef.current = false;
+                    return;
+                  }
                   const idx = visibleGridImages.findIndex((x) => x.key === img.key);
                   if (idx >= 0) {
                     setPreviewIndex(idx);
