@@ -35,6 +35,7 @@ export default function CropPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [downloadStartFolderIndex, setDownloadStartFolderIndex] = useState<number>(1);
   const [downloadFixedCode, setDownloadFixedCode] = useState<string>("404");
+  const [downloadZipName, setDownloadZipName] = useState<string>("");
   const [downloading, setDownloading] = useState(false);
   const [excludedKeys, setExcludedKeys] = useState<Record<string, true>>({});
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -84,17 +85,37 @@ export default function CropPage() {
         throw new Error((data as any)?.error || `下载失败(${res.status})`);
       }
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
       const cd = res.headers.get("Content-Disposition") || "";
       const m = /filename="([^"]+)"/.exec(cd);
+      const suggestedName = (downloadZipName || "").trim() || m?.[1] || `cut-download-${Date.now()}.zip`;
+
+      const w = window as any;
+      if (typeof w.showSaveFilePicker === "function") {
+        const handle = await w.showSaveFilePicker({
+          suggestedName,
+          types: [
+            { description: "Zip", accept: { "application/zip": [".zip"] } },
+          ],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        messageApi.success("已保存");
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
       a.href = url;
-      a.download = m?.[1] || `cut-download-${Date.now()}.zip`;
+      a.download = suggestedName;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (e) {
+      const anyErr = e as any;
+      const name = anyErr?.name ? String(anyErr.name) : "";
+      if (name === "AbortError") return;
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {
       setDownloading(false);
@@ -316,6 +337,14 @@ export default function CropPage() {
             <InputNumber size="small" min={1} value={downloadStartFolderIndex} onChange={(v) => setDownloadStartFolderIndex(Number(v || 1))} />
             <Typography.Text type="secondary">固定码</Typography.Text>
             <Input size="small" style={{ width: 90 }} value={downloadFixedCode} onChange={(e) => setDownloadFixedCode(e.target.value)} />
+            <Typography.Text type="secondary">文件名</Typography.Text>
+            <Input
+              size="small"
+              style={{ width: 220 }}
+              placeholder="留空则自动，例如 cut-download-xxx.zip"
+              value={downloadZipName}
+              onChange={(e) => setDownloadZipName(e.target.value)}
+            />
             <Button size="small" type="primary" disabled={!selectedRowKeys.length} loading={downloading} onClick={downloadSelected}>
               下载选中({selectedRowKeys.length})
             </Button>

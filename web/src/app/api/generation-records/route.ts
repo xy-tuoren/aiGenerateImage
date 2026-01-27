@@ -38,6 +38,7 @@ type BatchJobConfigDoc = {
   _id?: ObjectId;
   jobId: ObjectId;
   configId: ObjectId;
+  config?: Record<string, any>;
   status: "queued" | "running" | "completed" | "failed";
   total: number;
   done: number;
@@ -142,14 +143,23 @@ export async function GET(req: Request) {
     ? await configsCol
         .find(
           { _id: { $in: configObjectIds } },
-          { projection: { prompt: 1, appName: 1, lang: 1, batchFun: 1, imageConfig: 1 } as any }
+          { projection: { prompt: 1, appName: 1, lang: 1, batchFun: 1, imageConfig: 1, referenceImages: 1 } as any }
         )
         .toArray()
     : [];
   const configMap = new Map<string, any>(configs.map((c: any) => [String(c._id), c]));
 
+  const jobIdForSnapshot = filter.jobId instanceof ObjectId ? filter.jobId : null;
+  const jobConfigSnapMap = new Map<string, any>();
+  if (jobIdForSnapshot && configObjectIds.length) {
+    const snaps = await jobConfigsCol.find({ jobId: jobIdForSnapshot, configId: { $in: configObjectIds } } as any).toArray();
+    for (const jc of snaps as any[]) {
+      if (jc?.config) jobConfigSnapMap.set(String(jc.configId), jc.config);
+    }
+  }
+
   const items = merged.map((r: any) => {
-    const cfg = configMap.get(String(r.configId));
+    const cfg = configMap.get(String(r.configId)) || jobConfigSnapMap.get(String(r.configId));
     const appName = r.appName ?? cfg?.appName;
     const lang = r.lang ?? cfg?.lang;
     const referenceImages = r.referenceImages ?? cfg?.referenceImages;

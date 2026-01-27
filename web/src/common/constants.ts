@@ -41,3 +41,11 @@ export const ASPECT_RATIO_OPTIONS = [
 export const RESPONSE_MODALITIES_OPTIONS = [
   { label: "IMAGE", value: "IMAGE" }
 ];
+
+export const BATCH_FUN_OPTIONS = [
+  { label: "batch", value: "batch" },
+  { label: "translate", value: "translate" },
+  { label: "combination", value: "combination" },
+  { label: "combination2", value: "combination2" },
+  { label: "combination3", value: "combination3" },
+];

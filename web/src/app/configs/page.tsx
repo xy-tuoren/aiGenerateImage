@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Card, Drawer, Form, Input, InputNumber, Popconfirm, Select, Space, Table, Typography, message } from "antd";
+import { AutoComplete, Button, Card, Drawer, Form, Input, InputNumber, Popconfirm, Select, Space, Table, Typography, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { PlusOutlined, PictureOutlined, EditOutlined, CopyOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import { ASPECT_RATIO_OPTIONS, IMAGE_SIZE_OPTIONS, RESPONSE_MODALITIES_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
+import { ASPECT_RATIO_OPTIONS, BATCH_FUN_OPTIONS, IMAGE_SIZE_OPTIONS, RESPONSE_MODALITIES_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
 import AdminShell from "@/app/_components/AdminShell";
 import * as promptFns from "@/common/prompt";
 
@@ -195,7 +195,7 @@ export default function ConfigsPage() {
                   count: row.count ?? 1,
                   prompt: row.prompt,
                   referenceImagesText: Array.isArray(row.referenceImages) ? row.referenceImages.join("\n") : "",
-                  generationConfig_temperature: row.generationConfig?.temperature ?? 0.5,
+                  generationConfig_temperature: row.generationConfig?.temperature ?? 1,
                   imageConfig_imageSize: row.imageConfig?.imageSize ?? "1K",
                   imageConfig_aspectRatio: row.imageConfig?.aspectRatio ?? "1:1",
                   responseModalities: Array.isArray(row.responseModalities) ? row.responseModalities : ["IMAGE"],
@@ -265,7 +265,7 @@ export default function ConfigsPage() {
       count: 1,
       imageConfig_aspectRatio: "1:1",
       imageConfig_imageSize: "1K",
-      generationConfig_temperature: 0.5,
+      generationConfig_temperature: 1,
       responseModalities: ["IMAGE"],
     });
     setEditingId(null);
@@ -392,30 +392,43 @@ export default function ConfigsPage() {
       >
         <Form form={form} layout="vertical">
           <Form.Item name="appName" label="appName">
-            <Select
-              showSearch
+            <AutoComplete
+              options={appNameOptions}
               allowClear
               placeholder="请选择或输入 appName"
-              options={appNameOptions}
+              filterOption={(inputValue, option) =>
+                String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+              }
             />
           </Form.Item>
           <Form.Item name="lang" label="lang">
-            <Select
-              showSearch
+            <AutoComplete
+              options={SUPPORTED_LANGUAGES.map((lang) => ({ label: lang, value: lang }))}
               allowClear
               placeholder="请选择或输入语言代码"
-              options={SUPPORTED_LANGUAGES.map((lang) => ({ label: lang, value: lang }))}
+              filterOption={(inputValue, option) =>
+                String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+              }
             />
           </Form.Item>
           <Form.Item name="batchFun" label="batchFun">
-            <Input placeholder="例如：cut / combination2" />
+            <AutoComplete
+              options={BATCH_FUN_OPTIONS}
+              allowClear
+              placeholder="请选择或输入 batchFun"
+              filterOption={(inputValue, option) =>
+                String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+              }
+            />
           </Form.Item>
           <Form.Item name="promptTmpFunName" label="promptTmpFunName">
-            <Select
-              showSearch
-              allowClear
-              placeholder="请选择或搜索 prompt 函数"
+            <AutoComplete
               options={promptTmpFunNameOptions}
+              allowClear
+              placeholder="请选择或输入 prompt 函数"
+              filterOption={(inputValue, option) =>
+                String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+              }
             />
           </Form.Item>
           <Form.Item name="count" label="count">
@@ -437,18 +450,28 @@ export default function ConfigsPage() {
           </Form.Item>
 
           <Form.Item name="imageConfig_imageSize" label="imageConfig.imageSize">
-            <Select
+            <AutoComplete
               options={IMAGE_SIZE_OPTIONS}
+              allowClear
+              placeholder="请选择或输入 imageSize"
+              filterOption={(inputValue, option) =>
+                String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+              }
             />
           </Form.Item>
           <Form.Item name="imageConfig_aspectRatio" label="imageConfig.aspectRatio">
-            <Select
+            <AutoComplete
               options={ASPECT_RATIO_OPTIONS}
+              allowClear
+              placeholder="请选择或输入 aspectRatio"
+              filterOption={(inputValue, option) =>
+                String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+              }
             />
           </Form.Item>
 
           <Form.Item name="responseModalities" label="responseModalities">
-            <Select mode="multiple" options={RESPONSE_MODALITIES_OPTIONS} />
+            <Select mode="tags" options={RESPONSE_MODALITIES_OPTIONS} />
           </Form.Item>
 
           <Form.Item name="nextPromptFunText" label="nextPromptFun（可选，每行一个函数名）">

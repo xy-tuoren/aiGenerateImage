@@ -62,9 +62,12 @@ export async function GET(
 
   const jobConfigs = await jobConfigsCol.find({ jobId: _id }).toArray();
   const configIds = jobConfigs.map((c: any) => c.configId).filter(Boolean);
-  const configs = await configsCol
-    .find({ _id: { $in: configIds } }, { projection: { prompt: 1, appName: 1, lang: 1, batchFun: 1, imageConfig: 1 } as any })
-    .toArray();
+  const needLookupIds = jobConfigs.filter((jc: any) => !jc?.config).map((jc: any) => jc.configId).filter(Boolean);
+  const configs = needLookupIds.length
+    ? await configsCol
+        .find({ _id: { $in: needLookupIds } }, { projection: { prompt: 1, appName: 1, lang: 1, batchFun: 1, imageConfig: 1, referenceImages: 1 } as any })
+        .toArray()
+    : [];
   const configMap = new Map<string, any>(configs.map((c: any) => [String(c._id), c]));
 
   const latestImages = await imagesCol
@@ -79,7 +82,7 @@ export async function GET(
   }
 
   const items = (jobConfigs as any[]).map((jc) => {
-    const cfg = configMap.get(String(jc.configId));
+    const cfg = (jc as any)?.config ? { ...(jc as any).config } : configMap.get(String(jc.configId));
     return {
       configId: String(jc.configId),
       status: jc.status,
@@ -93,6 +96,7 @@ export async function GET(
             batchFun: cfg.batchFun,
             aspectRatio: cfg.imageConfig?.aspectRatio,
             prompt: cfg.prompt,
+            referenceImages: cfg.referenceImages,
           }
         : undefined,
       images: imagesByConfig.get(String(jc.configId)) || [],

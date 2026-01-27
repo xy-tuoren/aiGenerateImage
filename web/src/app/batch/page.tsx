@@ -7,6 +7,9 @@ import { PlayCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminShell from "@/app/_components/AdminShell";
 
+const IMAGE_FALLBACK_SVG =
+  "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2296%22%20height%3D%2296%22%20viewBox%3D%220%200%2096%2096%22%3E%3Crect%20width%3D%2296%22%20height%3D%2296%22%20rx%3D%228%22%20fill%3D%22%23f5f5f5%22/%3E%3Cpath%20d%3D%22M24%2064l12-12%2010%2010%208-8%2018%2018H24z%22%20fill%3D%22%23bfbfbf%22/%3E%3Ccircle%20cx%3D%2236%22%20cy%3D%2238%22%20r%3D%226%22%20fill%3D%22%23bfbfbf%22/%3E%3Ctext%20x%3D%2248%22%20y%3D%2288%22%20text-anchor%3D%22middle%22%20font-size%3D%2212%22%20fill%3D%22%23999999%22%3E%E5%8A%A0%E8%BD%BD%E5%A4%B1%E8%B4%A5%3C/text%3E%3C/svg%3E";
+
 type ConfigItem = {
   id: string;
   appName?: string;
@@ -62,6 +65,7 @@ type HistoryItem = {
   prompt?: string;
   createdAt?: string;
   jobId?: string;
+  referenceImages?: string[];
   images: Array<{ url: string; index?: number; createdAt?: string; mimeType?: string; jobId?: string }>;
   errors?: string[];
   configMeta?: {
@@ -70,6 +74,7 @@ type HistoryItem = {
     batchFun?: string;
     aspectRatio?: string;
     prompt?: string;
+    referenceImages?: string[];
   };
 };
 
@@ -181,6 +186,7 @@ export default function BatchPage() {
         const jobId = String((it as any).jobId || "").trim();
         if (!configId) continue;
         const key = jobId ? `${jobId}|${configId}` : configId;
+        const refImgs = (it as any).referenceImages ?? (it as any).configMeta?.referenceImages;
         const g = byKey.get(key) || {
           id: key,
           configId,
@@ -188,6 +194,7 @@ export default function BatchPage() {
           jobId: "",
           prompt: "",
           configMeta: (it as any).configMeta,
+          referenceImages: refImgs,
           images: [],
           errors: [],
           _hasCompleted: false,
@@ -201,7 +208,9 @@ export default function BatchPage() {
           g.jobId = (it as any).jobId || g.jobId;
           g.prompt = (it as any).prompt || g.prompt;
           if ((it as any).configMeta) g.configMeta = (it as any).configMeta;
+          if (refImgs) g.referenceImages = refImgs;
         }
+        if ((!g.referenceImages || !Array.isArray(g.referenceImages) || !g.referenceImages.length) && refImgs) g.referenceImages = refImgs;
         const st = String((it as any).status || "");
         if (st === "completed") g._hasCompleted = true;
         else if (st === "failed") g._hasFailed = true;
@@ -222,6 +231,7 @@ export default function BatchPage() {
           prompt: g.prompt,
           createdAt: g.createdAt,
           jobId: g.jobId || undefined,
+          referenceImages: Array.isArray(g.referenceImages) ? g.referenceImages : undefined,
           images: Array.isArray(g.images) ? g.images : [],
           errors: Array.isArray(g.errors) ? g.errors : [],
           configMeta: g.configMeta,
@@ -401,7 +411,7 @@ export default function BatchPage() {
             <Image.PreviewGroup>
               <Space wrap size={8}>
                 {imgs.map((img) => (
-                  <Image key={img.url} width={64} alt={img.url} height={64} style={{ objectFit: "cover" }} src={img.url} />
+                  <Image key={img.url} width={64} alt="生成图" height={64} style={{ objectFit: "cover" }} src={img.url} fallback={IMAGE_FALLBACK_SVG} />
                 ))}
               </Space>
             </Image.PreviewGroup>
@@ -461,6 +471,47 @@ export default function BatchPage() {
         },
       },
       {
+        title: "参考图",
+        key: "referenceImages",
+        width: 220,
+        render: (_v, row) => {
+          const refs0 = Array.isArray((row as any).referenceImages) ? (row as any).referenceImages : [];
+          const refs1 = Array.isArray((row as any).configMeta?.referenceImages) ? (row as any).configMeta.referenceImages : [];
+          const refs = refs0.length ? refs0 : refs1;
+          const show = refs.slice(0, 4);
+          const rest = Math.max(0, refs.length - show.length);
+          if (!show.length) return <Typography.Text type="secondary">-</Typography.Text>;
+          return (
+            <Image.PreviewGroup>
+              <Space size={6} wrap={false}>
+                {show.map((src: string, idx: number) => (
+                  <Image key={`${src}|${idx}`} width={48} alt="参考图" height={48} style={{ objectFit: "cover" }} src={src} fallback={IMAGE_FALLBACK_SVG} />
+                ))}
+                {rest ? (
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 4,
+                      background: "#f5f5f5",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "rgba(0,0,0,0.45)",
+                      fontSize: 12,
+                      flex: "0 0 auto",
+                    }}
+                    title={`还有 ${rest} 张`}
+                  >
+                    ...(+{rest})
+                  </div>
+                ) : null}
+              </Space>
+            </Image.PreviewGroup>
+          );
+        },
+      },
+      {
         title: "提示词",
         dataIndex: "prompt",
         key: "prompt",
@@ -502,7 +553,7 @@ export default function BatchPage() {
               <Image.PreviewGroup>
                 <Space size={6} wrap={false}>
                   {show.map((img) => (
-                    <Image key={img.url} width={72} alt={img.url} height={72} style={{ objectFit: "cover" }} src={img.url} />
+                    <Image key={img.url} width={72} alt="生成图" height={72} style={{ objectFit: "cover" }} src={img.url} fallback={IMAGE_FALLBACK_SVG} />
                   ))}
                   {rest ? (
                     <div

@@ -23,6 +23,15 @@ type ImageConfigDoc = {
   updatedAt?: Date;
 };
 
+function normalizeGenerationConfig(input: any) {
+  const g = input && typeof input === "object" ? { ...input } : undefined;
+  if (!g) return { temperature: 1 };
+  const t = g.temperature;
+  const n = t === undefined || t === null || t === "" ? undefined : Number(t);
+  g.temperature = typeof n === "number" && Number.isFinite(n) ? n : 1;
+  return g;
+}
+
 function toClient(doc: ImageConfigDoc) {
   const { _id, ...rest } = doc as any;
   return { id: _id ? String(_id) : undefined, ...rest };
@@ -65,7 +74,7 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   const patch: Partial<ImageConfigDoc> = {
     prompt,
     referenceImages,
-    generationConfig: body.generationConfig && typeof body.generationConfig === "object" ? body.generationConfig : undefined,
+    generationConfig: normalizeGenerationConfig(body.generationConfig),
     imageConfig: body.imageConfig && typeof body.imageConfig === "object" ? body.imageConfig : undefined,
     responseModalities: Array.isArray(body.responseModalities) ? body.responseModalities : undefined,
     count: typeof countNum === "number" && !Number.isNaN(countNum) ? countNum : undefined,

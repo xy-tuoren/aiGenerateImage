@@ -39,6 +39,8 @@ type BatchJobConfigDoc = {
   _id?: ObjectId;
   jobId: ObjectId;
   configId: ObjectId;
+  sourceConfigId?: ObjectId;
+  config?: Omit<ImageConfigDoc, "_id">;
   status: "queued" | "running" | "completed" | "failed";
   total: number;
   done: number;
@@ -141,6 +143,7 @@ function guessMimeFromPath(p: string) {
   if (lower.endsWith(".webp")) return "image/webp";
   if (lower.endsWith(".gif")) return "image/gif";
   if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".jfif")) return "image/jpeg";
   return "image/jpeg";
 }
 
@@ -243,6 +246,63 @@ async function readReferenceImagesToBase64(refs: string[]) {
   return expanded.length ? await Promise.all(expanded.map((p) => readReferenceImageToBase64(p))) : [];
 }
 
+async function prepareReferenceImages(
+  refs: string[],
+  opts: { jobId: ObjectId; configId: ObjectId; index: number; appName?: string; lang?: string }
+): Promise<{ forModel?: Array<{ data: string; mimeType: string }>; publicUrls?: string[] }> {
+  const raw = Array.isArray(refs) ? refs.map((x) => String(x || "").trim()).filter(Boolean) : [];
+  if (!raw.length) return {};
+  const expanded: string[] = [];
+  for (const r of raw) expanded.push(...(await expandReferenceToPaths(r)));
+  if (!expanded.length) return {};
+
+  const appNameSeg = safePathSegment(opts.appName);
+  const langSeg = safePathSegment(opts.lang);
+  const relDir = join("reference-images", appNameSeg, langSeg, String(opts.jobId), String(opts.configId), String(opts.index));
+  const absDir = join(process.cwd(), "public", relDir);
+  await fs.ensureDir(absDir);
+
+  const forModel: Array<{ data: string; mimeType: string }> = [];
+  const publicUrls: string[] = [];
+
+  for (let i = 0; i < expanded.length; i += 1) {
+    const r = String(expanded[i] || "").trim();
+    if (!r) continue;
+    const isHttp = /^https?:\/\//i.test(r);
+    let buf: Buffer;
+    let mimeType: string;
+    if (isHttp) {
+      const res = await fetch(r);
+      if (!res.ok) throw new Error(`下载参考图失败: ${r}, status=${res.status}`);
+      const ab = await res.arrayBuffer();
+      buf = Buffer.from(ab);
+      mimeType = res.headers.get("content-type") || "image/jpeg";
+    } else {
+      buf = await fs.readFile(r);
+      mimeType = guessMimeFromPath(r);
+    }
+
+    const ext = extFromMime(mimeType);
+    const baseName = `${i + 1}.${ext}`;
+    let filename = baseName;
+    let absFile = join(absDir, filename);
+    if (await fs.pathExists(absFile)) {
+      let k = 2;
+      while (true) {
+        filename = `${i + 1}-${k}.${ext}`;
+        absFile = join(absDir, filename);
+        if (!(await fs.pathExists(absFile))) break;
+        k += 1;
+      }
+    }
+    await fs.writeFile(absFile, buf);
+    publicUrls.push(`/${relDir.replaceAll("\\", "/")}/${filename}`);
+    forModel.push({ data: buf.toString("base64"), mimeType });
+  }
+
+  return { forModel: forModel.length ? forModel : undefined, publicUrls: publicUrls.length ? publicUrls : undefined };
+}
+
 function buildPrompt(config: ImageConfigDoc): string {
   const fnName = (config.promptTmpFunName || "").trim();
   const aspectRatio = (config.imageConfig as any)?.aspectRatio;
@@ -295,8 +355,31 @@ async function runBatchJob(input: StartJobInput) {
   );
 
   const configObjectIds = input.configIds.map((id) => new ObjectId(id));
-  const configs = await configsCol.find({ _id: { $in: configObjectIds } }).toArray();
-  const configMap = new Map<string, ImageConfigDoc>(configs.map((c) => [String(c._id), c]));
+  const jobConfigs = await jobConfigsCol
+    .find({ jobId: jobObjectId, configId: { $in: configObjectIds } })
+    .toArray();
+  const jobCfgMap = new Map<string, BatchJobConfigDoc>(jobConfigs.map((jc) => [String(jc.configId), jc]));
+
+  const needFetchFromConfigsCol = configObjectIds.filter((oid) => {
+    const jc = jobCfgMap.get(String(oid));
+    return !jc || !jc.config;
+  });
+  const configs = needFetchFromConfigsCol.length
+    ? await configsCol.find({ _id: { $in: needFetchFromConfigsCol } }).toArray()
+    : [];
+  const fetchedConfigMap = new Map<string, ImageConfigDoc>(configs.map((c) => [String(c._id), c]));
+
+  const configMap = new Map<string, ImageConfigDoc>();
+  for (const oid of configObjectIds) {
+    const key = String(oid);
+    const jc = jobCfgMap.get(key);
+    if (jc?.config) {
+      configMap.set(key, { _id: oid, ...(jc.config as any) });
+      continue;
+    }
+    const cfg = fetchedConfigMap.get(key);
+    if (cfg) configMap.set(key, cfg);
+  }
 
   const q = asyncLib.queue(async (task: { configId: string; index: number }) => {
     const config = configMap.get(task.configId);
@@ -308,16 +391,24 @@ async function runBatchJob(input: StartJobInput) {
     );
 
     const prompt = buildPrompt(config);
+    let referenceImageUrls: string[] | undefined;
     try {
       const referenceImagesRaw = Array.isArray(config.referenceImages) ? config.referenceImages : [];
-      const refImgs = referenceImagesRaw.length ? await readReferenceImagesToBase64(referenceImagesRaw) : [];
-      const referenceImages = refImgs.length ? refImgs : undefined;
+      const prepared = await prepareReferenceImages(referenceImagesRaw, { jobId: jobObjectId, configId: config._id, index: task.index, appName: config.appName, lang: config.lang });
+      const referenceImages = prepared.forModel;
+      referenceImageUrls = prepared.publicUrls;
 
       const client = new GeminiClient({});
       const generated = await client.generateImage(prompt, {
         responseModalities: Array.isArray(config.responseModalities) ? config.responseModalities : ["IMAGE"],
         imageConfig: config.imageConfig,
-        generationConfig: config.generationConfig,
+        generationConfig: {
+          ...(config.generationConfig && typeof config.generationConfig === "object" ? config.generationConfig : {}),
+          temperature:
+            (config.generationConfig as any)?.temperature === undefined || (config.generationConfig as any)?.temperature === null || (config.generationConfig as any)?.temperature === ""
+              ? 1
+              : Number((config.generationConfig as any)?.temperature),
+        },
         referenceImages,
       });
 
@@ -362,7 +453,7 @@ async function runBatchJob(input: StartJobInput) {
         prompt,
         appName: config.appName,
         lang: config.lang,
-        referenceImages: config.referenceImages,
+        referenceImages: referenceImageUrls,
       });
       await recordsCol.insertOne({
         jobId: jobObjectId,
@@ -375,7 +466,7 @@ async function runBatchJob(input: StartJobInput) {
         createdAt: now,
         appName: config.appName,
         lang: config.lang,
-        referenceImages: config.referenceImages,
+        referenceImages: referenceImageUrls,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -389,7 +480,7 @@ async function runBatchJob(input: StartJobInput) {
         createdAt: new Date(),
         appName: config.appName,
         lang: config.lang,
-        referenceImages: config.referenceImages,
+        referenceImages: referenceImageUrls,
       });
       throw err instanceof Error ? err : new Error(msg);
     }

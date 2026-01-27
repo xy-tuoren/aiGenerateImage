@@ -142,7 +142,7 @@ export async function POST(req: Request) {
     }
   })();
 
-  archive.on("error", (err) => {
+  archive.on("error", (err: any) => {
     try {
       archive.abort();
     } catch {

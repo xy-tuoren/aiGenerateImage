@@ -254,19 +254,19 @@ export default function GalleryPage() {
         </Space>
 
         <Image.PreviewGroup>
-          <Space wrap size={12} style={{ width: "100%" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 12, width: "100%" }}>
             {gridImages.map((img) => (
               <div
                 key={img.key}
-                style={{ position: "relative", cursor: selectMode ? "pointer" : "default" }}
+                style={{ position: "relative", cursor: selectMode ? "pointer" : "default", width: "100%", aspectRatio: "16 / 9", overflow: "hidden" }}
                 onClick={() => {
                   if (selectMode) togglePick(img.key);
                 }}
               >
                 <Image
-                  width={240}
-                  height={135}
-                  style={{ objectFit: "cover" }}
+                  width="100%"
+                  height="100%"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   src={img.url}
                   alt={img.url}
                   preview={!selectMode}
@@ -295,7 +295,7 @@ export default function GalleryPage() {
                 ) : null}
               </div>
             ))}
-          </Space>
+          </div>
         </Image.PreviewGroup>
       </Space>
     </AdminShell>
