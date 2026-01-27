@@ -263,7 +263,7 @@ export default function ConfigsPage() {
     form.resetFields();
     form.setFieldsValue({
       count: 1,
-      imageConfig_aspectRatio: "1:1",
+      imageConfig_aspectRatio: "2:1",
       imageConfig_imageSize: "1K",
       generationConfig_temperature: 1,
       responseModalities: ["IMAGE"],

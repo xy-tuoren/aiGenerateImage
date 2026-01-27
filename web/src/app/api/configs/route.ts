@@ -57,12 +57,16 @@ export async function POST(req: NextRequest) {
   const countRaw = body.count;
   const countNum = countRaw === undefined || countRaw === null || countRaw === "" ? undefined : Number(countRaw);
 
+  const inputImageConfig = body.imageConfig && typeof body.imageConfig === "object" ? body.imageConfig : undefined;
+  const aspectRatioRaw = inputImageConfig ? (inputImageConfig as any).aspectRatio : undefined;
+  const aspectRatio = (aspectRatioRaw ?? "").toString().trim() || "2:1";
+
   const now = new Date();
   const doc: ImageConfigDoc = {
     prompt,
     referenceImages,
     generationConfig: normalizeGenerationConfig(body.generationConfig),
-    imageConfig: body.imageConfig && typeof body.imageConfig === "object" ? body.imageConfig : undefined,
+    imageConfig: inputImageConfig ? { ...(inputImageConfig as any), aspectRatio } : { aspectRatio },
     responseModalities: Array.isArray(body.responseModalities) ? body.responseModalities : undefined,
     count: typeof countNum === "number" && !Number.isNaN(countNum) ? countNum : undefined,
     nextPromptFun: Array.isArray(body.nextPromptFun) ? body.nextPromptFun : undefined,

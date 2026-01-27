@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import sharp from "sharp";
 
 export interface GeminiConfig {
   apiKey?: string;
@@ -82,6 +83,25 @@ export class GeminiClient {
     const imagePart = contentParts.find((p: any) => p.inlineData?.data);
     if (!imagePart || !imagePart.inlineData) {
       throw new Error("Gemini 返回结果中没有图片数据 inlineData");
+    }
+
+    const debugSize = String(process.env.DEBUG_GEMINI_IMAGE_SIZE || "").toLowerCase();
+    if (debugSize === "1" || debugSize === "true" || debugSize === "yes") {
+      try {
+        const buf = Buffer.from(imagePart.inlineData.data || "", "base64");
+        const meta = await sharp(buf).metadata();
+        console.log("[gemini:image]", {
+          model: this.model,
+          mimeType: imagePart.inlineData.mimeType || "",
+          format: meta.format,
+          width: meta.width,
+          height: meta.height,
+          sizeBytes: buf.length,
+          promptChars: String(prompt || "").length,
+        });
+      } catch (e) {
+        console.log("[gemini:image] metadata failed:", e instanceof Error ? e.message : String(e));
+      }
     }
 
     return {

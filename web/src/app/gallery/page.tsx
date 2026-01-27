@@ -49,7 +49,7 @@ export default function GalleryPage() {
   const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
   const [appName, setAppName] = useState<string>("");
   const [lang, setLang] = useState<string>("");
-  const [aspectRatio, setAspectRatio] = useState<string>("16:9");
+  const [aspectRatio, setAspectRatio] = useState<string>("2:1");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
@@ -155,6 +155,7 @@ export default function GalleryPage() {
   }, [items, aspectRatio]);
 
   const hiddenKeySet = useMemo(() => new Set(hiddenKeys), [hiddenKeys]);
+  const selectedKeySet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
 
   const visibleGridImages: GridImage[] = useMemo(() => {
     if (!hiddenKeys.length) return gridImages;
@@ -166,6 +167,10 @@ export default function GalleryPage() {
     for (const img of gridImages) m.set(img.key, img);
     return m;
   }, [gridImages]);
+
+  const selectedImages = useMemo(() => {
+    return selectedKeys.map((k) => keyToImg.get(k)).filter(Boolean) as GridImage[];
+  }, [keyToImg, selectedKeys]);
 
   const togglePick = useCallback((k: string) => {
     setSelectedKeys((prev) => {
@@ -310,9 +315,6 @@ export default function GalleryPage() {
           <Button icon={<ReloadOutlined />} onClick={fetchImages} loading={loading}>
             刷新
           </Button>
-          <Button onClick={() => { setSelectedKeys([]); setSelectMode(false); }} disabled={loading || creatingCut || !selectedKeys.length}>
-            清空
-          </Button>
           <Button type="primary" onClick={onCreateCut} loading={creatingCut} disabled={!selectMode || !selectedKeys.length}>
             裁剪所选（生成任务）
           </Button>
@@ -320,13 +322,42 @@ export default function GalleryPage() {
           {selectMode ? <Typography.Text type="secondary">已选 {selectedKeys.length} 张</Typography.Text> : null}
         </Space>
 
+        {selectedImages.length ? (
+          <div style={{ padding: 10, background: "#f5f5f5", borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)" }}>
+            <Space wrap size={10} align="center" style={{ width: "100%" }}>
+              <Typography.Text strong>当前已选（{selectedImages.length}）</Typography.Text>
+              <Typography.Text type="secondary">右键可选/取消，预览里按 C 也可选</Typography.Text>
+              <Button size="small" onClick={() => { setSelectedKeys([]); setSelectMode(false); }} disabled={loading || creatingCut}>
+                清空已选
+              </Button>
+              <div style={{ flex: "1 1 100%" }} />
+              <Image.PreviewGroup>
+                <Space wrap size={8}>
+                  {selectedImages.slice(0, 80).map((img) => (
+                    <div key={`sel|${img.key}`} style={{ position: "relative", width: 92, height: 52, borderRadius: 8, overflow: "hidden", border: "1px solid rgba(0,0,0,0.12)", background: "#fff", cursor: "pointer" }}>
+                      <Image width={92} height={52} style={{ width: 92, height: 52, objectFit: "cover" }} src={img.url} alt={img.url} />
+                      <div
+                        title="移除"
+                        onClick={(e) => { e.stopPropagation(); togglePick(img.key); }}
+                        style={{ position: "absolute", top: 4, right: 4, width: 18, height: 18, borderRadius: 6, background: "rgba(0,0,0,0.55)", color: "#fff", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", userSelect: "none" }}
+                      >
+                        ×
+                      </div>
+                    </div>
+                  ))}
+                </Space>
+              </Image.PreviewGroup>
+            </Space>
+          </div>
+        ) : null}
+
         <Image.PreviewGroup
           preview={{
-            visible: previewOpen,
+            open: previewOpen,
             current: previewIndex,
-            onVisibleChange: (v) => {
-              setPreviewOpen(Boolean(v));
-              if (!v) setPreviewIndex(0);
+            onOpenChange: (open) => {
+              setPreviewOpen(Boolean(open));
+              if (!open) setPreviewIndex(0);
             },
             onChange: (cur) => setPreviewIndex(Number(cur) || 0),
           }}
@@ -335,7 +366,7 @@ export default function GalleryPage() {
             {visibleGridImages.map((img) => (
               <div
                 key={img.key}
-                style={{ position: "relative", cursor: "default", width: "100%", aspectRatio: "16 / 9", overflow: "hidden" }}
+                style={{ position: "relative", cursor: "default", width: "100%", aspectRatio: "16 / 9", overflow: "hidden", borderRadius: 10, border: selectedKeySet.has(img.key) ? "3px solid #1677ff" : "1px solid rgba(0,0,0,0.06)", boxShadow: selectedKeySet.has(img.key) ? "0 0 0 3px rgba(22,119,255,0.22)" : undefined }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   togglePick(img.key);
@@ -355,26 +386,30 @@ export default function GalleryPage() {
                   src={img.url}
                   alt={img.url}
                 />
-                {selectedKeys.includes(img.key) ? (
+                {selectedKeySet.has(img.key) ? (
+                  <div style={{ position: "absolute", inset: 0, background: "rgba(22,119,255,0.16)", pointerEvents: "none" }} />
+                ) : null}
+                {selectedKeySet.has(img.key) ? (
                   <div
                     style={{
                       position: "absolute",
-                      top: 6,
-                      left: 6,
-                      width: 18,
-                      height: 18,
-                      borderRadius: 4,
-                      border: "1px solid rgba(0,0,0,0.45)",
-                      background: selectedKeys.includes(img.key) ? "#1677ff" : "rgba(255,255,255,0.85)",
+                      top: 8,
+                      left: 8,
+                      width: 26,
+                      height: 26,
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,0.85)",
+                      background: "#1677ff",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       color: "#fff",
-                      fontSize: 12,
+                      fontSize: 16,
+                      fontWeight: 700,
                       userSelect: "none",
                     }}
                   >
-                    {selectedKeys.includes(img.key) ? "✓" : ""}
+                    ✓
                   </div>
                 ) : null}
               </div>

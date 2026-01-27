@@ -21,6 +21,8 @@ type CutRecordDoc = {
   _id?: ObjectId;
   sourceUrl: string;
   sourceAbsPath: string;
+  appName?: string;
+  lang?: string;
   outputs?: Record<string, Record<string, CutRecordOutputItem>>;
 };
 
@@ -153,11 +155,23 @@ export async function POST(req: Request) {
     }
   });
 
-  const filename = `cut-download-${Date.now()}.zip`;
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  const now = new Date();
+  const datePrefix = `${pad2(now.getMonth() + 1)}${pad2(now.getDate())}`;
+  const sanitize = (s: string) => s.replace(/[\\/:*?"<>|\s]+/g, "-").replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+  const pickedAppNames = orderedDocs.map((d) => String(d.appName || "").trim()).filter(Boolean);
+  const pickedLangs = orderedDocs.map((d) => String(d.lang || "").trim()).filter(Boolean);
+  const appName =
+    pickedAppNames.length && pickedAppNames.every((x) => x === pickedAppNames[0]) ? pickedAppNames[0] : (pickedAppNames.length ? "mixed" : "unknown");
+  const lang =
+    pickedLangs.length && pickedLangs.every((x) => x === pickedLangs[0]) ? pickedLangs[0] : (pickedLangs.length ? "mixed" : "unknown");
+  const filenameUtf8 = `${datePrefix}-${sanitize(appName)}-${sanitize(lang)}.zip`;
+  const filenameAscii = filenameUtf8.replace(/[^\x20-\x7E]+/g, "_");
+  const filenameStar = encodeURIComponent(filenameUtf8).replace(/['()]/g, escape).replace(/\*/g, "%2A");
   return new Response(webStream as any, {
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `attachment; filename="${filenameAscii}"; filename*=UTF-8''${filenameStar}`,
       "Cache-Control": "no-store",
       "X-Items-Added": String(added),
     },
