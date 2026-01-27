@@ -53,7 +53,7 @@ export async function POST(req: Request) {
   const excludedKeysArr = Array.isArray(excludedKeysRaw) ? excludedKeysRaw.map((x) => String(x)).filter(Boolean) : [];
   const excludedSet = new Set(excludedKeysArr);
 
-  // 为了匹配样例命名：每个 ratio 只取这 3 个模板（不含 stitchLongImage1024 / vertical collage）
+  // 模板优先级：先放常用 3 个，再追加其它模板（例如 stitchLongImage1024 / getCutVerticalCollagePrompt）
   const templateOrder = ["getCutLogoFinalPrompt", "getCutOtherFinalPrompt", "getCutScaleFinalPrompt"];
 
   const db = await getMongoDb();
@@ -100,7 +100,9 @@ export async function POST(req: Request) {
           const outs11 = rec.outputs && rec.outputs["1:1"] ? rec.outputs["1:1"] : undefined;
           if (outs11 && typeof outs11 === "object") {
             let n = 0;
-            for (const tpl of templateOrder) {
+            const tplNames = Object.keys(outs11).sort();
+            const orderedTpls = [...templateOrder, ...tplNames.filter((t) => !templateOrder.includes(t))];
+            for (const tpl of orderedTpls) {
               if (rec._id && excludedSet.has(`${String(rec._id)}|1:1|${tpl}`)) continue;
               const it = outs11[tpl];
               const url = it?.outputUrl ? String(it.outputUrl) : "";
@@ -121,7 +123,9 @@ export async function POST(req: Request) {
           const outs45 = rec.outputs && rec.outputs["4:5"] ? rec.outputs["4:5"] : undefined;
           if (outs45 && typeof outs45 === "object") {
             let n = 0;
-            for (const tpl of templateOrder) {
+            const tplNames = Object.keys(outs45).sort();
+            const orderedTpls = [...templateOrder, ...tplNames.filter((t) => !templateOrder.includes(t))];
+            for (const tpl of orderedTpls) {
               if (rec._id && excludedSet.has(`${String(rec._id)}|4:5|${tpl}`)) continue;
               const it = outs45[tpl];
               const url = it?.outputUrl ? String(it.outputUrl) : "";

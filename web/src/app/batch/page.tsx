@@ -44,6 +44,7 @@ type JobSummary = {
 type JobItem = {
   id?: string;
   configId: string;
+  sourceConfigId?: string;
   status: string;
   total: number;
   done: number;
@@ -56,6 +57,7 @@ type JobItem = {
     prompt?: string;
   };
   images: Array<{ url: string; index: number; createdAt?: string; mimeType?: string }>;
+  subConfigIds?: string[];
 };
 
 type HistoryItem = {
@@ -99,6 +101,7 @@ export default function BatchPage() {
   const [refreshingAll, setRefreshingAll] = useState(false);
   const [polling, setPolling] = useState(false);
   const pollTimer = useRef<any>(null);
+  const [retryingKey, setRetryingKey] = useState<string>("");
   const [form] = Form.useForm();
   const [livePage, setLivePage] = useState(1);
   const [livePageSize, setLivePageSize] = useState(10);
@@ -182,14 +185,14 @@ export default function BatchPage() {
       const arr = Array.isArray(data.items) ? data.items : [];
       const byKey = new Map<string, any>();
       for (const it of arr) {
-        const configId = String((it as any).configId || "").trim();
-        const jobId = String((it as any).jobId || "").trim();
-        if (!configId) continue;
-        const key = jobId ? `${jobId}|${configId}` : configId;
+        const rawConfigId = String((it as any).configId || "").trim();
+        const jobId0 = String((it as any).jobId || "").trim();
+        if (!rawConfigId) continue;
+        const key = `${jobId0}|${rawConfigId}`;
         const refImgs = (it as any).referenceImages ?? (it as any).configMeta?.referenceImages;
         const g = byKey.get(key) || {
           id: key,
-          configId,
+          configId: rawConfigId,
           createdAt: "",
           jobId: "",
           prompt: "",
@@ -361,8 +364,35 @@ export default function BatchPage() {
     });
   }, [configs]);
 
-  const columns: ColumnsType<JobItem> = useMemo(
-    () => [
+  const onRetry = async (row: JobItem) => {
+    const jobId = String(job?.id || "").trim();
+    if (!jobId) return;
+    const cfgIds = Array.isArray((row as any).subConfigIds) ? (row as any).subConfigIds.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
+    if (!cfgIds.length) {
+      messageApi.error("configIds 为空，无法重试");
+      return;
+    }
+    setRetryingKey(String((row as any).configId || cfgIds[0] || ""));
+    try {
+      const res = await fetch(`/api/batch-jobs/${encodeURIComponent(jobId)}/retry`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ configIds: cfgIds }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "重试");
+      messageApi.success(`已重试 ${Number(data?.retried || 0)} 个配置`);
+      await fetchJob(jobId);
+      startPolling(jobId);
+      fetchJobList();
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRetryingKey("");
+    }
+  };
+
+  const columns: ColumnsType<JobItem> = [
       {
         title: "配置",
         dataIndex: "configId",
@@ -370,13 +400,15 @@ export default function BatchPage() {
         width: 360,
         render: (_v, row) => {
           const m = row.configMeta;
+          const showId = row.sourceConfigId || row.configId;
+          const mergedCnt = Array.isArray(row.subConfigIds) ? row.subConfigIds.length : 0;
           return (
             <Space orientation="vertical" size={0}>
               <Typography.Text strong>
                 {(m?.appName || "")} / {(m?.lang || "")} / {(m?.aspectRatio || "")} / {(m?.batchFun || "")}
               </Typography.Text>
               <Typography.Text type="secondary">
-                configId: {row.configId}
+                configId: {showId}{mergedCnt > 1 ? `（合并 ${mergedCnt} 个）` : ""}
               </Typography.Text>
             </Space>
           );
@@ -418,9 +450,69 @@ export default function BatchPage() {
           );
         },
       },
-    ],
-    [],
-  );
+      {
+        title: "操作",
+        key: "actions",
+        width: 110,
+        render: (_v, row) => {
+          const total = Number(row.total) || 0;
+          const done = Number(row.done) || 0;
+          const canRetry = Boolean(job?.id) && done < total && (row.status === "failed" || job?.status === "failed");
+          return (
+            <Button
+              size="small"
+              type="primary"
+              disabled={!canRetry}
+              loading={retryingKey === String((row as any).configId || "")}
+              onClick={() => onRetry(row)}
+            >
+              重试
+            </Button>
+          );
+        },
+      },
+    ];
+
+  const liveItems = useMemo(() => {
+    const src = Array.isArray(items) ? items : [];
+    const byKey = new Map<string, JobItem>();
+    const statusRank = (s: string) => (s === "failed" ? 4 : s === "running" ? 3 : s === "queued" ? 2 : s === "completed" ? 1 : 0);
+    for (const it of src) {
+      const key = String((it as any).sourceConfigId || it.configId || "").trim();
+      if (!key) continue;
+      const prev = byKey.get(key);
+      if (!prev) {
+        byKey.set(key, {
+          ...it,
+          configId: key,
+          subConfigIds: [String(it.configId || "").trim()].filter(Boolean),
+          images: Array.isArray(it.images) ? [...it.images] : [],
+          total: Number(it.total) || 0,
+          done: Number(it.done) || 0,
+          status: String(it.status || ""),
+        });
+        continue;
+      }
+      const nextTotal = (Number(prev.total) || 0) + (Number(it.total) || 0);
+      const nextDone = (Number(prev.done) || 0) + (Number(it.done) || 0);
+      const nextStatus = statusRank(String(it.status || "")) > statusRank(String(prev.status || "")) ? String(it.status || "") : String(prev.status || "");
+      const nextError = prev.error || it.error;
+      const mergedSub = [...(Array.isArray(prev.subConfigIds) ? prev.subConfigIds : []), String(it.configId || "").trim()].filter(Boolean);
+      const mergedImgs = [...(Array.isArray(prev.images) ? prev.images : []), ...(Array.isArray(it.images) ? it.images : [])];
+      mergedImgs.sort((a, b) => new Date((b as any).createdAt || 0 as any).getTime() - new Date((a as any).createdAt || 0 as any).getTime());
+      byKey.set(key, {
+        ...prev,
+        total: nextTotal,
+        done: nextDone,
+        status: nextStatus,
+        error: nextError,
+        subConfigIds: Array.from(new Set(mergedSub)),
+        images: mergedImgs.slice(0, 200),
+        configMeta: prev.configMeta || it.configMeta,
+      });
+    }
+    return Array.from(byKey.values());
+  }, [items]);
 
   const historyColumns: ColumnsType<HistoryItem> = useMemo(
     () => [
@@ -788,7 +880,7 @@ export default function BatchPage() {
                     <Table
                       rowKey={(row) => (row as any).id || (row as any).configId}
                       columns={columns}
-                      dataSource={items}
+                      dataSource={liveItems}
                       pagination={{
                         current: livePage,
                         pageSize: livePageSize,

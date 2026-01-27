@@ -94,6 +94,7 @@ export async function resizeImageByAspectRatio(
     '1:1': { width: 1024, height: 1024 },
     '16:9': { width: 1200, height: 628 },
     '9:16': { width: 628, height: 1200 },
+    '2:1': { width: 1200, height: 628 },
   };
 
   const normalizedRatio = (aspectRatio || '').trim();

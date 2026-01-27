@@ -63,7 +63,6 @@ export async function GET(req: Request) {
     if (status !== "queued" && status !== "running" && status !== "completed" && status !== "failed") {
       return Response.json({ ok: false, error: "status 非法" }, { status: 400 });
     }
-    filter.status = status;
   }
   if (appName) filter.appName = appName;
   if (lang) filter.lang = lang;
@@ -76,18 +75,21 @@ export async function GET(req: Request) {
   const col = db.collection<CutRecordDoc>("cut_records");
   const docs = await col.find(filter, { sort: { updatedAt: -1 }, limit } as any).toArray();
 
-  const items = docs.map((d: any) => ({
-    id: String(d._id),
-    jobId: d.jobId ? String(d.jobId) : undefined,
-    sourceUrl: d.sourceUrl,
-    sourceAbsPath: d.sourceAbsPath,
-    appName: d.appName,
-    lang: d.lang,
-    status: d.status || deriveStatus(d.outputs),
-    outputs: d.outputs,
-    createdAt: d.createdAt,
-    updatedAt: d.updatedAt,
-  }));
+  const items = docs.map((d: any) => {
+    const derived = d.outputs ? deriveStatus(d.outputs) : (d.status || "queued");
+    return {
+      id: String(d._id),
+      jobId: d.jobId ? String(d.jobId) : undefined,
+      sourceUrl: d.sourceUrl,
+      sourceAbsPath: d.sourceAbsPath,
+      appName: d.appName,
+      lang: d.lang,
+      status: derived,
+      outputs: d.outputs,
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
+    };
+  }).filter((it: any) => (status ? String(it.status) === status : true));
 
   return Response.json({ ok: true, items });
 }

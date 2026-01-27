@@ -85,6 +85,7 @@ export async function GET(
     const cfg = (jc as any)?.config ? { ...(jc as any).config } : configMap.get(String(jc.configId));
     return {
       configId: String(jc.configId),
+      sourceConfigId: jc?.sourceConfigId ? String(jc.sourceConfigId) : undefined,
       status: jc.status,
       total: jc.total,
       done: jc.done,

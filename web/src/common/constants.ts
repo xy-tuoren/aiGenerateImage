@@ -32,6 +32,7 @@ export const IMAGE_SIZE_OPTIONS = [
 ];
 
 export const ASPECT_RATIO_OPTIONS = [
+  { label: "2:1", value: "2:1" },
   { label: "1:1", value: "1:1" },
   { label: "4:5", value: "4:5" },
   { label: "16:9", value: "16:9" },

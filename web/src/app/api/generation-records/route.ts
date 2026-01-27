@@ -8,6 +8,7 @@ type GenerationRecordDoc = {
   _id?: ObjectId;
   jobId: ObjectId;
   configId: ObjectId;
+  sourceConfigId?: ObjectId;
   index: number;
   status: "completed" | "failed";
   prompt: string;
@@ -17,6 +18,8 @@ type GenerationRecordDoc = {
   createdAt: Date;
   appName?: string;
   lang?: string;
+  batchFun?: string;
+  aspectRatio?: string;
   referenceImages?: string[];
 };
 
@@ -24,6 +27,7 @@ type GeneratedImageDoc = {
   _id?: ObjectId;
   jobId: ObjectId;
   configId: ObjectId;
+  sourceConfigId?: ObjectId;
   index: number;
   url: string;
   mimeType: string;
@@ -31,6 +35,8 @@ type GeneratedImageDoc = {
   prompt: string;
   appName?: string;
   lang?: string;
+  batchFun?: string;
+  aspectRatio?: string;
   referenceImages?: string[];
 };
 
@@ -38,6 +44,7 @@ type BatchJobConfigDoc = {
   _id?: ObjectId;
   jobId: ObjectId;
   configId: ObjectId;
+  sourceConfigId?: ObjectId;
   config?: Record<string, any>;
   status: "queued" | "running" | "completed" | "failed";
   total: number;
@@ -62,19 +69,6 @@ export async function GET(req: Request) {
   const recordsCol = db.collection<GenerationRecordDoc>("generation_records");
   const imagesCol = db.collection<GeneratedImageDoc>("generated_images");
   const jobConfigsCol = db.collection<BatchJobConfigDoc>("batch_job_configs");
-  const configsCol = db.collection("image_configs");
-
-  let allowedConfigIds: ObjectId[] | null = null;
-  if (appName || lang) {
-    const configFilter: any = {};
-    if (appName) configFilter.appName = appName;
-    if (lang) configFilter.lang = lang;
-    const matchingConfigs = await configsCol.find(configFilter, { projection: { _id: 1 } as any }).toArray();
-    allowedConfigIds = matchingConfigs.map((c: any) => c._id).filter(Boolean);
-    if (allowedConfigIds.length === 0) {
-      return Response.json({ ok: true, items: [] });
-    }
-  }
 
   const filter: any = {};
   if (jobId) {
@@ -84,13 +78,13 @@ export async function GET(req: Request) {
   if (configId) {
     if (!ObjectId.isValid(configId)) return Response.json({ ok: false, error: "configId 非法" }, { status: 400 });
     filter.configId = new ObjectId(configId);
-  } else if (allowedConfigIds) {
-    filter.configId = { $in: allowedConfigIds };
   }
   if (status) {
     if (status !== "completed" && status !== "failed") return Response.json({ ok: false, error: "status 非法" }, { status: 400 });
     filter.status = status;
   }
+  if (appName) filter.appName = appName;
+  if (lang) filter.lang = lang;
 
   const records = await recordsCol.find(filter, { sort: { createdAt: -1 }, limit } as any).toArray();
   const existingKeys = new Set(records.map((r) => `${String(r.jobId)}|${String(r.configId)}|${Number(r.index)}`));
@@ -100,6 +94,7 @@ export async function GET(req: Request) {
     .map((img) => ({
       jobId: img.jobId,
       configId: img.configId,
+      sourceConfigId: img.sourceConfigId,
       index: img.index,
       status: "completed" as const,
       prompt: img.prompt,
@@ -108,6 +103,8 @@ export async function GET(req: Request) {
       createdAt: img.createdAt,
       appName: img.appName,
       lang: img.lang,
+      batchFun: img.batchFun,
+      aspectRatio: img.aspectRatio,
       referenceImages: img.referenceImages,
     }))
     .filter((r) => !existingKeys.has(`${String(r.jobId)}|${String(r.configId)}|${Number(r.index)}`));
@@ -116,16 +113,29 @@ export async function GET(req: Request) {
     filter.status && filter.status !== "failed"
       ? []
       : await jobConfigsCol
-          .find({ ...filter, status: "failed" }, { sort: { updatedAt: -1 }, limit } as any)
+          .find(
+            {
+              ...(filter.jobId ? { jobId: filter.jobId } : {}),
+              ...(filter.configId ? { configId: filter.configId } : {}),
+              status: "failed",
+            } as any,
+            { sort: { updatedAt: -1 }, limit } as any
+          )
           .toArray();
   const extraRecordsFromJobConfigs = extraFailedFromJobConfigs.map((jc) => ({
     jobId: jc.jobId,
     configId: jc.configId,
+    sourceConfigId: jc.sourceConfigId,
     index: -1,
     status: "failed" as const,
-    prompt: "",
+    prompt: jc?.config?.prompt || "",
     error: jc.error,
     createdAt: jc.updatedAt || jc.createdAt,
+    appName: jc?.config?.appName,
+    lang: jc?.config?.lang,
+    batchFun: jc?.config?.batchFun,
+    aspectRatio: jc?.config?.imageConfig?.aspectRatio,
+    referenceImages: jc?.config?.referenceImages,
   }));
 
   const merged = [
@@ -139,34 +149,38 @@ export async function GET(req: Request) {
 
   const configIds = Array.from(new Set(merged.map((r: any) => String(r.configId)))).filter(Boolean);
   const configObjectIds = configIds.map((id) => new ObjectId(id));
-  const configs = configObjectIds.length
-    ? await configsCol
+
+  // configId -> sourceConfigId 映射（用于“同一配置跨多次任务合并”）
+  const jobCfgMetas = configObjectIds.length
+    ? await jobConfigsCol
         .find(
-          { _id: { $in: configObjectIds } },
-          { projection: { prompt: 1, appName: 1, lang: 1, batchFun: 1, imageConfig: 1, referenceImages: 1 } as any }
+          { configId: { $in: configObjectIds } } as any,
+          { projection: { configId: 1, sourceConfigId: 1, config: 1 } as any }
         )
         .toArray()
     : [];
-  const configMap = new Map<string, any>(configs.map((c: any) => [String(c._id), c]));
-
-  const jobIdForSnapshot = filter.jobId instanceof ObjectId ? filter.jobId : null;
-  const jobConfigSnapMap = new Map<string, any>();
-  if (jobIdForSnapshot && configObjectIds.length) {
-    const snaps = await jobConfigsCol.find({ jobId: jobIdForSnapshot, configId: { $in: configObjectIds } } as any).toArray();
-    for (const jc of snaps as any[]) {
-      if (jc?.config) jobConfigSnapMap.set(String(jc.configId), jc.config);
-    }
+  const cfgIdToSourceId = new Map<string, ObjectId>();
+  const jobCfgSnapMap = new Map<string, any>();
+  for (const jc of jobCfgMetas as any[]) {
+    if (jc?.configId && jc?.sourceConfigId) cfgIdToSourceId.set(String(jc.configId), jc.sourceConfigId);
+    if (jc?.configId && jc?.config) jobCfgSnapMap.set(String(jc.configId), jc.config);
   }
 
   const items = merged.map((r: any) => {
-    const cfg = configMap.get(String(r.configId)) || jobConfigSnapMap.get(String(r.configId));
-    const appName = r.appName ?? cfg?.appName;
-    const lang = r.lang ?? cfg?.lang;
-    const referenceImages = r.referenceImages ?? cfg?.referenceImages;
+    const cfgId = String(r.configId);
+    const cfg = jobCfgSnapMap.get(cfgId);
+    const sourceId = r?.sourceConfigId || cfgIdToSourceId.get(cfgId);
+    const sourceIdStr = sourceId ? String(sourceId) : "";
+    const appName2 = r.appName ?? cfg?.appName;
+    const lang2 = r.lang ?? cfg?.lang;
+    const referenceImages2 = r.referenceImages ?? cfg?.referenceImages;
+    const batchFun2 = r.batchFun ?? cfg?.batchFun;
+    const aspectRatio2 = r.aspectRatio ?? cfg?.imageConfig?.aspectRatio;
     return {
       id: r._id ? String(r._id) : undefined,
       jobId: String(r.jobId),
       configId: String(r.configId),
+      sourceConfigId: sourceIdStr || undefined,
       index: r.index,
       status: r.status,
       prompt: r.prompt || cfg?.prompt,
@@ -174,31 +188,29 @@ export async function GET(req: Request) {
       url: r.url,
       mimeType: r.mimeType,
       createdAt: r.createdAt,
-      appName,
-      lang,
-      referenceImages,
-      configMeta: cfg
+      appName: appName2,
+      lang: lang2,
+      batchFun: batchFun2,
+      aspectRatio: aspectRatio2,
+      referenceImages: referenceImages2,
+      configMeta: appName2 || lang2 || batchFun2 || aspectRatio2 || referenceImages2
         ? {
-            appName: appName ?? cfg.appName,
-            lang: lang ?? cfg.lang,
-            batchFun: cfg.batchFun,
-            aspectRatio: cfg.imageConfig?.aspectRatio,
-            prompt: cfg.prompt,
-            referenceImages: referenceImages ?? cfg.referenceImages,
+            appName: appName2,
+            lang: lang2,
+            batchFun: batchFun2,
+            aspectRatio: aspectRatio2,
+            prompt: r.prompt || cfg?.prompt,
+            referenceImages: referenceImages2,
           }
-        : appName || lang || referenceImages
-          ? {
-              appName,
-              lang,
-              batchFun: undefined,
-              aspectRatio: undefined,
-              prompt: undefined,
-              referenceImages,
-            }
-          : undefined,
+        : undefined,
     };
   });
 
-  return Response.json({ ok: true, items });
+  const filteredByMeta = items.filter((it: any) => {
+    if (appName && String(it?.appName || it?.configMeta?.appName || "").trim() !== appName) return false;
+    if (lang && String(it?.lang || it?.configMeta?.lang || "").trim() !== lang) return false;
+    return true;
+  });
+  return Response.json({ ok: true, items: filteredByMeta });
 }
 

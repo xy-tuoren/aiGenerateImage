@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Image, Select, Space, Typography, message } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
@@ -10,6 +10,7 @@ type HistoryItem = {
   id?: string;
   jobId: string;
   configId: string;
+  sourceConfigId?: string;
   index: number;
   status: string;
   prompt?: string;
@@ -34,6 +35,7 @@ type GridImage = {
   url: string;
   jobId: string;
   configId: string;
+  sourceConfigId?: string;
   index: number;
   createdAt?: string;
   appName?: string;
@@ -50,6 +52,9 @@ export default function GalleryPage() {
   const [aspectRatio, setAspectRatio] = useState<string>("16:9");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const [creatingCut, setCreatingCut] = useState(false);
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
@@ -117,18 +122,21 @@ export default function GalleryPage() {
       }
       const jobId = String(it.jobId || "");
       const configId = String(it.configId || "");
+      const sourceConfigId = it.sourceConfigId ? String(it.sourceConfigId) : "";
+      const groupConfigId = sourceConfigId || configId;
       if (!jobId || !configId) continue;
       const index = Number(it.index) || 0;
       const createdAt = it.createdAt ? String(it.createdAt) : undefined;
       const t = createdAt ? new Date(createdAt).getTime() : 0;
-      const gk = `${jobId}|${configId}`;
+      const gk = `${jobId}|${groupConfigId}`;
       const g = groupMap.get(gk) || { latestAt: 0, imgs: [] };
       g.latestAt = Math.max(g.latestAt, Number.isFinite(t) ? t : 0);
       g.imgs.push({
-        key: `${gk}|${index}|${createdAt || ""}|${it.url}`,
+        key: `${gk}|${configId}|${index}|${createdAt || ""}|${it.url}`,
         url: String(it.url),
         jobId,
-        configId,
+        configId: groupConfigId,
+        sourceConfigId: sourceConfigId || undefined,
         index,
         createdAt,
         appName: it.appName ?? it.configMeta?.appName,
@@ -146,22 +154,81 @@ export default function GalleryPage() {
     return out;
   }, [items, aspectRatio]);
 
+  const hiddenKeySet = useMemo(() => new Set(hiddenKeys), [hiddenKeys]);
+
+  const visibleGridImages: GridImage[] = useMemo(() => {
+    if (!hiddenKeys.length) return gridImages;
+    return gridImages.filter((img) => !hiddenKeySet.has(img.key));
+  }, [gridImages, hiddenKeySet, hiddenKeys.length]);
+
   const keyToImg = useMemo(() => {
     const m = new Map<string, GridImage>();
     for (const img of gridImages) m.set(img.key, img);
     return m;
   }, [gridImages]);
 
-  const togglePick = (k: string) => {
+  const togglePick = useCallback((k: string) => {
     setSelectedKeys((prev) => {
       if (prev.includes(k)) return prev.filter((x) => x !== k);
       return [...prev, k];
     });
-  };
+  }, []);
+
+  useEffect(() => {
+    setSelectMode(selectedKeys.length > 0);
+  }, [selectedKeys]);
 
   useEffect(() => {
     setSelectedKeys([]);
   }, [aspectRatio]);
+
+  useEffect(() => {
+    setHiddenKeys([]);
+  }, [appName, lang, aspectRatio]);
+
+  useEffect(() => {
+    if (!previewOpen) return;
+    if (previewIndex < 0) setPreviewIndex(0);
+    else if (previewIndex >= visibleGridImages.length) setPreviewIndex(Math.max(0, visibleGridImages.length - 1));
+  }, [previewOpen, previewIndex, visibleGridImages.length]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!previewOpen) return;
+      const k = String(e.key || "").toLowerCase();
+      if (k !== "c" && k !== "x") return;
+      const img = visibleGridImages[previewIndex];
+      if (!img) return;
+      e.preventDefault();
+      if (k === "c") {
+        togglePick(img.key);
+        setPreviewIndex((cur) => {
+          const len = visibleGridImages.length;
+          if (!len) return 0;
+          return Math.min(cur + 1, len - 1);
+        });
+        return;
+      }
+      if (k === "x") {
+        const curIdx = previewIndex;
+        const prevLen = visibleGridImages.length;
+        setHiddenKeys((prev) => {
+          if (prev.includes(img.key)) return prev;
+          return [...prev, img.key];
+        });
+        const nextLen = Math.max(0, (prevLen || 0) - 1);
+        if (!nextLen) {
+          setPreviewOpen(false);
+          setPreviewIndex(0);
+        } else {
+          setPreviewIndex(Math.min(curIdx, nextLen - 1));
+        }
+        return;
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [previewOpen, previewIndex, togglePick, visibleGridImages]);
 
   const onCreateCut = async () => {
     if (!selectedKeys.length) {
@@ -243,24 +310,42 @@ export default function GalleryPage() {
           <Button icon={<ReloadOutlined />} onClick={fetchImages} loading={loading}>
             刷新
           </Button>
-          <Button onClick={() => { setSelectMode((v) => !v); setSelectedKeys([]); }} disabled={loading || creatingCut}>
-            {selectMode ? "退出选择" : "选择裁剪"}
+          <Button onClick={() => { setSelectedKeys([]); setSelectMode(false); }} disabled={loading || creatingCut || !selectedKeys.length}>
+            清空
           </Button>
           <Button type="primary" onClick={onCreateCut} loading={creatingCut} disabled={!selectMode || !selectedKeys.length}>
             裁剪所选（生成任务）
           </Button>
-          <Typography.Text type="secondary">{loading ? "加载中..." : `${gridImages.length} 张`}</Typography.Text>
+          <Typography.Text type="secondary">{loading ? "加载中..." : `${visibleGridImages.length} 张`}</Typography.Text>
           {selectMode ? <Typography.Text type="secondary">已选 {selectedKeys.length} 张</Typography.Text> : null}
         </Space>
 
-        <Image.PreviewGroup>
+        <Image.PreviewGroup
+          preview={{
+            visible: previewOpen,
+            current: previewIndex,
+            onVisibleChange: (v) => {
+              setPreviewOpen(Boolean(v));
+              if (!v) setPreviewIndex(0);
+            },
+            onChange: (cur) => setPreviewIndex(Number(cur) || 0),
+          }}
+        >
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 12, width: "100%" }}>
-            {gridImages.map((img) => (
+            {visibleGridImages.map((img) => (
               <div
                 key={img.key}
-                style={{ position: "relative", cursor: selectMode ? "pointer" : "default", width: "100%", aspectRatio: "16 / 9", overflow: "hidden" }}
+                style={{ position: "relative", cursor: "default", width: "100%", aspectRatio: "16 / 9", overflow: "hidden" }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  togglePick(img.key);
+                }}
                 onClick={() => {
-                  if (selectMode) togglePick(img.key);
+                  const idx = visibleGridImages.findIndex((x) => x.key === img.key);
+                  if (idx >= 0) {
+                    setPreviewIndex(idx);
+                    setPreviewOpen(true);
+                  }
                 }}
               >
                 <Image
@@ -269,9 +354,8 @@ export default function GalleryPage() {
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   src={img.url}
                   alt={img.url}
-                  preview={!selectMode}
                 />
-                {selectMode ? (
+                {selectedKeys.includes(img.key) ? (
                   <div
                     style={{
                       position: "absolute",

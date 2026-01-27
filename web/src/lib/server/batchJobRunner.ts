@@ -53,6 +53,7 @@ type GeneratedImageDoc = {
   _id?: ObjectId;
   jobId: ObjectId;
   configId: ObjectId;
+  sourceConfigId?: ObjectId;
   index: number;
   url: string;
   filePath: string;
@@ -61,6 +62,8 @@ type GeneratedImageDoc = {
   prompt: string;
   appName?: string;
   lang?: string;
+  batchFun?: string;
+  aspectRatio?: string;
   referenceImages?: string[];
 };
 
@@ -68,6 +71,7 @@ type GenerationRecordDoc = {
   _id?: ObjectId;
   jobId: ObjectId;
   configId: ObjectId;
+  sourceConfigId?: ObjectId;
   index: number;
   status: "completed" | "failed";
   prompt: string;
@@ -77,6 +81,8 @@ type GenerationRecordDoc = {
   createdAt: Date;
   appName?: string;
   lang?: string;
+  batchFun?: string;
+  aspectRatio?: string;
   referenceImages?: string[];
 };
 
@@ -85,6 +91,7 @@ type StartJobInput = {
   configIds: string[];
   concurrency: number;
   countOverrideMap?: Record<string, number>;
+  onlyMissing?: boolean;
 };
 
 declare global {
@@ -321,7 +328,7 @@ function buildPrompt(config: ImageConfigDoc): string {
 export async function startBatchJob(input: StartJobInput) {
   const { jobId, configIds, concurrency, countOverrideMap } = input;
   if (runningMap.has(jobId)) return;
-  const p = runBatchJob({ jobId, configIds, concurrency, countOverrideMap }).catch((e) => {
+  const p = runBatchJob({ jobId, configIds, concurrency, countOverrideMap, onlyMissing: input.onlyMissing }).catch((e) => {
     console.error("runBatchJob failed:", e);
   }).finally(() => {
     runningMap.delete(jobId);
@@ -351,7 +358,7 @@ async function runBatchJob(input: StartJobInput) {
 
   await jobsCol.updateOne(
     { _id: jobObjectId },
-    { $set: { status: "running", updatedAt: new Date() } }
+    { $set: { status: "running", updatedAt: new Date() }, $unset: { error: "" } as any }
   );
 
   const configObjectIds = input.configIds.map((id) => new ObjectId(id));
@@ -387,10 +394,14 @@ async function runBatchJob(input: StartJobInput) {
 
     await jobConfigsCol.updateOne(
       { jobId: jobObjectId, configId: new ObjectId(task.configId) },
-      { $set: { status: "running", updatedAt: new Date() } }
+      { $set: { status: "running", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
 
     const prompt = buildPrompt(config);
+    const aspectRatio = String(((config.imageConfig as any)?.aspectRatio ?? "") || "").trim() || undefined;
+    const batchFun = (config.batchFun ? String(config.batchFun) : "").trim() || undefined;
+    const jc = jobCfgMap.get(String(config._id));
+    const sourceConfigId = jc?.sourceConfigId;
     let referenceImageUrls: string[] | undefined;
     try {
       const referenceImagesRaw = Array.isArray(config.referenceImages) ? config.referenceImages : [];
@@ -445,6 +456,7 @@ async function runBatchJob(input: StartJobInput) {
       await imagesCol.insertOne({
         jobId: jobObjectId,
         configId: config._id,
+        sourceConfigId,
         index: task.index,
         url,
         filePath: absFile,
@@ -453,11 +465,14 @@ async function runBatchJob(input: StartJobInput) {
         prompt,
         appName: config.appName,
         lang: config.lang,
+        batchFun,
+        aspectRatio,
         referenceImages: referenceImageUrls,
       });
       await recordsCol.insertOne({
         jobId: jobObjectId,
         configId: config._id,
+        sourceConfigId,
         index: task.index,
         status: "completed",
         prompt,
@@ -466,6 +481,8 @@ async function runBatchJob(input: StartJobInput) {
         createdAt: now,
         appName: config.appName,
         lang: config.lang,
+        batchFun,
+        aspectRatio,
         referenceImages: referenceImageUrls,
       });
     } catch (err) {
@@ -473,6 +490,7 @@ async function runBatchJob(input: StartJobInput) {
       await recordsCol.insertOne({
         jobId: jobObjectId,
         configId: config._id,
+        sourceConfigId,
         index: task.index,
         status: "failed",
         prompt,
@@ -480,6 +498,8 @@ async function runBatchJob(input: StartJobInput) {
         createdAt: new Date(),
         appName: config.appName,
         lang: config.lang,
+        batchFun,
+        aspectRatio,
         referenceImages: referenceImageUrls,
       });
       throw err instanceof Error ? err : new Error(msg);
@@ -515,7 +535,15 @@ async function runBatchJob(input: StartJobInput) {
     const cfg = configMap.get(configId);
     const overrideCount = input.countOverrideMap ? input.countOverrideMap[String(configId)] : undefined;
     const count = Math.max(0, overrideCount !== undefined ? Number(overrideCount) : Number(cfg?.count ?? 1) || 0);
-    for (let i = 0; i < count; i += 1) tasks.push({ configId, index: i });
+    if (input.onlyMissing) {
+      const completedIdxs = await recordsCol.distinct("index" as any, { jobId: jobObjectId, configId: new ObjectId(configId), status: "completed" } as any);
+      const completedSet = new Set<number>((Array.isArray(completedIdxs) ? completedIdxs : []).map((x: any) => Number(x)).filter((n: any) => Number.isFinite(n)));
+      for (let i = 0; i < count; i += 1) {
+        if (!completedSet.has(i)) tasks.push({ configId, index: i });
+      }
+    } else {
+      for (let i = 0; i < count; i += 1) tasks.push({ configId, index: i });
+    }
   }
 
   if (!tasks.length) {
@@ -563,10 +591,10 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
 
   await jobsCol.updateOne(
     { _id: jobObjectId },
-    { $set: { status: "running", updatedAt: new Date() } }
+    { $set: { status: "running", updatedAt: new Date() }, $unset: { error: "" } as any }
   );
 
-  const items = await cutItemsCol.find({ jobId: jobObjectId }).toArray();
+  const items = await cutItemsCol.find({ jobId: jobObjectId, status: { $ne: "completed" } } as any).toArray();
   if (!items.length) {
     await jobsCol.updateOne(
       { _id: jobObjectId },
@@ -582,7 +610,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
     const now0 = new Date();
     await cutItemsCol.updateOne(
       { _id: task.itemId },
-      { $set: { status: "running", updatedAt: now0 } }
+      { $set: { status: "running", updatedAt: now0 }, $unset: { error: "" } as any }
     );
     try {
       const pathKey = `outputs.${item.ratio}.${item.templateName}`;
