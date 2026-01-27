@@ -57,14 +57,13 @@ type JobItem = {
 
 type HistoryItem = {
   id?: string;
-  jobId: string;
   configId: string;
-  index: number;
   status: string;
   prompt?: string;
-  error?: string;
-  url?: string;
   createdAt?: string;
+  jobId?: string;
+  images: Array<{ url: string; index?: number; createdAt?: string; mimeType?: string; jobId?: string }>;
+  errors?: string[];
   configMeta?: {
     appName?: string;
     lang?: string;
@@ -89,6 +88,7 @@ export default function BatchPage() {
   const [jobList, setJobList] = useState<JobSummary[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [historyPromptExpanded, setHistoryPromptExpanded] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<"live" | "history">("live");
   const [starting, setStarting] = useState(false);
   const [refreshingAll, setRefreshingAll] = useState(false);
@@ -174,7 +174,60 @@ export default function BatchPage() {
         messageApi.error(data?.error || "获取历史记录失败");
         return;
       }
-      setHistory(Array.isArray(data.items) ? data.items : []);
+      const arr = Array.isArray(data.items) ? data.items : [];
+      const byKey = new Map<string, any>();
+      for (const it of arr) {
+        const configId = String((it as any).configId || "").trim();
+        const jobId = String((it as any).jobId || "").trim();
+        if (!configId) continue;
+        const key = jobId ? `${jobId}|${configId}` : configId;
+        const g = byKey.get(key) || {
+          id: key,
+          configId,
+          createdAt: "",
+          jobId: "",
+          prompt: "",
+          configMeta: (it as any).configMeta,
+          images: [],
+          errors: [],
+          _hasCompleted: false,
+          _hasFailed: false,
+          _hasRunning: false,
+          _hasQueued: false,
+        };
+        const createdAt = (it as any).createdAt ? String((it as any).createdAt) : "";
+        if (!g.createdAt || (createdAt && new Date(createdAt).getTime() > new Date(g.createdAt).getTime())) {
+          g.createdAt = createdAt || g.createdAt;
+          g.jobId = (it as any).jobId || g.jobId;
+          g.prompt = (it as any).prompt || g.prompt;
+          if ((it as any).configMeta) g.configMeta = (it as any).configMeta;
+        }
+        const st = String((it as any).status || "");
+        if (st === "completed") g._hasCompleted = true;
+        else if (st === "failed") g._hasFailed = true;
+        else if (st === "running") g._hasRunning = true;
+        else if (st === "queued") g._hasQueued = true;
+        const url = (it as any).url ? String((it as any).url) : "";
+        if (url) g.images.push({ url, index: (it as any).index, createdAt, mimeType: (it as any).mimeType, jobId: (it as any).jobId });
+        const err = (it as any).error ? String((it as any).error) : "";
+        if (err) g.errors.push(err);
+        byKey.set(key, g);
+      }
+      const grouped = Array.from(byKey.values()).map((g: any) => {
+        const status = g._hasFailed && !g._hasCompleted ? "failed" : g._hasCompleted ? "completed" : g._hasRunning ? "running" : g._hasQueued ? "queued" : "unknown";
+        return {
+          id: g.id,
+          configId: g.configId,
+          status,
+          prompt: g.prompt,
+          createdAt: g.createdAt,
+          jobId: g.jobId || undefined,
+          images: Array.isArray(g.images) ? g.images : [],
+          errors: Array.isArray(g.errors) ? g.errors : [],
+          configMeta: g.configMeta,
+        } as HistoryItem;
+      }).sort((a, b) => new Date(b.createdAt || 0 as any).getTime() - new Date(a.createdAt || 0 as any).getTime());
+      setHistory(grouped);
     } catch (e) {
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {
@@ -259,12 +312,37 @@ export default function BatchPage() {
     if (jobId) openJob(jobId);
     const fromQs = (searchParams.get("configIds") || "").trim();
     const qsIds = fromQs ? fromQs.split(",").map((s) => s.trim()).filter(Boolean) : [];
-    form.setFieldsValue({ concurrency: 64, configIds: qsIds });
+    form.setFieldsValue({ concurrency: 64, configIds: qsIds, actualCount: undefined });
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const onStorage = (ev: StorageEvent) => {
+      try {
+        const k = String(ev?.key || "");
+        if (k !== lastJobIdKey && k !== recentJobIdsKey) return;
+        const id = (() => {
+          try {
+            return (localStorage.getItem(lastJobIdKey) || "").trim();
+          } catch {
+            return "";
+          }
+        })();
+        if (!id) return;
+        if (id && id !== (job?.id || "")) {
+          fetchJobList();
+          openJob(id);
+        }
+      } catch {
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.id]);
 
   const configOptions = useMemo(() => {
     return configs.map((c) => {
@@ -285,10 +363,10 @@ export default function BatchPage() {
           return (
             <Space orientation="vertical" size={0}>
               <Typography.Text strong>
-                {(m?.appName || "-")} / {(m?.lang || "-")} / {(m?.batchFun || "-")}
+                {(m?.appName || "")} / {(m?.lang || "")} / {(m?.aspectRatio || "")} / {(m?.batchFun || "")}
               </Typography.Text>
               <Typography.Text type="secondary">
-                {row.configId}
+                configId: {row.configId}
               </Typography.Text>
             </Space>
           );
@@ -340,7 +418,7 @@ export default function BatchPage() {
         title: "时间",
         dataIndex: "createdAt",
         key: "createdAt",
-        width: 190,
+        width: 140,
         render: (v) => {
           const s = v ? String(v) : "";
           if (!s) return <Typography.Text type="secondary">-</Typography.Text>;
@@ -352,7 +430,7 @@ export default function BatchPage() {
         title: "状态",
         dataIndex: "status",
         key: "status",
-        width: 110,
+        width: 80,
         render: (v) => {
           const s = String(v || "-");
           if (s === "failed") return <Typography.Text type="danger">failed</Typography.Text>;
@@ -363,45 +441,99 @@ export default function BatchPage() {
       {
         title: "配置",
         key: "config",
-        width: 320,
+        width: 210,
         render: (_v, row) => {
           const m = row.configMeta;
-          const idx = Number(row.index);
-          const idxText = Number.isFinite(idx) && idx >= 0 ? `#${idx + 1}` : "-";
+          const cnt = Array.isArray(row.images) ? row.images.length : 0;
           return (
             <Space orientation="vertical" size={0}>
               <Typography.Text strong>
-                {(m?.appName || "-")} / {(m?.lang || "-")} / {(m?.batchFun || "-")}
+                {(m?.appName || "")} / {(m?.lang || "")} / {(m?.aspectRatio || "")}
               </Typography.Text>
               <Typography.Text type="secondary">
-                {row.configId} / {idxText}
+                <Typography.Text style={{ maxWidth: 200 }} ellipsis title={row.configId}>
+                  {row.configId}
+                </Typography.Text>{" "}
+                {cnt ? `(${cnt})` : ""}
               </Typography.Text>
             </Space>
           );
         },
       },
       {
-        title: "提示词（实际）",
+        title: "提示词",
         dataIndex: "prompt",
         key: "prompt",
-        render: (v) => {
+        width: 250,
+        render: (v, row) => {
           const s = v ? String(v) : "";
           if (!s) return <Typography.Text type="secondary">-</Typography.Text>;
-          return <Typography.Paragraph style={{ margin: 0 }} ellipsis={{ rows: 3, expandable: true, symbol: "展开" }}>{s}</Typography.Paragraph>;
+          const k = String((row as any).id || `${(row as any).jobId || ""}|${(row as any).configId || ""}`);
+          const expanded = Boolean(historyPromptExpanded[k]);
+          const canToggle = s.length > 60;
+          return (
+            <div>
+              <Typography.Paragraph style={{ margin: 0, maxWidth: 250 }} ellipsis={expanded ? false : { rows: 2 }}>
+                {s}
+              </Typography.Paragraph>
+              {canToggle ? (
+                <Typography.Link
+                  onClick={() => {
+                    setHistoryPromptExpanded((prev) => ({ ...prev, [k]: !expanded }));
+                  }}
+                >
+                  {expanded ? "收起" : "展开"}
+                </Typography.Link>
+              ) : null}
+            </div>
+          );
         },
       },
       {
         title: "结果",
         key: "result",
-        width: 240,
+        width: 680,
         render: (_v, row) => {
-          if (row.url) return <Image width={80} height={80} style={{ objectFit: "cover" }} src={row.url} alt={row.url} />;
-          if (row.error) return <Typography.Text type="danger">{row.error}</Typography.Text>;
+          const all = Array.isArray(row.images) ? row.images : [];
+          const show = all.slice(0, 10);
+          const rest = Math.max(0, all.length - show.length);
+          if (show.length) {
+            return (
+              <Image.PreviewGroup>
+                <Space size={6} wrap={false}>
+                  {show.map((img) => (
+                    <Image key={img.url} width={72} alt={img.url} height={72} style={{ objectFit: "cover" }} src={img.url} />
+                  ))}
+                  {rest ? (
+                    <div
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: 4,
+                        background: "#f5f5f5",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "rgba(0,0,0,0.45)",
+                        fontSize: 12,
+                        flex: "0 0 auto",
+                      }}
+                      title={`还有 ${rest} 张`}
+                    >
+                      ...(+{rest})
+                    </div>
+                  ) : null}
+                </Space>
+              </Image.PreviewGroup>
+            );
+          }
+          const err = Array.isArray(row.errors) ? row.errors.filter(Boolean)[0] : "";
+          if (err) return <Typography.Text type="danger">{err}</Typography.Text>;
           return <Typography.Text type="secondary">-</Typography.Text>;
         },
       },
     ],
-    [],
+    [historyPromptExpanded],
   );
 
   const onStart = async () => {
@@ -413,12 +545,16 @@ export default function BatchPage() {
     }
     setStarting(true);
     try {
+      const actualCountRaw = values.actualCount;
+      const actualCountNum = actualCountRaw === undefined || actualCountRaw === null || actualCountRaw === "" ? undefined : Number(actualCountRaw);
+      const actualCount = typeof actualCountNum === "number" && Number.isFinite(actualCountNum) ? Math.max(0, Math.floor(actualCountNum)) : undefined;
       const res = await fetch("/api/batch-jobs/start", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           configIds,
           concurrency: values.concurrency,
+          actualCount,
         }),
       });
       const data = await res.json();
@@ -439,7 +575,9 @@ export default function BatchPage() {
       startPolling(jobId);
       fetchJobList();
       fetchHistory();
-      messageApi.success(`已启动任务: ${jobId}`);
+      const total = data?.total !== undefined && data?.total !== null ? String(data.total) : "";
+      const ac = data?.actualCount !== undefined && data?.actualCount !== null ? String(data.actualCount) : "";
+      messageApi.success(`已启动任务: ${jobId}${ac ? `，实际数量=${ac}` : ""}${total ? `，总数=${total}` : ""}`);
     } catch (e) {
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {
@@ -487,10 +625,10 @@ export default function BatchPage() {
   return (
     <AdminShell defaultSelectedKey="/batch" headerTitle="批量生成图片 - 批量生图">
       {contextHolder}
-      <Space orientation="vertical" size={12} style={{ width: "100%" }}>
-        <Card styles={{ body: { padding: 12 } }}>
-          <Form form={form} layout="inline" size="small">
-            <Form.Item name="configIds" label="配置" rules={[{ required: true, message: "请选择配置" }]}>
+      <Space orientation="vertical" size={8} style={{ width: "100%" }}>
+        <Card styles={{ body: { padding: 8 } }}>
+          <Form form={form} layout="inline" size="small" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
+            <Form.Item name="configIds" label={<span>配置 <span style={{ color: "#ff4d4f" }}>*</span></span>} rules={[{ required: true, message: "请选择配置" }]} style={{ marginBottom: 0 }}>
               <Select
                 mode="multiple"
                 style={{ width: 260 }}
@@ -502,10 +640,13 @@ export default function BatchPage() {
                 maxTagCount="responsive"
               />
             </Form.Item>
-            <Form.Item name="concurrency" label="并发" rules={[{ required: true }]}>
+            <Form.Item name="concurrency" label={<span>并发 <span style={{ color: "#ff4d4f" }}>*</span></span>} rules={[{ required: true }]} style={{ marginBottom: 0 }}>
               <InputNumber min={1} max={99} style={{ width: 90 }} />
             </Form.Item>
-            <Form.Item label="任务">
+            <Form.Item name="actualCount" label="实际数量" style={{ marginBottom: 0 }}>
+              <InputNumber min={0} step={1} style={{ width: 110 }} placeholder="可选" />
+            </Form.Item>
+            <Form.Item label="任务" style={{ marginBottom: 0 }}>
               <Select
                 style={{ width: 360 }}
                 placeholder="选择任务"
@@ -517,7 +658,7 @@ export default function BatchPage() {
                 allowClear={false}
               />
             </Form.Item>
-            <Form.Item>
+            <Form.Item style={{ marginBottom: 0 }}>
               <Space.Compact>
                 <Tooltip title="启动新的批量任务">
                   <Button size="small" type="primary" icon={<PlayCircleOutlined />} onClick={onStart} loading={starting}>
@@ -537,23 +678,37 @@ export default function BatchPage() {
                 </Tooltip>
               </Space.Compact>
             </Form.Item>
-            <Form.Item>
-              <Space wrap size={8} align="center">
-                <Typography.Text type="secondary">{job ? job.status : "-"}</Typography.Text>
-                <Typography.Text
-                  type="secondary"
-                  style={{ maxWidth: 220 }}
-                  ellipsis
-                  copyable={job?.id ? { text: job.id } : false}
-                >
-                  {job?.id || ""}
-                </Typography.Text>
-                {job?.error ? <Typography.Text type="danger">{job.error}</Typography.Text> : null}
-                <Progress percent={overallPct} size="small" status={job?.status === "failed" ? "exception" : undefined} style={{ width: 140 }} />
-                <Typography.Text type="secondary">{job ? `${job.done}/${job.total}` : "-"}</Typography.Text>
-                {polling ? <Typography.Text type="secondary">轮询中</Typography.Text> : null}
-              </Space>
-            </Form.Item>
+            {job?.id && (
+              <div style={{ marginTop: 8, padding: 6, background: "#f5f5f5", borderRadius: 6 }}>
+                <Space wrap size={8} align="center" style={{ width: "100%" }}>
+                  <Typography.Text strong style={{ color: job.status === "completed" ? "#52c41a" : job.status === "failed" ? "#ff4d4f" : "#1890ff" }}>
+                    {job.status || "-"}
+                  </Typography.Text>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ maxWidth: 240 }}
+                    ellipsis
+                    copyable={job?.id ? { text: job.id } : false}
+                  >
+                    {job?.id || ""}
+                  </Typography.Text>
+                  {job?.error ? <Typography.Text type="danger">{job.error}</Typography.Text> : null}
+                  <Progress 
+                    percent={overallPct} 
+                    size="small" 
+                    status={job?.status === "failed" ? "exception" : undefined} 
+                    style={{ width: 160, minWidth: 160 }} 
+                  />
+                  <Typography.Text type="secondary" strong>{job ? `${job.done}/${job.total}` : "-"}</Typography.Text>
+                  {polling ? (
+                    <Typography.Text type="secondary" style={{ color: "#1890ff" }}>
+                      <ReloadOutlined spin style={{ marginRight: 4 }} />
+                      轮询中
+                    </Typography.Text>
+                  ) : null}
+                </Space>
+              </div>
+            )}
           </Form>
         </Card>
 
@@ -561,7 +716,7 @@ export default function BatchPage() {
           <Tabs
             activeKey={activeTab}
             onChange={(k) => setActiveTab((k as any) || "live")}
-            tabBarStyle={{ paddingLeft: 12, paddingRight: 12, marginBottom: 0 }}
+            tabBarStyle={{ paddingLeft: 8, paddingRight: 8, marginBottom: 0 }}
             tabBarExtraContent={
               activeTab === "history" ? (
                 <Button size="small" icon={<ReloadOutlined />} onClick={fetchHistory} loading={historyLoading}>
@@ -578,7 +733,7 @@ export default function BatchPage() {
                 key: "live",
                 label: "实时任务",
                 children: (
-                  <div style={{ padding: 12 }}>
+                  <div style={{ padding: 8 }}>
                     <Table
                       rowKey={(row) => (row as any).id || (row as any).configId}
                       columns={columns}
@@ -609,12 +764,15 @@ export default function BatchPage() {
                 key: "history",
                 label: "历史记录",
                 children: (
-                  <div style={{ padding: 12 }}>
+                  <div style={{ padding: 8 }}>
                     <Table
-                      rowKey={(row) => row.id || `${row.jobId}-${row.configId}-${row.index}-${row.createdAt || ""}`}
+                      rowKey={(row) => row.id || `${row.jobId || ""}|${row.configId}`}
                       columns={historyColumns}
                       dataSource={history}
                       loading={historyLoading}
+                      size="small"
+                      tableLayout="fixed"
+                      scroll={{ x: 1400 }}
                       pagination={{
                         current: historyPage,
                         pageSize: historyPageSize,

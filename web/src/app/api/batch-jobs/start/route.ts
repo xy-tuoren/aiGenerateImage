@@ -26,6 +26,9 @@ export async function POST(req: NextRequest) {
   }
 
   const concurrency = Math.max(1, Number((body as any).concurrency ?? 3) || 3);
+  const actualCountRaw = (body as any).actualCount;
+  const actualCountNum = actualCountRaw === undefined || actualCountRaw === null || actualCountRaw === "" ? undefined : Number(actualCountRaw);
+  const actualCount = typeof actualCountNum === "number" && Number.isFinite(actualCountNum) ? Math.max(0, Math.floor(actualCountNum)) : undefined;
 
   const db = await getMongoDb();
   const configsCol = db.collection<ImageConfigDoc>("image_configs");
@@ -42,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   const totals = configIds.map((id) => {
     const cfg = cfgMap.get(id);
-    const count = Math.max(0, Number(cfg?.count ?? 1) || 0);
+    const count = actualCount !== undefined ? actualCount : Math.max(0, Number(cfg?.count ?? 1) || 0);
     return { id, count };
   });
   const total = totals.reduce((sum, x) => sum + x.count, 0);
@@ -70,12 +73,14 @@ export async function POST(req: NextRequest) {
   }));
   if (jobConfigDocs.length) await jobConfigsCol.insertMany(jobConfigDocs as any[]);
 
+  const countOverrideMap = actualCount !== undefined ? Object.fromEntries(totals.map((x) => [x.id, x.count])) : undefined;
   await startBatchJob({
     jobId: String(jobId),
     configIds,
     concurrency,
+    countOverrideMap,
   });
 
-  return Response.json({ ok: true, jobId: String(jobId) });
+  return Response.json({ ok: true, jobId: String(jobId), total, actualCount });
 }
 

@@ -4,6 +4,80 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms || 0)));
 }
 
+function mimeFromFormat(format: string) {
+  const f = String(format || '').toLowerCase();
+  if (f === 'jpeg' || f === 'jpg') return 'image/jpeg';
+  if (f === 'webp') return 'image/webp';
+  if (f === 'gif') return 'image/gif';
+  if (f === 'tiff' || f === 'tif') return 'image/tiff';
+  if (f === 'avif') return 'image/avif';
+  if (f === 'heif' || f === 'heic') return 'image/heif';
+  return 'image/png';
+}
+
+/**
+ * 将同一张图缩放到目标分辨率的一半高度后，上下各拼接一次（更适合做参考图/预览图）。
+ * 规则：先生成一张 targetWidth x floor(targetHeight/2) 的缩放图，然后上下各贴一次；输出画布为 targetWidth x targetHeight。
+ */
+export async function stitchLongImageToSize(
+  input: string | ArrayBuffer | Buffer,
+  targetWidth: number,
+  targetHeight: number,
+  options?: { background?: string; format?: 'png' | 'jpeg' | 'webp' }
+): Promise<{ data: string; mimeType: string }> {
+  const w = Math.max(1, Math.floor(Number(targetWidth) || 0));
+  const h = Math.max(1, Math.floor(Number(targetHeight) || 0));
+  if (!w || !h) throw new Error('目标宽度/高度不能为空');
+  const inputBuffer = typeof input === 'string' ? Buffer.from(input, 'base64') : Buffer.isBuffer(input) ? input : Buffer.from(input);
+
+  const bg = String(options?.background || '#ffffff');
+  const fmt = (options?.format || 'png') as 'png' | 'jpeg' | 'webp';
+
+  const halfH = Math.floor(h / 2);
+  const bottomH = h - halfH;
+  if (halfH <= 0 || bottomH <= 0) throw new Error(`目标高度过小，无法上下拼接: targetHeight=${h}`);
+
+  // 目标：先把原图缩放成一张 tile（w x halfH），复制一份，再上下拼接
+  // - 用 cover 填充整个区域，避免两边留白
+  // - 奇数高度导致 bottomH 比 halfH 多 1px 时，用背景补齐 1px，而不是重新 resize
+  const tileBuffer = await sharp(inputBuffer)
+    .resize(w, halfH, { fit: 'cover', position: 'center' })
+    .flatten({ background: bg })
+    .toBuffer();
+
+  const bottomHalfBuffer = bottomH === halfH
+    ? tileBuffer
+    : await sharp({
+      create: {
+        width: w,
+        height: bottomH,
+        channels: 3,
+        background: bg,
+      },
+    }).composite([
+      { input: tileBuffer, left: 0, top: 0 },
+    ]).toBuffer();
+
+  let out = sharp({
+    create: {
+      width: w,
+      height: h,
+      channels: 3,
+      background: bg,
+    },
+  }).composite([
+    { input: tileBuffer, left: 0, top: 0 },
+    { input: bottomHalfBuffer, left: 0, top: halfH },
+  ]);
+
+  if (fmt === 'jpeg') out = out.jpeg({ quality: 95 });
+  else if (fmt === 'webp') out = out.webp({ quality: 95 });
+  else out = out.png();
+
+  const finalBuffer = await out.toBuffer();
+  return { data: finalBuffer.toString('base64'), mimeType: mimeFromFormat(fmt) };
+}
+
 
 /**
  * 根据 aspectRatio 裁剪图片到固定尺寸

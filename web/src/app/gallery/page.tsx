@@ -51,6 +51,8 @@ export default function GalleryPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [creatingCut, setCreatingCut] = useState(false);
+  const batchLastJobIdKey = "batch:lastJobId";
+  const batchRecentJobIdsKey = "batch:recentJobIds";
 
   const fetchImages = async () => {
     setLoading(true);
@@ -178,7 +180,7 @@ export default function GalleryPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           images: picked.map((p) => ({ url: p.url, appName: p.appName, lang: p.lang })),
-          concurrency: 16,
+          concurrency: 64,
         }),
       });
       const data = await res.json();
@@ -187,10 +189,20 @@ export default function GalleryPage() {
         return;
       }
       const jobId = String(data.jobId || "");
+      try {
+        if (jobId) {
+          localStorage.setItem(batchLastJobIdKey, jobId);
+          const raw = localStorage.getItem(batchRecentJobIdsKey);
+          const arr = raw ? JSON.parse(raw) : [];
+          const prev = Array.isArray(arr) ? arr.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
+          const next = [jobId, ...prev.filter((x: string) => x !== jobId)].slice(0, 50);
+          localStorage.setItem(batchRecentJobIdsKey, JSON.stringify(next));
+        }
+      } catch {
+      }
       messageApi.success(`已创建裁图任务: ${jobId}`);
       setSelectedKeys([]);
       setSelectMode(false);
-      if (jobId) window.open(`/batch?jobId=${encodeURIComponent(jobId)}`, "_blank");
     } catch (e) {
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {

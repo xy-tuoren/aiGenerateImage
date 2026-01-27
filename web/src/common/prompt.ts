@@ -95,3 +95,9 @@ export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: {
 export function getCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   return `生成一张${getRatioDesc(aspectRatio)}，需要重新调整构图适应新尺寸并且${appName}应用图标更加显眼需要保留背景。`;
 }
+
+export function getCutVerticalCollagePrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
+  return `1、生成一张${getRatioDesc(aspectRatio)}，上下结构且上下都为原图的拼图。
+  2、${prompt}
+  `;
+}

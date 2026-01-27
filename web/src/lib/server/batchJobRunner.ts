@@ -5,7 +5,7 @@ import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { GeminiClient } from "@/lib/server/gemini";
 import * as promptFns from "@/common/prompt";
-import { resizeImageByAspectRatio } from "@/lib/server/utils";
+import { resizeImageByAspectRatio, stitchLongImageToSize } from "@/lib/server/utils";
 
 type ImageConfigDoc = {
   _id: ObjectId;
@@ -82,6 +82,7 @@ type StartJobInput = {
   jobId: string;
   configIds: string[];
   concurrency: number;
+  countOverrideMap?: Record<string, number>;
 };
 
 declare global {
@@ -108,6 +109,19 @@ type CutJobItemDoc = {
   outputUrl?: string;
   outputFilePath?: string;
   outputMimeType?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type CutRecordDoc = {
+  _id?: ObjectId;
+  jobId?: ObjectId;
+  sourceUrl: string;
+  sourceAbsPath: string;
+  appName?: string;
+  lang?: string;
+  status?: "queued" | "running" | "completed" | "failed";
+  outputs?: Record<string, Record<string, any>>;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -245,9 +259,11 @@ function buildPrompt(config: ImageConfigDoc): string {
 }
 
 export async function startBatchJob(input: StartJobInput) {
-  const { jobId, configIds, concurrency } = input;
+  const { jobId, configIds, concurrency, countOverrideMap } = input;
   if (runningMap.has(jobId)) return;
-  const p = runBatchJob({ jobId, configIds, concurrency }).finally(() => {
+  const p = runBatchJob({ jobId, configIds, concurrency, countOverrideMap }).catch((e) => {
+    console.error("runBatchJob failed:", e);
+  }).finally(() => {
     runningMap.delete(jobId);
   });
   runningMap.set(jobId, p);
@@ -256,7 +272,9 @@ export async function startBatchJob(input: StartJobInput) {
 export async function startCutJob(input: { jobId: string; concurrency: number }) {
   const { jobId, concurrency } = input;
   if (cutRunningMap.has(jobId)) return;
-  const p = runCutJob({ jobId, concurrency }).finally(() => {
+  const p = runCutJob({ jobId, concurrency }).catch((e) => {
+    console.error("runCutJob failed:", e);
+  }).finally(() => {
     cutRunningMap.delete(jobId);
   });
   cutRunningMap.set(jobId, p);
@@ -373,7 +391,7 @@ async function runBatchJob(input: StartJobInput) {
         lang: config.lang,
         referenceImages: config.referenceImages,
       });
-      throw err;
+      throw err instanceof Error ? err : new Error(msg);
     }
 
     await jobsCol.updateOne(
@@ -404,7 +422,8 @@ async function runBatchJob(input: StartJobInput) {
   const tasks: Array<{ configId: string; index: number }> = [];
   for (const configId of input.configIds) {
     const cfg = configMap.get(configId);
-    const count = Math.max(0, Number(cfg?.count ?? 1) || 0);
+    const overrideCount = input.countOverrideMap ? input.countOverrideMap[String(configId)] : undefined;
+    const count = Math.max(0, overrideCount !== undefined ? Number(overrideCount) : Number(cfg?.count ?? 1) || 0);
     for (let i = 0; i < count; i += 1) tasks.push({ configId, index: i });
   }
 
@@ -449,6 +468,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
   const jobObjectId = new ObjectId(input.jobId);
   const jobsCol = db.collection<BatchJobDoc>("batch_jobs");
   const cutItemsCol = db.collection<CutJobItemDoc>("cut_job_items");
+  const cutRecordsCol = db.collection<CutRecordDoc>("cut_records");
 
   await jobsCol.updateOne(
     { _id: jobObjectId },
@@ -473,6 +493,27 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
       { _id: task.itemId },
       { $set: { status: "running", updatedAt: now0 } }
     );
+    try {
+      const pathKey = `outputs.${item.ratio}.${item.templateName}`;
+      await cutRecordsCol.updateOne(
+        { sourceAbsPath: String(item.sourceAbsPath) },
+        {
+          $set: {
+            jobId: jobObjectId,
+            sourceUrl: item.sourceUrl,
+            sourceAbsPath: item.sourceAbsPath,
+            appName: item.appName,
+            lang: item.lang,
+            status: "running",
+            updatedAt: now0,
+            [pathKey]: { status: "running", updatedAt: now0 },
+          } as any,
+          $setOnInsert: { createdAt: now0 } as any,
+        } as any,
+        { upsert: true } as any
+      );
+    } catch {
+    }
 
     const baseArgs = {
       appName: item.appName,
@@ -488,6 +529,69 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
     const prompt = typeof fn === "function" ? String((fn as (args: typeof baseArgs) => unknown)(baseArgs)) : "";
 
     try {
+      if (item.templateName === "stitchLongImage1024") {
+        const sourceBuf = await fs.readFile(String(item.sourceAbsPath));
+        const stitched = await stitchLongImageToSize(sourceBuf, 1024, 1024, { background: "#ffffff", format: "jpeg" });
+
+        const ext = extFromMime(stitched.mimeType);
+        const ts = Date.now();
+        const ratioToken = aspectRatioToken("1:1");
+        const baseName = `${ts}-${ratioToken}.${ext}`;
+        const appNameSeg = safePathSegment(item.appName);
+        const langSeg = safePathSegment(item.lang);
+        const relDir = join("cut", appNameSeg, langSeg, String(jobObjectId));
+        const absDir = join(process.cwd(), "public", relDir);
+        await fs.ensureDir(absDir);
+
+        let filename = baseName;
+        let absFile = join(absDir, filename);
+        if (await fs.pathExists(absFile)) {
+          let i = 2;
+          while (true) {
+            filename = `${ts}-${ratioToken}-${i}.${ext}`;
+            absFile = join(absDir, filename);
+            if (!(await fs.pathExists(absFile))) break;
+            i += 1;
+          }
+        }
+        await fs.writeFile(absFile, Buffer.from(stitched.data, "base64"));
+        const url = `/${relDir.replaceAll("\\", "/")}/${filename}`;
+
+        const now = new Date();
+        await cutItemsCol.updateOne(
+          { _id: task.itemId },
+          {
+            $set: {
+              status: "completed",
+              done: 1,
+              updatedAt: now,
+              outputUrl: url,
+              outputFilePath: absFile,
+              outputMimeType: stitched.mimeType,
+            },
+          }
+        );
+        try {
+          const pathKey = `outputs.${item.ratio}.${item.templateName}`;
+          await cutRecordsCol.updateOne(
+            { sourceAbsPath: String(item.sourceAbsPath) },
+            {
+              $set: {
+                jobId: jobObjectId,
+                sourceUrl: item.sourceUrl,
+                sourceAbsPath: item.sourceAbsPath,
+                appName: item.appName,
+                lang: item.lang,
+                updatedAt: now,
+                [pathKey]: { status: "completed", outputUrl: url, outputMimeType: stitched.mimeType, updatedAt: now },
+              } as any,
+              $setOnInsert: { createdAt: now } as any,
+            } as any,
+            { upsert: true } as any
+          );
+        } catch {
+        }
+      } else {
       const refImgs = await readReferenceImagesToBase64([String(item.sourceAbsPath)]);
       const referenceImages = refImgs.length ? refImgs : undefined;
       const client = new GeminiClient({});
@@ -541,6 +645,27 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
           },
         }
       );
+      try {
+        const pathKey = `outputs.${item.ratio}.${item.templateName}`;
+        await cutRecordsCol.updateOne(
+          { sourceAbsPath: String(item.sourceAbsPath) },
+          {
+            $set: {
+              jobId: jobObjectId,
+              sourceUrl: item.sourceUrl,
+              sourceAbsPath: item.sourceAbsPath,
+              appName: item.appName,
+              lang: item.lang,
+              updatedAt: now,
+              [pathKey]: { status: "completed", outputUrl: url, outputMimeType: generated.mimeType, updatedAt: now },
+            } as any,
+            $setOnInsert: { createdAt: now } as any,
+          } as any,
+          { upsert: true } as any
+        );
+      } catch {
+      }
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const now = new Date();
@@ -548,7 +673,28 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
         { _id: task.itemId },
         { $set: { status: "failed", error: msg, updatedAt: now } }
       );
-      throw err;
+      try {
+        const pathKey = `outputs.${item.ratio}.${item.templateName}`;
+        await cutRecordsCol.updateOne(
+          { sourceAbsPath: String(item.sourceAbsPath) },
+          {
+            $set: {
+              jobId: jobObjectId,
+              sourceUrl: item.sourceUrl,
+              sourceAbsPath: item.sourceAbsPath,
+              appName: item.appName,
+              lang: item.lang,
+              status: "failed",
+              updatedAt: now,
+              [pathKey]: { status: "failed", error: msg, updatedAt: now },
+            } as any,
+            $setOnInsert: { createdAt: now } as any,
+          } as any,
+          { upsert: true } as any
+        );
+      } catch {
+      }
+      throw err instanceof Error ? err : new Error(msg);
     }
 
     await jobsCol.updateOne(

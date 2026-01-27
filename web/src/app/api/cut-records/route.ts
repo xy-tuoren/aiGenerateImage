@@ -4,23 +4,50 @@ import { getMongoDb } from "@/lib/server/mongodb";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type CutJobItemDoc = {
-  _id?: ObjectId;
-  jobId: ObjectId;
-  sourceUrl: string;
-  appName?: string;
-  lang?: string;
-  ratio: string;
-  templateName: string;
+type CutRecordOutputItem = {
   status: "queued" | "running" | "completed" | "failed";
-  total: number;
-  done: number;
-  error?: string;
   outputUrl?: string;
   outputMimeType?: string;
+  error?: string;
+  updatedAt?: Date;
+};
+
+type CutRecordDoc = {
+  _id?: ObjectId;
+  jobId?: ObjectId;
+  sourceUrl: string;
+  sourceAbsPath: string;
+  appName?: string;
+  lang?: string;
+  status?: "queued" | "running" | "completed" | "failed";
+  outputs?: Record<string, Record<string, CutRecordOutputItem>>;
   createdAt: Date;
   updatedAt: Date;
 };
+
+function deriveStatus(outputs: CutRecordDoc["outputs"]): "queued" | "running" | "completed" | "failed" {
+  const o = outputs && typeof outputs === "object" ? outputs : undefined;
+  if (!o) return "queued";
+  let hasQueued = false;
+  let hasRunning = false;
+  let hasCompleted = false;
+  for (const ratioKey of Object.keys(o)) {
+    const byTpl = o[ratioKey];
+    if (!byTpl || typeof byTpl !== "object") continue;
+    for (const tplKey of Object.keys(byTpl)) {
+      const it = byTpl[tplKey];
+      const s = it?.status;
+      if (s === "failed") return "failed";
+      if (s === "running") hasRunning = true;
+      else if (s === "queued") hasQueued = true;
+      else if (s === "completed") hasCompleted = true;
+    }
+  }
+  if (hasRunning) return "running";
+  if (hasQueued) return "queued";
+  if (hasCompleted) return "completed";
+  return "queued";
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -29,7 +56,6 @@ export async function GET(req: Request) {
   const status = (searchParams.get("status") || "").trim();
   const appName = (searchParams.get("appName") || "").trim();
   const lang = (searchParams.get("lang") || "").trim();
-  const ratio = (searchParams.get("ratio") || "").trim();
   const jobId = (searchParams.get("jobId") || "").trim();
 
   const filter: any = {};
@@ -41,30 +67,24 @@ export async function GET(req: Request) {
   }
   if (appName) filter.appName = appName;
   if (lang) filter.lang = lang;
-  if (ratio) filter.ratio = ratio;
   if (jobId) {
     if (!ObjectId.isValid(jobId)) return Response.json({ ok: false, error: "jobId 非法" }, { status: 400 });
     filter.jobId = new ObjectId(jobId);
   }
 
   const db = await getMongoDb();
-  const col = db.collection<CutJobItemDoc>("cut_job_items");
-  const docs = await col.find(filter, { sort: { createdAt: -1 }, limit } as any).toArray();
+  const col = db.collection<CutRecordDoc>("cut_records");
+  const docs = await col.find(filter, { sort: { updatedAt: -1 }, limit } as any).toArray();
 
   const items = docs.map((d: any) => ({
     id: String(d._id),
-    jobId: String(d.jobId),
+    jobId: d.jobId ? String(d.jobId) : undefined,
     sourceUrl: d.sourceUrl,
-    outputUrl: d.outputUrl,
-    outputMimeType: d.outputMimeType,
+    sourceAbsPath: d.sourceAbsPath,
     appName: d.appName,
     lang: d.lang,
-    ratio: d.ratio,
-    templateName: d.templateName,
-    status: d.status,
-    total: d.total,
-    done: d.done,
-    error: d.error,
+    status: d.status || deriveStatus(d.outputs),
+    outputs: d.outputs,
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
   }));
