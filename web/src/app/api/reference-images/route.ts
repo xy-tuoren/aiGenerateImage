@@ -1,17 +1,7 @@
 import { NextResponse } from "next/server";
-import { fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMaterial, fetchPackageIdToAppNamesMap } from "@/lib/server/getReferenceImages";
+import { fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMaterial } from "@/lib/server/getReferenceImages";
 
 export const dynamic = "force-dynamic";
-
-export async function GET() {
-  try {
-    const all = await fetchPackageIdToAppNamesMap();
-    return NextResponse.json({ success: true, total: all.length, data: all });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "未知错误";
-    return NextResponse.json({ success: false, message }, { status: 500 });
-  }
-}
 
 export async function POST(req: Request) {
   try {

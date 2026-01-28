@@ -42,6 +42,8 @@ export default function CropPage() {
   const [previewItems, setPreviewItems] = useState<{ k: string; url: string }[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [activePreviewKey, setActivePreviewKey] = useState<string | null>(null);
+  const [cropPage, setCropPage] = useState(1);
+  const [cropPageSize, setCropPageSize] = useState(10);
 
   const fetchRecords = async () => {
     setRecordsLoading(true);
@@ -355,7 +357,20 @@ export default function CropPage() {
           rowKey="id"
           loading={recordsLoading}
           dataSource={records}
-          pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: ["10", "20", "50", "100"] }}
+          pagination={{
+            current: cropPage,
+            pageSize: cropPageSize,
+            showSizeChanger: true,
+            pageSizeOptions: ["10", "20", "50", "100"],
+            showTotal: (total) => `共 ${total} 条`,
+            onChange: (page, pageSize) => {
+              setCropPage(page);
+              if (pageSize !== cropPageSize) {
+                setCropPageSize(pageSize);
+                setCropPage(1);
+              }
+            },
+          }}
           columns={columns}
           scroll={{ x: "max-content" }}
           rowSelection={{

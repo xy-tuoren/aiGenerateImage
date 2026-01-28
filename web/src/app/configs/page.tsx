@@ -944,14 +944,15 @@ export default function ConfigsPage() {
               showSizeChanger: true,
               pageSizeOptions: ["10", "20", "50", "100"],
               showTotal: (total) => {
-                const pages = Math.max(1, Math.ceil((Number(total) || 0) / (Number(configPageSize) || 20)));
+                const pages = Math.max(1, Math.ceil((Number(total) || 0) / (Number(configPageSize) || 10)));
                 return `共 ${total} 条 / ${pages} 页`;
               },
               onChange: (page, pageSize) => {
-                setConfigPage(page);
                 if (pageSize !== configPageSize) {
                   setConfigPageSize(pageSize);
                   setConfigPage(1);
+                } else {
+                  setConfigPage(page);
                 }
               },
             }}
