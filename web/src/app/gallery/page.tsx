@@ -59,6 +59,8 @@ export default function GalleryPage() {
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ active: boolean; moved: boolean; startX: number; startY: number; curX: number; curY: number }>({ active: false, moved: false, startX: 0, startY: 0, curX: 0, curY: 0 });
   const suppressClickRef = useRef(false);
+  const dragRafRef = useRef<number | null>(null);
+  const dragBoxRef = useRef<{ active: boolean; x: number; y: number; w: number; h: number }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
   const [dragBox, setDragBox] = useState<{ active: boolean; x: number; y: number; w: number; h: number }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
@@ -266,7 +268,12 @@ export default function GalleryPage() {
         st.moved = true;
         suppressClickRef.current = true;
       }
-      setDragBox({ active: true, x: st.startX, y: st.startY, w: dx, h: dy });
+      dragBoxRef.current = { active: true, x: st.startX, y: st.startY, w: dx, h: dy };
+      if (dragRafRef.current) return;
+      dragRafRef.current = window.requestAnimationFrame(() => {
+        dragRafRef.current = null;
+        setDragBox(dragBoxRef.current);
+      });
     };
     const onUp = () => {
       const st = dragStateRef.current;
@@ -275,6 +282,11 @@ export default function GalleryPage() {
       const wrap = gridWrapRef.current;
       const moved = st.moved;
       const sx = st.startX, sy = st.startY, ex = st.curX, ey = st.curY;
+      dragBoxRef.current = { ...dragBoxRef.current, active: false };
+      if (dragRafRef.current) {
+        window.cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
       setDragBox((prev) => ({ ...prev, active: false }));
       if (!wrap) return;
       if (!moved) return;
@@ -299,6 +311,10 @@ export default function GalleryPage() {
     return () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
+      if (dragRafRef.current) {
+        window.cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
     };
   }, [addPicks]);
 
@@ -431,7 +447,7 @@ export default function GalleryPage() {
         >
           <div
             ref={gridWrapRef}
-            style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 12, width: "100%", userSelect: dragBox.active ? "none" : undefined }}
+            style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 12, width: "100%", userSelect: dragBox.active ? "none" : undefined, cursor: dragBox.active ? "crosshair" : undefined }}
             onMouseDown={(e) => {
               if (e.button !== 0) return;
               if (previewOpen) return;
@@ -442,6 +458,7 @@ export default function GalleryPage() {
               const y = e.clientY - rect.top;
               dragStateRef.current = { active: true, moved: false, startX: x, startY: y, curX: x, curY: y };
               suppressClickRef.current = false;
+              dragBoxRef.current = { active: true, x, y, w: 0, h: 0 };
               setDragBox({ active: true, x, y, w: 0, h: 0 });
               e.preventDefault();
               e.stopPropagation();
@@ -455,9 +472,10 @@ export default function GalleryPage() {
                   top: Math.min(dragBox.y, dragBox.y + dragBox.h),
                   width: Math.abs(dragBox.w),
                   height: Math.abs(dragBox.h),
-                  background: "rgba(22,119,255,0.16)",
-                  border: "1px solid rgba(22,119,255,0.65)",
-                  boxShadow: "0 0 0 1px rgba(255,255,255,0.7) inset",
+                  background: "rgba(0,160,255,0.22)",
+                  border: "2px solid rgba(0,160,255,0.95)",
+                  boxShadow: "0 0 0 2px rgba(255,255,255,0.65) inset, 0 8px 20px rgba(0,160,255,0.25)",
+                  outline: "1px dashed rgba(0,0,0,0.25)",
                   borderRadius: 6,
                   pointerEvents: "none",
                   zIndex: 10,

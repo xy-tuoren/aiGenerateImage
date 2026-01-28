@@ -38,6 +38,13 @@ export default function ConfigsPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ConfigItem[]>([]);
+  const [savingCellMap, setSavingCellMap] = useState<Record<string, boolean>>({});
+  const [tableEditMode, setTableEditMode] = useState(false);
+  const [editModeBaseMap, setEditModeBaseMap] = useState<Record<string, ConfigItem>>({});
+  const [draftMap, setDraftMap] = useState<Record<string, Partial<ConfigItem>>>({});
+  const [savingEditMode, setSavingEditMode] = useState(false);
+  const [editingCell, setEditingCell] = useState<{ id: string; field: "appName" | "lang" | "batchFun" | "promptTmpFunName" | "aspectRatio" | "count" | "prompt" } | null>(null);
+  const [editingDraft, setEditingDraft] = useState<string | number | null>("");
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deletingBatch, setDeletingBatch] = useState(false);
@@ -153,26 +160,495 @@ export default function ConfigsPage() {
     }
   }, [editingId, fetchList, messageApi, selectedRowKeys]);
 
+  const buildPutPayload = useCallback((row: ConfigItem) => {
+    return {
+      prompt: row.prompt,
+      count: row.count ?? undefined,
+      appName: row.appName || undefined,
+      lang: row.lang || undefined,
+      batchFun: row.batchFun || undefined,
+      promptTmpFunName: row.promptTmpFunName || undefined,
+      referenceImages: Array.isArray(row.referenceImages) && row.referenceImages.length ? row.referenceImages : undefined,
+      nextPromptFun: Array.isArray(row.nextPromptFun) && row.nextPromptFun.length ? row.nextPromptFun : undefined,
+      responseModalities: Array.isArray(row.responseModalities) && row.responseModalities.length ? row.responseModalities : undefined,
+      generationConfig: row.generationConfig && typeof row.generationConfig === "object" ? row.generationConfig : undefined,
+      imageConfig: row.imageConfig && typeof row.imageConfig === "object" ? row.imageConfig : undefined,
+      extra: row.extra && typeof row.extra === "object" ? row.extra : undefined,
+    };
+  }, []);
+
+  const saveInlineRow = useCallback(async (nextRow: ConfigItem, prevRow: ConfigItem, savingKey: string, opts?: { silentSuccess?: boolean }) => {
+    setSavingCellMap((m) => ({ ...m, [savingKey]: true }));
+    setItems((prev) => prev.map((it) => (it.id === nextRow.id ? nextRow : it)));
+    try {
+      const res = await fetch(`/api/configs/${nextRow.id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(buildPutPayload(nextRow)),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        setItems((prev) => prev.map((it) => (it.id === prevRow.id ? prevRow : it)));
+        messageApi.error(data?.error || "更新失败");
+        return;
+      }
+      if (data?.item) {
+        setItems((prev) => prev.map((it) => (it.id === nextRow.id ? data.item : it)));
+      }
+      if (!opts?.silentSuccess) messageApi.success("已保存");
+    } catch (e) {
+      setItems((prev) => prev.map((it) => (it.id === prevRow.id ? prevRow : it)));
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSavingCellMap((m) => {
+        const next = { ...m };
+        delete next[savingKey];
+        return next;
+      });
+    }
+  }, [buildPutPayload, messageApi]);
+
+  const promptTmpFunNameOptions = useMemo(() => {
+    return Object.keys(promptFns)
+      .filter((k) => typeof (promptFns as any)[k] === "function")
+      .sort()
+      .map((k) => ({ label: k, value: k }));
+  }, []);
+
+  const startEditCell = useCallback((row: ConfigItem, field: "appName" | "lang" | "batchFun" | "promptTmpFunName" | "aspectRatio" | "count" | "prompt") => {
+    if (!tableEditMode) return;
+    if (!row?.id) return;
+    const savingKey = `${row.id}:${field}`;
+    if (savingCellMap[savingKey]) return;
+    setEditingCell({ id: row.id, field });
+    if (field === "aspectRatio") {
+      setEditingDraft(String(row.imageConfig?.aspectRatio || ""));
+      return;
+    }
+    if (field === "count") {
+      setEditingDraft(typeof row.count === "number" ? row.count : "");
+      return;
+    }
+    setEditingDraft(String((row as any)[field] || ""));
+  }, [savingCellMap, tableEditMode]);
+
+  const cancelEditCell = useCallback(() => {
+    setEditingCell(null);
+    setEditingDraft("");
+  }, []);
+
+  const commitEditCell = useCallback(async (row: ConfigItem, overrideDraft?: string | number | null) => {
+    if (!editingCell || editingCell.id !== row.id) return;
+    const field = editingCell.field;
+    const savingKey = `${row.id}:${field}`;
+    if (savingCellMap[savingKey]) return;
+    const draftVal = overrideDraft !== undefined ? overrideDraft : editingDraft;
+
+    if (field === "count") {
+      const raw = typeof draftVal === "number" ? String(draftVal) : String(draftVal || "").trim();
+      const num = raw === "" ? undefined : Number(raw);
+      if (raw !== "" && !(typeof num === "number" && Number.isFinite(num) && num >= 0)) {
+        messageApi.error("count 必须是大于等于 0 的数字");
+        return;
+      }
+      const nextVal = raw === "" ? undefined : num;
+      if ((row.count ?? undefined) === nextVal) {
+        cancelEditCell();
+        return;
+      }
+      setDraftMap((m) => ({ ...m, [row.id]: { ...(m[row.id] || {}), count: nextVal } }));
+      setItems((prev) => prev.map((it) => (it.id === row.id ? { ...it, count: nextVal } : it)));
+      cancelEditCell();
+      return;
+    }
+
+    if (field === "aspectRatio") {
+      const nextVal = String(draftVal || "").trim();
+      if (String(row.imageConfig?.aspectRatio || "") === nextVal) {
+        cancelEditCell();
+        return;
+      }
+      const nextImageConfig = { ...(row.imageConfig && typeof row.imageConfig === "object" ? row.imageConfig : {}), aspectRatio: nextVal };
+      setDraftMap((m) => ({ ...m, [row.id]: { ...(m[row.id] || {}), imageConfig: nextImageConfig } }));
+      setItems((prev) => prev.map((it) => (it.id === row.id ? { ...it, imageConfig: nextImageConfig } : it)));
+      cancelEditCell();
+      return;
+    }
+
+    const nextVal = field === "prompt" ? String(draftVal || "") : String(draftVal || "").trim();
+    if (String((row as any)[field] || "") === nextVal) {
+      cancelEditCell();
+      return;
+    }
+    const patched = { ...row, [field]: nextVal || undefined } as any;
+    setDraftMap((m) => ({ ...m, [row.id]: { ...(m[row.id] || {}), [field]: nextVal || undefined } }));
+    setItems((prev) => prev.map((it) => (it.id === row.id ? patched : it)));
+    cancelEditCell();
+  }, [cancelEditCell, editingCell, editingDraft, messageApi, savingCellMap]);
+
+  const getCellDisplay = useCallback((text: string, saving: boolean) => {
+    const val = String(text || "");
+    const display = val ? val : "（空）";
+    const style: any = tableEditMode ? { padding: "2px 6px", border: "1px dashed #d9d9d9", borderRadius: 4, display: "inline-block", minWidth: 40, background: "#fafafa" } : {};
+    const opacity = saving ? 0.6 : 1;
+    return (
+      <Typography.Text
+        title={val}
+        type={val ? undefined : "secondary"}
+        style={{ cursor: saving ? "not-allowed" : (tableEditMode ? "pointer" : "default"), opacity, ...style }}
+      >
+        {display}
+      </Typography.Text>
+    );
+  }, [tableEditMode]);
+
   const columns: ColumnsType<ConfigItem> = useMemo(
     () => [
-      { title: "appName", dataIndex: "appName", key: "appName", width: 160, ellipsis: true, align: "center" },
-      { title: "lang", dataIndex: "lang", key: "lang", width: 90, ellipsis: true, align: "center" },
-      { title: "batchFun", dataIndex: "batchFun", key: "batchFun", width: 160, ellipsis: true, align: "center" },
-      { title: "promptTmpFunName", dataIndex: "promptTmpFunName", key: "promptTmpFunName", width: 180, ellipsis: true, align: "center" },
-      { title: "aspectRatio", dataIndex: ["imageConfig", "aspectRatio"], key: "aspectRatio", width: 110, ellipsis: true, align: "center" },
-      { title: "count", dataIndex: "count", key: "count", width: 80, align: "center" },
+      {
+        title: "appName",
+        dataIndex: "appName",
+        key: "appName",
+        width: 160,
+        ellipsis: true,
+        align: "center",
+        render: (v, row) => {
+          const field = "appName" as const;
+          const savingKey = `${row.id}:${field}`;
+          const saving = Boolean(savingCellMap[savingKey]);
+          const isEditing = editingCell?.id === row.id && editingCell?.field === field;
+          const text = String(v || "");
+          if (isEditing) {
+            return (
+              <AutoComplete
+                autoFocus
+                options={appNameOptions}
+                allowClear
+                placeholder="请选择或输入 appName"
+                value={String(editingDraft ?? "")}
+                filterOption={(inputValue, option) =>
+                  String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+                }
+                onChange={(val) => setEditingDraft(val)}
+                onSelect={(val) => {
+                  setEditingDraft(val);
+                  void commitEditCell(row, val);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelEditCell();
+                  if (e.key === "Enter") void commitEditCell(row);
+                }}
+                onBlur={() => void commitEditCell(row)}
+                style={{ width: "100%" }}
+              />
+            );
+          }
+          return (
+            <span
+              onClick={() => {
+                if (saving) return;
+                startEditCell(row, field);
+              }}
+            >
+              {getCellDisplay(text, saving)}
+            </span>
+          );
+        },
+      },
+      {
+        title: "lang",
+        dataIndex: "lang",
+        key: "lang",
+        width: 60,
+        ellipsis: true,
+        align: "center",
+        render: (v, row) => {
+          const field = "lang" as const;
+          const savingKey = `${row.id}:${field}`;
+          const saving = Boolean(savingCellMap[savingKey]);
+          const isEditing = editingCell?.id === row.id && editingCell?.field === field;
+          const text = String(v || "");
+          if (isEditing) {
+            return (
+              <AutoComplete
+                autoFocus
+                options={SUPPORTED_LANGUAGES.map((lang) => ({ label: lang, value: lang }))}
+                allowClear
+                placeholder="请选择或输入语言代码"
+                value={String(editingDraft ?? "")}
+                filterOption={(inputValue, option) =>
+                  String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+                }
+                onChange={(val) => setEditingDraft(val)}
+                onSelect={(val) => {
+                  setEditingDraft(val);
+                  void commitEditCell(row, val);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelEditCell();
+                  if (e.key === "Enter") void commitEditCell(row);
+                }}
+                onBlur={() => void commitEditCell(row)}
+                style={{ width: "100%" }}
+              />
+            );
+          }
+          return (
+            <span
+              onClick={() => {
+                if (saving) return;
+                startEditCell(row, field);
+              }}
+            >
+              {getCellDisplay(text, saving)}
+            </span>
+          );
+        },
+      },
+      {
+        title: "batchFun",
+        dataIndex: "batchFun",
+        key: "batchFun",
+        width: 160,
+        ellipsis: true,
+        align: "center",
+        render: (v, row) => {
+          const field = "batchFun" as const;
+          const savingKey = `${row.id}:${field}`;
+          const saving = Boolean(savingCellMap[savingKey]);
+          const isEditing = editingCell?.id === row.id && editingCell?.field === field;
+          const text = String(v || "");
+          if (isEditing) {
+            return (
+              <AutoComplete
+                autoFocus
+                options={BATCH_FUN_OPTIONS}
+                allowClear
+                placeholder="请选择或输入 batchFun"
+                value={String(editingDraft ?? "")}
+                filterOption={(inputValue, option) =>
+                  String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+                }
+                onChange={(val) => setEditingDraft(val)}
+                onSelect={(val) => {
+                  setEditingDraft(val);
+                  void commitEditCell(row, val);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelEditCell();
+                  if (e.key === "Enter") void commitEditCell(row);
+                }}
+                onBlur={() => void commitEditCell(row)}
+                style={{ width: "100%" }}
+              />
+            );
+          }
+          return (
+            <span
+              onClick={() => {
+                if (saving) return;
+                startEditCell(row, field);
+              }}
+            >
+              {getCellDisplay(text, saving)}
+            </span>
+          );
+        },
+      },
+      {
+        title: "promptTmpFunName",
+        dataIndex: "promptTmpFunName",
+        key: "promptTmpFunName",
+        width: 200,
+        ellipsis: true,
+        align: "center",
+        render: (v, row) => {
+          const field = "promptTmpFunName" as const;
+          const savingKey = `${row.id}:${field}`;
+          const saving = Boolean(savingCellMap[savingKey]);
+          const isEditing = editingCell?.id === row.id && editingCell?.field === field;
+          const text = String(v || "");
+          if (isEditing) {
+            return (
+              <AutoComplete
+                autoFocus
+                options={promptTmpFunNameOptions}
+                allowClear
+                placeholder="请选择或输入 prompt 函数"
+                value={String(editingDraft ?? "")}
+                filterOption={(inputValue, option) =>
+                  String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+                }
+                onChange={(val) => setEditingDraft(val)}
+                onSelect={(val) => {
+                  setEditingDraft(val);
+                  void commitEditCell(row, val);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelEditCell();
+                  if (e.key === "Enter") void commitEditCell(row);
+                }}
+                onBlur={() => void commitEditCell(row)}
+                style={{ width: "100%" }}
+              />
+            );
+          }
+          return (
+            <span
+              onClick={() => {
+                if (saving) return;
+                startEditCell(row, field);
+              }}
+            >
+              {getCellDisplay(text, saving)}
+            </span>
+          );
+        },
+      },
+      {
+        title: "aspectRatio",
+        dataIndex: ["imageConfig", "aspectRatio"],
+        key: "aspectRatio",
+        width: 110,
+        ellipsis: true,
+        align: "center",
+        render: (v, row) => {
+          const field = "aspectRatio" as const;
+          const savingKey = `${row.id}:${field}`;
+          const saving = Boolean(savingCellMap[savingKey]);
+          const isEditing = editingCell?.id === row.id && editingCell?.field === field;
+          const text = String(v || "");
+          if (isEditing) {
+            return (
+              <AutoComplete
+                autoFocus
+                options={ASPECT_RATIO_OPTIONS}
+                allowClear
+                placeholder="请选择或输入 aspectRatio"
+                value={String(editingDraft ?? "")}
+                filterOption={(inputValue, option) =>
+                  String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
+                }
+                onChange={(val) => setEditingDraft(val)}
+                onSelect={(val) => {
+                  setEditingDraft(val);
+                  void commitEditCell(row, val);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelEditCell();
+                  if (e.key === "Enter") void commitEditCell(row);
+                }}
+                onBlur={() => void commitEditCell(row)}
+                style={{ width: "100%" }}
+              />
+            );
+          }
+          return (
+            <span
+              onClick={() => {
+                if (saving) return;
+                startEditCell(row, field);
+              }}
+            >
+              {getCellDisplay(text, saving)}
+            </span>
+          );
+        },
+      },
+      {
+        title: "count",
+        dataIndex: "count",
+        key: "count",
+        width: 80,
+        align: "center",
+        render: (v, row) => {
+          const field = "count" as const;
+          const savingKey = `${row.id}:${field}`;
+          const saving = Boolean(savingCellMap[savingKey]);
+          const isEditing = editingCell?.id === row.id && editingCell?.field === field;
+          const text = v === undefined || v === null ? "" : String(v);
+          if (isEditing) {
+            return (
+              <InputNumber
+                autoFocus
+                min={0}
+                style={{ width: "100%" }}
+                value={typeof editingDraft === "number" ? editingDraft : (String(editingDraft || "").trim() === "" ? null : Number(editingDraft))}
+                onChange={(val) => setEditingDraft(val === null ? "" : (val as any))}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelEditCell();
+                  if (e.key === "Enter") void commitEditCell(row);
+                }}
+                onBlur={() => void commitEditCell(row)}
+              />
+            );
+          }
+          return (
+            <span
+              onClick={() => {
+                if (saving) return;
+                startEditCell(row, field);
+              }}
+            >
+              {getCellDisplay(text, saving)}
+            </span>
+          );
+        },
+      },
       {
         title: "prompt",
         dataIndex: "prompt",
         key: "prompt",
         width: 500,
-        ellipsis: true,
         align: "center",
-        render: (v) => (
-          <Typography.Text title={String(v || "")} style={{ cursor: "pointer" }}>
-            {String(v || "")}
-          </Typography.Text>
-        ),
+        onCell: () => ({ style: { whiteSpace: "normal" } }),
+        render: (v, row) => {
+          const field = "prompt" as const;
+          const savingKey = `${row.id}:${field}`;
+          const saving = Boolean(savingCellMap[savingKey]);
+          const isEditing = editingCell?.id === row.id && editingCell?.field === field;
+          const text = String(v || "");
+          if (isEditing) {
+            return (
+              <Input.TextArea
+                autoFocus
+                rows={3}
+                value={String(editingDraft ?? "")}
+                onChange={(e) => setEditingDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelEditCell();
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) void commitEditCell(row);
+                }}
+                onBlur={() => void commitEditCell(row)}
+              />
+            );
+          }
+          return (
+            <Typography.Paragraph
+              title={text}
+              style={{ margin: 0, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}
+              ellipsis={{
+                rows: 2,
+                tooltip: text,
+                expandable: true,
+                symbol: (
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    展开
+                  </span>
+                ),
+              }}
+              onClick={() => {
+                if (saving) return;
+                startEditCell(row, field);
+              }}
+            >
+              {text}
+            </Typography.Paragraph>
+          );
+        },
       },
       {
         title: "操作",
@@ -231,7 +707,7 @@ export default function ConfigsPage() {
         ),
       },
     ],
-    [form, handleCopy, handleDelete],
+    [appNameOptions, cancelEditCell, commitEditCell, editingCell, editingDraft, form, getCellDisplay, handleCopy, handleDelete, promptTmpFunNameOptions, savingCellMap, startEditCell],
   );
 
   const fetchAppNameOptions = async () => {
@@ -245,13 +721,6 @@ export default function ConfigsPage() {
       console.error("获取 appName 选项失败:", e);
     }
   };
-
-  const promptTmpFunNameOptions = useMemo(() => {
-    return Object.keys(promptFns)
-      .filter((k) => typeof (promptFns as any)[k] === "function")
-      .sort()
-      .map((k) => ({ label: k, value: k }));
-  }, []);
 
   useEffect(() => {
     fetchList();
@@ -335,6 +804,68 @@ export default function ConfigsPage() {
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
               新增配置
             </Button>
+            {!tableEditMode ? (
+              <Button
+                icon={<EditOutlined />}
+                disabled={loading || deletingBatch}
+                onClick={() => {
+                  const base: Record<string, ConfigItem> = {};
+                  items.forEach((it) => {
+                    if (it?.id) base[it.id] = it;
+                  });
+                  setEditModeBaseMap(base);
+                  setDraftMap({});
+                  setEditingCell(null);
+                  setEditingDraft("");
+                  setTableEditMode(true);
+                }}
+              >
+                进入编辑模式
+              </Button>
+            ) : (
+              <Button
+                type="primary"
+                loading={savingEditMode}
+                onClick={async () => {
+                  const ids = Object.keys(draftMap || {});
+                  if (!ids.length) {
+                    setTableEditMode(false);
+                    setEditModeBaseMap({});
+                    setDraftMap({});
+                    messageApi.success("未修改，无需保存");
+                    return;
+                  }
+                  setSavingEditMode(true);
+                  try {
+                    const failures: { id: string; error: string }[] = [];
+                    for (const id of ids) {
+                      const baseRow = editModeBaseMap[id];
+                      const currentRow = items.find((it) => it.id === id);
+                      if (!baseRow || !currentRow) continue;
+                      try {
+                        await saveInlineRow(currentRow, baseRow, `${id}:__editmode__`, { silentSuccess: true });
+                      } catch (e) {
+                        failures.push({ id, error: e instanceof Error ? e.message : String(e) });
+                      }
+                    }
+                    if (failures.length) {
+                      messageApi.error(`保存失败 ${failures.length}/${ids.length}：${failures[0]?.id} ${failures[0]?.error || ""}`);
+                      return;
+                    }
+                    messageApi.success(`保存成功：${ids.length} 条`);
+                    setTableEditMode(false);
+                    setEditModeBaseMap({});
+                    setDraftMap({});
+                    setEditingCell(null);
+                    setEditingDraft("");
+                  } finally {
+                    setSavingEditMode(false);
+                  }
+                }}
+              >
+                退出编辑模式并保存
+              </Button>
+            )}
             <Button
               icon={<PictureOutlined />}
               disabled={!selectedRowKeys.length}
