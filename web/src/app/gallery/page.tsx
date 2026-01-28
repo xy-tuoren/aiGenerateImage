@@ -46,10 +46,12 @@ export default function GalleryPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<HistoryItem[]>([]);
+  const [cutUrls, setCutUrls] = useState<string[]>([]);
   const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
   const [appName, setAppName] = useState<string>("");
   const [lang, setLang] = useState<string>("");
   const [aspectRatio, setAspectRatio] = useState<string>("2:1");
+  const [cutFilter, setCutFilter] = useState<"uncut" | "cut" | "all">("uncut");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
@@ -81,6 +83,22 @@ export default function GalleryPage() {
       }
       const arr = Array.isArray(data.items) ? data.items : [];
       setItems(arr);
+      try {
+        const urls = arr.map((x: any) => String(x?.url || "").trim()).filter(Boolean);
+        if (urls.length) {
+          const res2 = await fetch("/api/cut-records/flags", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ urls }),
+          });
+          const data2 = await res2.json().catch(() => null);
+          if (res2.ok && data2?.ok) {
+            const got = Array.isArray(data2.cutUrls) ? data2.cutUrls.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
+            if (got.length) setCutUrls((prev) => Array.from(new Set([...(prev || []), ...got])));
+          }
+        }
+      } catch {
+      }
     } catch (e) {
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {
@@ -162,11 +180,18 @@ export default function GalleryPage() {
 
   const hiddenKeySet = useMemo(() => new Set(hiddenKeys), [hiddenKeys]);
   const selectedKeySet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
+  const cutUrlSet = useMemo(() => new Set(cutUrls), [cutUrls]);
 
   const visibleGridImages: GridImage[] = useMemo(() => {
     if (!hiddenKeys.length) return gridImages;
     return gridImages.filter((img) => !hiddenKeySet.has(img.key));
   }, [gridImages, hiddenKeySet, hiddenKeys.length]);
+
+  const filteredGridImages: GridImage[] = useMemo(() => {
+    if (cutFilter === "all") return visibleGridImages;
+    if (cutFilter === "cut") return visibleGridImages.filter((img) => cutUrlSet.has(img.url));
+    return visibleGridImages.filter((img) => !cutUrlSet.has(img.url));
+  }, [visibleGridImages, cutFilter, cutUrlSet]);
 
   const keyToImg = useMemo(() => {
     const m = new Map<string, GridImage>();
@@ -210,21 +235,21 @@ export default function GalleryPage() {
   useEffect(() => {
     if (!previewOpen) return;
     if (previewIndex < 0) setPreviewIndex(0);
-    else if (previewIndex >= visibleGridImages.length) setPreviewIndex(Math.max(0, visibleGridImages.length - 1));
-  }, [previewOpen, previewIndex, visibleGridImages.length]);
+    else if (previewIndex >= filteredGridImages.length) setPreviewIndex(Math.max(0, filteredGridImages.length - 1));
+  }, [previewOpen, previewIndex, filteredGridImages.length]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!previewOpen) return;
       const k = String(e.key || "").toLowerCase();
       if (k !== "c" && k !== "x") return;
-      const img = visibleGridImages[previewIndex];
+      const img = filteredGridImages[previewIndex];
       if (!img) return;
       e.preventDefault();
       if (k === "c") {
         togglePick(img.key);
         setPreviewIndex((cur) => {
-          const len = visibleGridImages.length;
+          const len = filteredGridImages.length;
           if (!len) return 0;
           return Math.min(cur + 1, len - 1);
         });
@@ -232,7 +257,7 @@ export default function GalleryPage() {
       }
       if (k === "x") {
         const curIdx = previewIndex;
-        const prevLen = visibleGridImages.length;
+        const prevLen = filteredGridImages.length;
         setHiddenKeys((prev) => {
           if (prev.includes(img.key)) return prev;
           return [...prev, img.key];
@@ -249,7 +274,7 @@ export default function GalleryPage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [previewOpen, previewIndex, togglePick, visibleGridImages]);
+  }, [previewOpen, previewIndex, togglePick, filteredGridImages]);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -343,6 +368,7 @@ export default function GalleryPage() {
         messageApi.error(data?.error || "创建裁图任务失败");
         return;
       }
+      setCutUrls((prev) => Array.from(new Set([...(prev || []), ...picked.map((p) => String(p.url || "").trim()).filter(Boolean)])));
       const jobId = String(data.jobId || "");
       try {
         if (jobId) {
@@ -395,13 +421,24 @@ export default function GalleryPage() {
             options={ASPECT_RATIO_OPTIONS}
             onChange={(v) => setAspectRatio(String(v || ""))}
           />
+          <Select
+            style={{ width: 160 }}
+            placeholder="裁剪状态"
+            value={cutFilter}
+            options={[
+              { label: "未裁剪", value: "uncut" },
+              { label: "已裁剪", value: "cut" },
+              { label: "全部", value: "all" },
+            ]}
+            onChange={(v) => setCutFilter((v as any) || "uncut")}
+          />
           <Button icon={<ReloadOutlined />} onClick={fetchImages} loading={loading}>
             刷新
           </Button>
           <Button type="primary" onClick={onCreateCut} loading={creatingCut} disabled={!selectMode || !selectedKeys.length}>
             裁剪所选（生成任务）
           </Button>
-          <Typography.Text type="secondary">{loading ? "加载中..." : `${visibleGridImages.length} 张`}</Typography.Text>
+          <Typography.Text type="secondary">{loading ? "加载中..." : `${filteredGridImages.length} 张`}</Typography.Text>
           {selectMode ? <Typography.Text type="secondary">已选 {selectedKeys.length} 张</Typography.Text> : null}
         </Space>
 
@@ -482,7 +519,7 @@ export default function GalleryPage() {
                 }}
               />
             ) : null}
-            {visibleGridImages.map((img) => (
+            {filteredGridImages.map((img) => (
               <div
                 key={img.key}
                 data-grid-key={img.key}
@@ -496,7 +533,7 @@ export default function GalleryPage() {
                     suppressClickRef.current = false;
                     return;
                   }
-                  const idx = visibleGridImages.findIndex((x) => x.key === img.key);
+                  const idx = filteredGridImages.findIndex((x) => x.key === img.key);
                   if (idx >= 0) {
                     setPreviewIndex(idx);
                     setPreviewOpen(true);
