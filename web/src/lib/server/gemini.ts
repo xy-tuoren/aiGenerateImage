@@ -65,6 +65,31 @@ export class GeminiClient {
       ...(options.generationConfig ? { generationConfig: options.generationConfig } : {}),
     };
 
+    const debugReq = String(process.env.DEBUG_GEMINI_REQUEST || "").toLowerCase();
+    if (debugReq === "1" || debugReq === "true" || debugReq === "yes") {
+      try {
+        const req: any = { model: this.model, ...body };
+        const masked = JSON.parse(
+          JSON.stringify(req, (_k, v) => {
+            if (v && typeof v === "object" && typeof (v as any).inlineData?.data === "string") {
+              const data = (v as any).inlineData.data as string;
+              return {
+                ...v,
+                inlineData: {
+                  ...(v as any).inlineData,
+                  data: `[base64:${data.length}]`,
+                },
+              };
+            }
+            return v;
+          })
+        );
+        console.log("[gemini:request]", masked);
+      } catch (e) {
+        console.log("[gemini:request] dump failed:", e instanceof Error ? e.message : String(e));
+      }
+    }
+
     const data = await this.genAI.models.generateContent({
       model: this.model,
       ...body,

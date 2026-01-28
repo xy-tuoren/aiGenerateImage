@@ -50,13 +50,15 @@ export default function GalleryPage() {
   const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
   const [appName, setAppName] = useState<string>("");
   const [lang, setLang] = useState<string>("");
-  const [aspectRatio, setAspectRatio] = useState<string>("2:1");
+  const [aspectRatio, setAspectRatio] = useState<string>("16:9");
   const [cutFilter, setCutFilter] = useState<"uncut" | "cut" | "all">("uncut");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [selectedPreviewOpen, setSelectedPreviewOpen] = useState(false);
+  const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
   const [creatingCut, setCreatingCut] = useState(false);
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ active: boolean; moved: boolean; startX: number; startY: number; curX: number; curY: number }>({ active: false, moved: false, startX: 0, startY: 0, curX: 0, curY: 0 });
@@ -202,6 +204,7 @@ export default function GalleryPage() {
   const selectedImages = useMemo(() => {
     return selectedKeys.map((k) => keyToImg.get(k)).filter(Boolean) as GridImage[];
   }, [keyToImg, selectedKeys]);
+  const selectedPreviewImages = useMemo(() => selectedImages.slice(0, 80), [selectedImages]);
 
   const togglePick = useCallback((k: string) => {
     setSelectedKeys((prev) => {
@@ -256,6 +259,10 @@ export default function GalleryPage() {
         return;
       }
       if (k === "x") {
+        if (selectedKeySet.has(img.key)) {
+          togglePick(img.key);
+          return;
+        }
         const curIdx = previewIndex;
         const prevLen = filteredGridImages.length;
         setHiddenKeys((prev) => {
@@ -274,7 +281,30 @@ export default function GalleryPage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [previewOpen, previewIndex, togglePick, filteredGridImages]);
+  }, [previewOpen, previewIndex, selectedKeySet, togglePick, filteredGridImages]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!selectedPreviewOpen) return;
+      const k = String(e.key || "").toLowerCase();
+      if (k !== "x") return;
+      const img = selectedPreviewImages[selectedPreviewIndex];
+      if (!img) return;
+      e.preventDefault();
+      togglePick(img.key);
+      const curIdx = selectedPreviewIndex;
+      const prevLen = selectedPreviewImages.length;
+      const nextLen = Math.max(0, (prevLen || 0) - 1);
+      if (!nextLen) {
+        setSelectedPreviewOpen(false);
+        setSelectedPreviewIndex(0);
+      } else {
+        setSelectedPreviewIndex(Math.min(curIdx, nextLen - 1));
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectedPreviewOpen, selectedPreviewIndex, selectedPreviewImages, togglePick]);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -451,10 +481,27 @@ export default function GalleryPage() {
                 清空已选
               </Button>
               <div style={{ flex: "1 1 100%" }} />
-              <Image.PreviewGroup>
+              <Image.PreviewGroup
+                preview={{
+                  open: selectedPreviewOpen,
+                  current: selectedPreviewIndex,
+                  onOpenChange: (open) => {
+                    setSelectedPreviewOpen(Boolean(open));
+                    if (!open) setSelectedPreviewIndex(0);
+                  },
+                  onChange: (cur) => setSelectedPreviewIndex(Number(cur) || 0),
+                }}
+              >
                 <Space wrap size={8}>
-                  {selectedImages.slice(0, 80).map((img) => (
-                    <div key={`sel|${img.key}`} style={{ position: "relative", width: 92, height: 52, borderRadius: 8, overflow: "hidden", border: "1px solid rgba(0,0,0,0.12)", background: "#fff", cursor: "pointer" }}>
+                  {selectedPreviewImages.map((img, i) => (
+                    <div
+                      key={`sel|${img.key}`}
+                      style={{ position: "relative", width: 92, height: 52, borderRadius: 8, overflow: "hidden", border: "1px solid rgba(0,0,0,0.12)", background: "#fff", cursor: "pointer" }}
+                      onClick={() => {
+                        setSelectedPreviewIndex(i);
+                        setSelectedPreviewOpen(true);
+                      }}
+                    >
                       <Image width={92} height={52} style={{ width: 92, height: 52, objectFit: "cover" }} src={img.url} alt={img.url} />
                       <div
                         title="移除"

@@ -53,6 +53,8 @@ export default function ConfigsPage() {
   const [appNameOptions, setAppNameOptions] = useState<{ label: string; value: string }[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [configPage, setConfigPage] = useState(1);
+  const [configPageSize, setConfigPageSize] = useState(10);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -330,7 +332,7 @@ export default function ConfigsPage() {
         title: "appName",
         dataIndex: "appName",
         key: "appName",
-        width: 160,
+        width: 140,
         ellipsis: true,
         align: "center",
         render: (v, row) => {
@@ -380,7 +382,7 @@ export default function ConfigsPage() {
         title: "lang",
         dataIndex: "lang",
         key: "lang",
-        width: 80,
+        width: 70,
         ellipsis: true,
         align: "center",
         render: (v, row) => {
@@ -430,7 +432,7 @@ export default function ConfigsPage() {
         title: "batchFun",
         dataIndex: "batchFun",
         key: "batchFun",
-        width: 160,
+        width: 130,
         ellipsis: true,
         align: "center",
         render: (v, row) => {
@@ -480,7 +482,7 @@ export default function ConfigsPage() {
         title: "promptTmpFunName",
         dataIndex: "promptTmpFunName",
         key: "promptTmpFunName",
-        width: 200,
+        width: 160,
         ellipsis: true,
         align: "center",
         render: (v, row) => {
@@ -530,7 +532,7 @@ export default function ConfigsPage() {
         title: "aspectRatio",
         dataIndex: ["imageConfig", "aspectRatio"],
         key: "aspectRatio",
-        width: 110,
+        width: 90,
         ellipsis: true,
         align: "center",
         render: (v, row) => {
@@ -577,7 +579,7 @@ export default function ConfigsPage() {
         title: "count",
         dataIndex: "count",
         key: "count",
-        width: 80,
+        width: 70,
         align: "center",
         render: (v, row) => {
           const field = "count" as const;
@@ -617,7 +619,7 @@ export default function ConfigsPage() {
         title: "prompt",
         dataIndex: "prompt",
         key: "prompt",
-        width: 500,
+        width: 360,
         align: "center",
         onCell: () => ({ style: { whiteSpace: "normal" } }),
         render: (v, row) => {
@@ -672,61 +674,73 @@ export default function ConfigsPage() {
       {
         title: "操作",
         key: "actions",
-        width: 220,
-        fixed: "right",
+        width: 180,
         align: "center",
         render: (_v, row) => (
-          <Space>
-            <Button
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => {
-                form.resetFields();
-                form.setFieldsValue({
-                  appName: row.appName,
-                  lang: row.lang,
-                  batchFun: row.batchFun,
-                  promptTmpFunName: row.promptTmpFunName,
-                  count: row.count ?? 1,
-                  prompt: row.prompt,
-                  referenceImagesText: Array.isArray(row.referenceImages) ? row.referenceImages.join("\n") : "",
-                  generationConfig_temperature: row.generationConfig?.temperature ?? 1,
-                  imageConfig_imageSize: row.imageConfig?.imageSize ?? "1K",
-                  imageConfig_aspectRatio: row.imageConfig?.aspectRatio ?? "1:1",
-                  responseModalities: Array.isArray(row.responseModalities) ? row.responseModalities : ["IMAGE"],
-                  nextPromptFunText: Array.isArray(row.nextPromptFun) ? row.nextPromptFun.join("\n") : "",
-                  extraJson: row.extra ? (() => {
-                    try {
-                      return JSON.stringify(row.extra);
-                    } catch {
-                      return "";
-                    }
-                  })() : "",
-                });
-                setEditingId(row.id);
-                setOpen(true);
-              }}
-            >
-              编辑
-            </Button>
-            <Button size="small" icon={<CopyOutlined />} onClick={() => handleCopy(row)}>
-              复制
-            </Button>
-            <Popconfirm
-              title="确认删除该配置？"
-              okText="删除"
-              cancelText="取消"
-              onConfirm={() => handleDelete(row.id)}
-            >
-              <Button size="small" danger icon={<DeleteOutlined />}>
-                删除
+          <Space orientation="vertical" size={6}>
+            <Space size={6}>
+              <Button
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => {
+                  form.resetFields();
+                  form.setFieldsValue({
+                    appName: row.appName,
+                    lang: row.lang,
+                    batchFun: row.batchFun,
+                    promptTmpFunName: row.promptTmpFunName,
+                    count: row.count ?? 1,
+                    prompt: row.prompt,
+                    referenceImagesText: Array.isArray(row.referenceImages) ? row.referenceImages.join("\n") : "",
+                    generationConfig_temperature: row.generationConfig?.temperature ?? 1,
+                    imageConfig_imageSize: row.imageConfig?.imageSize ?? "1K",
+                    imageConfig_aspectRatio: row.imageConfig?.aspectRatio ?? "1:1",
+                    responseModalities: Array.isArray(row.responseModalities) ? row.responseModalities : ["IMAGE"],
+                    nextPromptFunText: Array.isArray(row.nextPromptFun) ? row.nextPromptFun.join("\n") : "",
+                    extraJson: row.extra ? (() => {
+                      try {
+                        return JSON.stringify(row.extra);
+                      } catch {
+                        return "";
+                      }
+                    })() : "",
+                  });
+                  setEditingId(row.id);
+                  setOpen(true);
+                }}
+              >
+                编辑
               </Button>
-            </Popconfirm>
+              <Button size="small" icon={<CopyOutlined />} onClick={() => handleCopy(row)}>
+                复制
+              </Button>
+            </Space>
+            <Space size={6}>
+              <Button
+                size="small"
+                icon={<PictureOutlined />}
+                onClick={() => {
+                  router.push(`/batch?configIds=${encodeURIComponent(row.id)}`);
+                }}
+              >
+                生图
+              </Button>
+              <Popconfirm
+                title="确认删除该配置？"
+                okText="删除"
+                cancelText="取消"
+                onConfirm={() => handleDelete(row.id)}
+              >
+                <Button size="small" danger icon={<DeleteOutlined />}>
+                  删除
+                </Button>
+              </Popconfirm>
+            </Space>
           </Space>
         ),
       },
     ],
-    [appNameOptions, cancelEditCell, commitEditCell, editingCell, editingDraft, form, getCellDisplay, handleCopy, handleDelete, promptTmpFunNameOptions, savingCellMap, startEditCell],
+    [appNameOptions, cancelEditCell, commitEditCell, editingCell, editingDraft, form, getCellDisplay, handleCopy, handleDelete, promptTmpFunNameOptions, router, savingCellMap, startEditCell],
   );
 
   const fetchAppNameOptions = async () => {
@@ -751,7 +765,7 @@ export default function ConfigsPage() {
     form.resetFields();
     form.setFieldsValue({
       count: 1,
-      imageConfig_aspectRatio: "2:1",
+      imageConfig_aspectRatio: "16:9",
       imageConfig_imageSize: "1K",
       generationConfig_temperature: 1,
       responseModalities: ["IMAGE"],
@@ -924,8 +938,23 @@ export default function ConfigsPage() {
             columns={columns}
             dataSource={items}
             tableLayout="fixed"
-            scroll={{ x: 1600 }}
-            pagination={{ pageSize: 20 }}
+            pagination={{
+              current: configPage,
+              pageSize: configPageSize,
+              showSizeChanger: true,
+              pageSizeOptions: ["10", "20", "50", "100"],
+              showTotal: (total) => {
+                const pages = Math.max(1, Math.ceil((Number(total) || 0) / (Number(configPageSize) || 20)));
+                return `共 ${total} 条 / ${pages} 页`;
+              },
+              onChange: (page, pageSize) => {
+                setConfigPage(page);
+                if (pageSize !== configPageSize) {
+                  setConfigPageSize(pageSize);
+                  setConfigPage(1);
+                }
+              },
+            }}
             rowSelection={{
               selectedRowKeys,
               onChange: (keys) => setSelectedRowKeys(keys as string[]),

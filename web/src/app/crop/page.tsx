@@ -355,7 +355,7 @@ export default function CropPage() {
           rowKey="id"
           loading={recordsLoading}
           dataSource={records}
-          pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ["10", "20", "50", "100"] }}
+          pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: ["10", "20", "50", "100"] }}
           columns={columns}
           scroll={{ x: "max-content" }}
           rowSelection={{

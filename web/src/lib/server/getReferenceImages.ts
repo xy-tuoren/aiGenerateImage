@@ -45,7 +45,6 @@ type AdCostMonthApiItem = {
   final_urls?: string;
   category?: string;
   cost?: number;
-  ctr?: number;
   [k: string]: unknown;
 };
 
@@ -63,7 +62,6 @@ export type AdCostMonthSimplifiedItem = {
   category: string;
   project: string;
   cost: number;
-  ctr: number;
 };
 
 export async function fetchAdCostMonthAll(params?: {
@@ -140,7 +138,6 @@ export async function fetchAdCostMonthAll(params?: {
         category: typeof item?.category === "string" ? item.category : "",
         project: typeof item?.project === "string" ? item.project : "",
         cost: typeof item?.cost === "number" ? item.cost : 0,
-        ctr: typeof item?.ctr === "number" ? item.ctr : 0,
       });
     }
 
@@ -172,7 +169,7 @@ export async function fetchPackageIdToAppNamesMap(params?: { site?: string[]; ca
     const map: Record<string, string[]> = {};
     for await (const doc of cursor) {
       const package_id = typeof doc?.package_id === "string" ? doc.package_id : "";
-      const app_name = typeof doc?.app_name === "string" ? doc.app_name : "";
+      const app_name = normalizeAppName(typeof doc?.app_name === "string" ? doc.app_name : "");
       if (!package_id || !app_name) continue;
       const arr = map[package_id] || (map[package_id] = []);
       if (!arr.includes(app_name)) arr.push(app_name);
@@ -203,10 +200,20 @@ async function writePackageIdToAppNamesMapCache(cacheDir: string, cacheFile: str
   await fs.writeFile(cacheFile, payload, "utf8");
 }
 
+function normalizeAppName(input: string) {
+  const raw = (input || "").trim();
+  if (!raw) return "";
+  return raw
+    .replace(/[\u2028\u2029\u0085\r\n]+/g, " ")
+    .replace(/[\u202A-\u202E\u2066-\u2069\u200E\u200F]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function safeUrlBasename(input: string) {
-  const base = (input || "").trim();
+  const base = normalizeAppName(input);
   if (!base) return "";
-  return base.replace(/[\\/:*?"<>|\r\n]/g, "_").slice(0, 120);
+  return base.replace(/[\\/:*?"<>|\r\n\u2028\u2029\u0085]/g, "_").slice(0, 120);
 }
 
 function pickExtFromUrlOrContentType(url: string, contentType?: string) {
@@ -250,10 +257,9 @@ function extractLastPathSegmentFromUrl(input: string) {
   }
 }
 
-function formatCostCtrForFilename(cost: number, ctr: number) {
+function formatCostForFilename(cost: number) {
   const costInt = Number.isFinite(cost) ? Math.round(cost) : 0;
-  const ctrFixed = Number.isFinite(ctr) ? ctr.toFixed(2) : "0.00";
-  return { costInt, ctrFixed };
+  return { costInt };
 }
 
 async function readJsonCache<T>(cacheFile: string, maxAgeMs: number) {
@@ -300,7 +306,7 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
     typeof params?.cacheMaxAgeMs === "number" && Number.isFinite(params.cacheMaxAgeMs) && params.cacheMaxAgeMs >= 0 ? params.cacheMaxAgeMs : 24 * 60 * 60 * 1000;
   const forceRefresh = params?.forceRefresh === true;
   const downloadConcurrency =
-    typeof params?.downloadConcurrency === "number" && Number.isFinite(params.downloadConcurrency) && params.downloadConcurrency > 0 ? Math.floor(params.downloadConcurrency) : 100;
+    typeof params?.downloadConcurrency === "number" && Number.isFinite(params.downloadConcurrency) && params.downloadConcurrency > 0 ? Math.floor(params.downloadConcurrency) : 64;
   const downloadTimeoutMs =
     typeof params?.downloadTimeoutMs === "number" && Number.isFinite(params.downloadTimeoutMs) && params.downloadTimeoutMs > 0 ? Math.floor(params.downloadTimeoutMs) : 30_000;
   const progressEveryRaw = typeof params?.progressEvery === "number" && Number.isFinite(params.progressEvery) && params.progressEvery > 0 ? Math.floor(params.progressEvery) : 20;
@@ -337,7 +343,7 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
     const app_names = package_id ? packageIdToAppNamesMap[package_id] || [] : [];
     const item: AdCostMonthWithAppNamesItem = { ...it, package_id, app_names };
     for (const app_name of app_names) {
-      const key = (app_name || "").trim();
+      const key = normalizeAppName(app_name);
       if (!key) continue;
       const bucket = byAppName[key] || (byAppName[key] = { app_name: key, items: [], local_files: [] });
       bucket.items.push(item);
@@ -349,12 +355,12 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
   const publicMaterialDir = path.join(process.cwd(), "public", "material");
   await fs.ensureDir(publicMaterialDir);
 
-  const downloadJobs: Array<{ app_name: string; url: string; cost: number; ctr: number }> = [];
+  const downloadJobs: Array<{ app_name: string; url: string; cost: number }> = [];
   for (const [app_name, bucket] of Object.entries(byAppName)) {
     for (const it of bucket.items) {
       const url = (it?.url || "").trim();
       if (!url) continue;
-      downloadJobs.push({ app_name, url, cost: it.cost, ctr: it.ctr });
+      downloadJobs.push({ app_name, url, cost: it.cost });
     }
   }
 
@@ -374,9 +380,9 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
       const url = job.url;
       const lastSeg = extractLastPathSegmentFromUrl(url);
       const idPart = /^\d+$/.test(lastSeg) ? lastSeg : createHash("sha1").update(url).digest("hex").slice(0, 16);
-      const { costInt, ctrFixed } = formatCostCtrForFilename(job.cost, job.ctr);
+      const { costInt } = formatCostForFilename(job.cost);
       const guessedExt = pickExtFromUrlOrContentType(url);
-      const baseStem = `${idPart}-${costInt}-${ctrFixed}`;
+      const baseStem = `${idPart}-${costInt}`;
       let filename = `${baseStem}${guessedExt}`;
       let absFile = path.join(appDir, filename);
       let relFile = path.posix.join("/material", encodeURIComponent(safeUrlBasename(job.app_name) || "unknown"), filename);
