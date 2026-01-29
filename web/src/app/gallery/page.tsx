@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { Button, Image, Pagination, Select, Space, Typography, message } from "antd";
+import { Button, Image, Select, Space, Typography, message } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
 import { ASPECT_RATIO_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
@@ -119,8 +119,9 @@ export default function GalleryPage() {
   const [creatingCut, setCreatingCut] = useState(false);
   const [downloadingZip, setDownloadingZip] = useState(false);
   const [galleryPage, setGalleryPage] = useState(1);
-  const [galleryPageSize, setGalleryPageSize] = useState(100);
+  const galleryPageSize = 100;
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ active: boolean; moved: boolean; startX: number; startY: number; curX: number; curY: number }>({ active: false, moved: false, startX: 0, startY: 0, curX: 0, curY: 0 });
   const suppressClickRef = useRef(false);
   const dragRafRef = useRef<number | null>(null);
@@ -263,15 +264,27 @@ export default function GalleryPage() {
   }, [visibleGridImages, cutFilter, cutUrlSet, fireplayUploadedUrlSet]);
 
   const paginatedGridImages: GridImage[] = useMemo(() => {
-    const start = (galleryPage - 1) * galleryPageSize;
-    return filteredGridImages.slice(start, start + galleryPageSize);
-  }, [filteredGridImages, galleryPage, galleryPageSize]);
+    return filteredGridImages.slice(0, galleryPage * galleryPageSize);
+  }, [filteredGridImages, galleryPage]);
+
+  const hasMore = (galleryPage * galleryPageSize) < filteredGridImages.length;
 
   useEffect(() => {
-    const total = filteredGridImages.length;
-    const maxPage = total ? Math.ceil(total / galleryPageSize) : 1;
-    if (galleryPage > maxPage) setGalleryPage(maxPage);
-  }, [filteredGridImages.length, galleryPage, galleryPageSize]);
+    setGalleryPage(1);
+  }, [appName, lang, aspectRatio, cutFilter]);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel || !hasMore) return;
+    const ob = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) setGalleryPage((p) => p + 1);
+      },
+      { rootMargin: "200px", threshold: 0 }
+    );
+    ob.observe(sentinel);
+    return () => ob.disconnect();
+  }, [hasMore, paginatedGridImages.length]);
 
   const keyToImg = useMemo(() => {
     const m = new Map<string, GridImage>();
@@ -785,22 +798,18 @@ export default function GalleryPage() {
           </div>
         </Image.PreviewGroup>
         {filteredGridImages.length > 0 ? (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
-            <Pagination
-              current={galleryPage}
-              pageSize={galleryPageSize}
-              total={filteredGridImages.length}
-              showSizeChanger
-              showQuickJumper
-              pageSizeOptions={[50, 100, 200, 500]}
-              showTotal={(total, range) => `${range[0]}-${range[1]} / 共 ${total} 张`}
-              onChange={(page, pageSize) => {
-                setGalleryPage(page);
-                if (pageSize !== galleryPageSize) setGalleryPageSize(pageSize);
-                setPreviewOpen(false);
-              }}
-            />
-          </div>
+          <>
+            <div ref={loadMoreSentinelRef} style={{ height: 1, width: "100%", visibility: "hidden" }} />
+            {hasMore ? (
+              <div style={{ textAlign: "center", padding: "16px 0", color: "rgba(0,0,0,0.45)" }}>
+                已展示 {paginatedGridImages.length} / {filteredGridImages.length} 张，下拉加载更多
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "16px 0", color: "rgba(0,0,0,0.45)" }}>
+                共 {filteredGridImages.length} 张，已全部加载
+              </div>
+            )}
+          </>
         ) : null}
       </Space>
     </AdminShell>
