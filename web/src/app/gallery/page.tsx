@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { Button, Image, Select, Space, Typography, message } from "antd";
+import { Button, Image, Pagination, Select, Space, Typography, message } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
 import { ASPECT_RATIO_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
@@ -47,8 +47,10 @@ function useUploadToFireplay(args: {
   messageApi: any;
   selectedKeys: string[];
   keyToImg: Map<string, GridImage>;
+  onUploadedSourceUrls?: (urls: string[]) => void;
+  onBeforeUpload?: () => void;
 }) {
-  const { messageApi, selectedKeys, keyToImg } = args;
+  const { messageApi, selectedKeys, keyToImg, onUploadedSourceUrls, onBeforeUpload } = args;
   const [uploadingFireplay, setUploadingFireplay] = useState(false);
 
   const onUploadToFireplay = useCallback(async () => {
@@ -61,6 +63,7 @@ function useUploadToFireplay(args: {
       messageApi.error("选中的图片无效");
       return;
     }
+    onBeforeUpload?.();
     setUploadingFireplay(true);
     try {
       const imageUrls = picked.map((x) => String(x.url || "").trim()).filter(Boolean);
@@ -77,6 +80,10 @@ function useUploadToFireplay(args: {
       const successCount = results.filter((x) => x.success).length;
       const failCount = results.length - successCount;
       messageApi.success(`已上传 Fireplay：成功 ${successCount} 张${failCount ? `，失败 ${failCount} 张` : ""}`);
+      const uploadedSourceUrls = Array.isArray(data?.uploadedSourceUrls)
+        ? data.uploadedSourceUrls.map((x: any) => String(x || "").trim()).filter(Boolean)
+        : [];
+      if (uploadedSourceUrls.length) onUploadedSourceUrls?.(uploadedSourceUrls);
     } catch (e: any) {
       const msg =
         e?.response?.data?.error ||
@@ -86,7 +93,7 @@ function useUploadToFireplay(args: {
     } finally {
       setUploadingFireplay(false);
     }
-  }, [keyToImg, messageApi, selectedKeys]);
+  }, [keyToImg, messageApi, onBeforeUpload, onUploadedSourceUrls, selectedKeys]);
 
   return { uploadingFireplay, onUploadToFireplay };
 }
@@ -96,11 +103,12 @@ export default function GalleryPage() {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [cutUrls, setCutUrls] = useState<string[]>([]);
+  const [fireplayUploadedUrls, setFireplayUploadedUrls] = useState<string[]>([]);
   const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
   const [appName, setAppName] = useState<string>("");
   const [lang, setLang] = useState<string>("");
   const [aspectRatio, setAspectRatio] = useState<string>("16:9");
-  const [cutFilter, setCutFilter] = useState<"uncut" | "cut" | "all">("uncut");
+  const [cutFilter, setCutFilter] = useState<"cut" | "uncut">("uncut");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
@@ -109,6 +117,8 @@ export default function GalleryPage() {
   const [selectedPreviewOpen, setSelectedPreviewOpen] = useState(false);
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
   const [creatingCut, setCreatingCut] = useState(false);
+  const [galleryPage, setGalleryPage] = useState(1);
+  const [galleryPageSize, setGalleryPageSize] = useState(100);
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ active: boolean; moved: boolean; startX: number; startY: number; curX: number; curY: number }>({ active: false, moved: false, startX: 0, startY: 0, curX: 0, curY: 0 });
   const suppressClickRef = useRef(false);
@@ -146,6 +156,10 @@ export default function GalleryPage() {
           if (res2.ok && data2?.ok) {
             const got = Array.isArray(data2.cutUrls) ? data2.cutUrls.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
             if (got.length) setCutUrls((prev) => Array.from(new Set([...(prev || []), ...got])));
+            const got2 = Array.isArray(data2.fireplayUploadedUrls)
+              ? data2.fireplayUploadedUrls.map((x: any) => String(x || "").trim()).filter(Boolean)
+              : [];
+            if (got2.length) setFireplayUploadedUrls((prev) => Array.from(new Set([...(prev || []), ...got2])));
           }
         }
       } catch {
@@ -195,6 +209,7 @@ export default function GalleryPage() {
         const ar = getAspect(it);
         if (ar !== aspectRatio) continue;
       }
+      const recId = it.id ? String(it.id) : "";
       const jobId = String(it.jobId || "");
       const configId = String(it.configId || "");
       const sourceConfigId = it.sourceConfigId ? String(it.sourceConfigId) : "";
@@ -207,7 +222,7 @@ export default function GalleryPage() {
       const g = groupMap.get(gk) || { latestAt: 0, imgs: [] };
       g.latestAt = Math.max(g.latestAt, Number.isFinite(t) ? t : 0);
       g.imgs.push({
-        key: `${gk}|${configId}|${index}|${createdAt || ""}|${it.url}`,
+        key: `${recId || `${gk}|${configId}|${index}|${createdAt || ""}`}|${it.url}`,
         url: String(it.url),
         jobId,
         configId: groupConfigId,
@@ -232,6 +247,7 @@ export default function GalleryPage() {
   const hiddenKeySet = useMemo(() => new Set(hiddenKeys), [hiddenKeys]);
   const selectedKeySet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
   const cutUrlSet = useMemo(() => new Set(cutUrls), [cutUrls]);
+  const fireplayUploadedUrlSet = useMemo(() => new Set(fireplayUploadedUrls), [fireplayUploadedUrls]);
 
   const visibleGridImages: GridImage[] = useMemo(() => {
     if (!hiddenKeys.length) return gridImages;
@@ -239,10 +255,22 @@ export default function GalleryPage() {
   }, [gridImages, hiddenKeySet, hiddenKeys.length]);
 
   const filteredGridImages: GridImage[] = useMemo(() => {
-    if (cutFilter === "all") return visibleGridImages;
-    if (cutFilter === "cut") return visibleGridImages.filter((img) => cutUrlSet.has(img.url));
-    return visibleGridImages.filter((img) => !cutUrlSet.has(img.url));
-  }, [visibleGridImages, cutFilter, cutUrlSet]);
+    let arr = visibleGridImages;
+    arr = arr.filter((img) => !fireplayUploadedUrlSet.has(img.url));
+    arr = arr.filter((img) => (cutFilter === "cut" ? cutUrlSet.has(img.url) : !cutUrlSet.has(img.url)));
+    return arr;
+  }, [visibleGridImages, cutFilter, cutUrlSet, fireplayUploadedUrlSet]);
+
+  const paginatedGridImages: GridImage[] = useMemo(() => {
+    const start = (galleryPage - 1) * galleryPageSize;
+    return filteredGridImages.slice(start, start + galleryPageSize);
+  }, [filteredGridImages, galleryPage, galleryPageSize]);
+
+  useEffect(() => {
+    const total = filteredGridImages.length;
+    const maxPage = total ? Math.ceil(total / galleryPageSize) : 1;
+    if (galleryPage > maxPage) setGalleryPage(maxPage);
+  }, [filteredGridImages.length, galleryPage, galleryPageSize]);
 
   const keyToImg = useMemo(() => {
     const m = new Map<string, GridImage>();
@@ -250,7 +278,18 @@ export default function GalleryPage() {
     return m;
   }, [gridImages]);
 
-  const { uploadingFireplay, onUploadToFireplay } = useUploadToFireplay({ messageApi, selectedKeys, keyToImg });
+  const { uploadingFireplay, onUploadToFireplay } = useUploadToFireplay({
+    messageApi,
+    selectedKeys,
+    keyToImg,
+    onBeforeUpload: () => {
+      setSelectedKeys([]);
+      setSelectMode(false);
+    },
+    onUploadedSourceUrls: (urls) => {
+      setFireplayUploadedUrls((prev) => Array.from(new Set([...(prev || []), ...(urls || [])])));
+    },
+  });
 
   const selectedImages = useMemo(() => {
     return selectedKeys.map((k) => keyToImg.get(k)).filter(Boolean) as GridImage[];
@@ -288,22 +327,23 @@ export default function GalleryPage() {
 
   useEffect(() => {
     if (!previewOpen) return;
+    const len = paginatedGridImages.length;
     if (previewIndex < 0) setPreviewIndex(0);
-    else if (previewIndex >= filteredGridImages.length) setPreviewIndex(Math.max(0, filteredGridImages.length - 1));
-  }, [previewOpen, previewIndex, filteredGridImages.length]);
+    else if (previewIndex >= len) setPreviewIndex(Math.max(0, len - 1));
+  }, [previewOpen, previewIndex, paginatedGridImages.length]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!previewOpen) return;
       const k = String(e.key || "").toLowerCase();
       if (k !== "c" && k !== "x") return;
-      const img = filteredGridImages[previewIndex];
+      const img = paginatedGridImages[previewIndex];
       if (!img) return;
       e.preventDefault();
       if (k === "c") {
         togglePick(img.key);
         setPreviewIndex((cur) => {
-          const len = filteredGridImages.length;
+          const len = paginatedGridImages.length;
           if (!len) return 0;
           return Math.min(cur + 1, len - 1);
         });
@@ -315,7 +355,7 @@ export default function GalleryPage() {
           return;
         }
         const curIdx = previewIndex;
-        const prevLen = filteredGridImages.length;
+        const prevLen = paginatedGridImages.length;
         setHiddenKeys((prev) => {
           if (prev.includes(img.key)) return prev;
           return [...prev, img.key];
@@ -332,7 +372,7 @@ export default function GalleryPage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [previewOpen, previewIndex, selectedKeySet, togglePick, filteredGridImages]);
+  }, [previewOpen, previewIndex, selectedKeySet, togglePick, paginatedGridImages]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -503,15 +543,15 @@ export default function GalleryPage() {
             onChange={(v) => setAspectRatio(String(v || ""))}
           />
           <Select
-            style={{ width: 160 }}
-            placeholder="裁剪状态"
+            style={{ width: 280 }}
+            placeholder="筛选"
             value={cutFilter}
             options={[
-              { label: "未裁剪", value: "uncut" },
               { label: "已裁剪", value: "cut" },
-              { label: "全部", value: "all" },
+              { label: "未裁剪", value: "uncut" },
             ]}
-            onChange={(v) => setCutFilter((v as any) || "uncut")}
+            onChange={(v) => setCutFilter((String(v || "") as any) || "uncut")}
+            menuItemSelectedIcon={null as any}
           />
           <Button icon={<ReloadOutlined />} onClick={fetchImages} loading={loading}>
             刷新
@@ -526,7 +566,7 @@ export default function GalleryPage() {
           >
             上传 Fireplay
           </Button>
-          <Typography.Text type="secondary">{loading ? "加载中..." : `${filteredGridImages.length} 张`}</Typography.Text>
+          <Typography.Text type="secondary">{loading ? "加载中..." : `共 ${filteredGridImages.length} 张`}</Typography.Text>
           {selectMode ? <Typography.Text type="secondary">已选 {selectedKeys.length} 张</Typography.Text> : null}
         </Space>
 
@@ -624,7 +664,7 @@ export default function GalleryPage() {
                 }}
               />
             ) : null}
-            {filteredGridImages.map((img) => (
+            {paginatedGridImages.map((img, idx) => (
               <div
                 key={img.key}
                 data-grid-key={img.key}
@@ -638,11 +678,8 @@ export default function GalleryPage() {
                     suppressClickRef.current = false;
                     return;
                   }
-                  const idx = filteredGridImages.findIndex((x) => x.key === img.key);
-                  if (idx >= 0) {
-                    setPreviewIndex(idx);
-                    setPreviewOpen(true);
-                  }
+                  setPreviewIndex(idx);
+                  setPreviewOpen(true);
                 }}
               >
                 <Image
@@ -682,6 +719,24 @@ export default function GalleryPage() {
             ))}
           </div>
         </Image.PreviewGroup>
+        {filteredGridImages.length > 0 ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 16, flexWrap: "wrap" }}>
+            <Pagination
+              current={galleryPage}
+              pageSize={galleryPageSize}
+              total={filteredGridImages.length}
+              showSizeChanger
+              showQuickJumper
+              pageSizeOptions={[50, 100, 200, 500]}
+              showTotal={(total, range) => `${range[0]}-${range[1]} / 共 ${total} 张`}
+              onChange={(page, pageSize) => {
+                setGalleryPage(page);
+                if (pageSize !== galleryPageSize) setGalleryPageSize(pageSize);
+                setPreviewOpen(false);
+              }}
+            />
+          </div>
+        ) : null}
       </Space>
     </AdminShell>
   );

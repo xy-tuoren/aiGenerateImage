@@ -44,4 +44,5 @@ next-env.d.ts
 /public/generated
 /public/cut
 /public/reference-images
+/public/material
 /.cache

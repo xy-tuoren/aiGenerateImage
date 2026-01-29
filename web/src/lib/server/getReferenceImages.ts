@@ -328,29 +328,40 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
     .digest("hex");
   const cacheFile = path.join(cacheDir, `adCostMonth.byAppName.${cacheKey}.json`);
 
+  let byAppName: AdCostMonthByAppNameCache | null = null;
   if (!forceRefresh) {
     const cached = await readJsonCache<AdCostMonthByAppNameCache>(cacheFile, cacheMaxAgeMs);
-    if (cached) return cached;
+    if (cached) byAppName = cached;
   }
 
-  const all = await fetchAdCostMonthAll(params);
-  const sites = Array.from(new Set(all.map((x) => (x?.project || "").trim()).filter(Boolean)));
-  const packageIdToAppNamesMap = await fetchPackageIdToAppNamesMap({ site: sites });
+  if (!byAppName) {
+    const all = await fetchAdCostMonthAll(params);
+    const sites = Array.from(new Set(all.map((x) => (x?.project || "").trim()).filter(Boolean)));
+    const packageIdToAppNamesMap = await fetchPackageIdToAppNamesMap({ site: sites });
 
-  const byAppName: AdCostMonthByAppNameCache = {};
-  for (const it of all) {
-    const package_id = extractPackageIdFromFinalUrls(it.final_urls);
-    const app_names = package_id ? packageIdToAppNamesMap[package_id] || [] : [];
-    const item: AdCostMonthWithAppNamesItem = { ...it, package_id, app_names };
-    for (const app_name of app_names) {
-      const key = normalizeAppName(app_name);
-      if (!key) continue;
-      const bucket = byAppName[key] || (byAppName[key] = { app_name: key, items: [], local_files: [] });
-      bucket.items.push(item);
+    byAppName = {};
+    for (const it of all) {
+      const package_id = extractPackageIdFromFinalUrls(it.final_urls);
+      const app_names = package_id ? packageIdToAppNamesMap[package_id] || [] : [];
+      const item: AdCostMonthWithAppNamesItem = { ...it, package_id, app_names };
+      for (const app_name of app_names) {
+        const key = normalizeAppName(app_name);
+        if (!key) continue;
+        const bucket = byAppName[key] || (byAppName[key] = { app_name: key, items: [], local_files: [] });
+        bucket.items.push(item);
+      }
     }
+
+    await writeJsonCache(cacheDir, cacheFile, byAppName);
   }
 
-  await writeJsonCache(cacheDir, cacheFile, byAppName);
+  // 兼容旧缓存：避免 local_files 缺失导致下载流程报错
+  for (const [k, bucket] of Object.entries(byAppName)) {
+    if (!bucket || typeof bucket !== "object") continue;
+    if (bucket.app_name !== k) bucket.app_name = k;
+    if (!Array.isArray(bucket.items)) bucket.items = [];
+    if (!Array.isArray(bucket.local_files)) bucket.local_files = [];
+  }
 
   const publicMaterialDir = path.join(process.cwd(), "public", "material");
   await fs.ensureDir(publicMaterialDir);
@@ -372,10 +383,35 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
   const startedAt = Date.now();
   console.log(`[reference-images] 开始下载: total=${totalJobs} concurrency=${downloadConcurrency}`);
 
+  // 避免“刷新后 cost 变化导致文件名变化”而重复下载同一张图：按 url 派生的 idPart 做去重
+  const appDirIdPartToFilenameCache = new Map<string, Map<string, string>>();
+  const getIdPartToFilenameMap = async (appDir: string) => {
+    const cached = appDirIdPartToFilenameCache.get(appDir);
+    if (cached) return cached;
+    const map = new Map<string, string>();
+    try {
+      const names = await fs.readdir(appDir);
+      for (const name of names) {
+        const base = String(name || "").trim();
+        if (!base) continue;
+        const dashIdx = base.indexOf("-");
+        if (dashIdx <= 0) continue;
+        const idPart = base.slice(0, dashIdx).trim();
+        if (!idPart) continue;
+        if (!map.has(idPart)) map.set(idPart, base);
+      }
+    } catch {
+      // ignore
+    }
+    appDirIdPartToFilenameCache.set(appDir, map);
+    return map;
+  };
+
   await asyncLib.eachLimit(downloadJobs, downloadConcurrency, async (job) => {
     let outcome: "success" | "skipped" | "failed" = "failed";
     try {
-      const appDir = path.join(publicMaterialDir, safeUrlBasename(job.app_name) || "unknown");
+      const safeAppName = safeUrlBasename(job.app_name) || "unknown";
+      const appDir = path.join(publicMaterialDir, safeAppName);
       await fs.ensureDir(appDir);
       const url = job.url;
       const lastSeg = extractLastPathSegmentFromUrl(url);
@@ -385,13 +421,25 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
       const baseStem = `${idPart}-${costInt}`;
       let filename = `${baseStem}${guessedExt}`;
       let absFile = path.join(appDir, filename);
-      let relFile = path.posix.join("/material", encodeURIComponent(safeUrlBasename(job.app_name) || "unknown"), filename);
+      let relFile = path.posix.join("/material", encodeURIComponent(safeAppName), filename);
+
+      const idPartToFilename = await getIdPartToFilenameMap(appDir);
+      const existingFilenameByIdPart = idPartToFilename.get(idPart);
+      if (existingFilenameByIdPart) {
+        const existingRel = path.posix.join("/material", encodeURIComponent(safeAppName), existingFilenameByIdPart);
+        const bucket = byAppName[job.app_name];
+        if (bucket && !bucket.local_files.includes(existingRel)) bucket.local_files.push(existingRel);
+        outcome = "skipped";
+        console.log(`[reference-images] 已存在(跳过): app=${safeAppName} file=${existingFilenameByIdPart}`);
+        return;
+      }
 
       if (await fs.pathExists(absFile)) {
         const bucket = byAppName[job.app_name];
         if (bucket && !bucket.local_files.includes(relFile)) bucket.local_files.push(relFile);
         outcome = "skipped";
-        console.log(`[reference-images] 已存在(跳过): ${absFile} (${relFile})`);
+        idPartToFilename.set(idPart, filename);
+        console.log(`[reference-images] 已存在(跳过): app=${safeAppName} file=${filename}`);
         return;
       }
 
@@ -410,27 +458,29 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
       if (ext !== guessedExt) {
         filename = `${baseStem}${ext}`;
         absFile = path.join(appDir, filename);
-        relFile = path.posix.join("/material", encodeURIComponent(safeUrlBasename(job.app_name) || "unknown"), filename);
+        relFile = path.posix.join("/material", encodeURIComponent(safeAppName), filename);
       }
       if (await fs.pathExists(absFile)) {
         const bucket = byAppName[job.app_name];
         if (bucket && !bucket.local_files.includes(relFile)) bucket.local_files.push(relFile);
         outcome = "skipped";
-        console.log(`[reference-images] 已存在(跳过): ${absFile} (${relFile})`);
+        idPartToFilename.set(idPart, filename);
+        console.log(`[reference-images] 已存在(跳过): app=${safeAppName} file=${filename}`);
         return;
       }
       let k = 2;
       while (await fs.pathExists(absFile)) {
         filename = `${baseStem}-${k}${ext}`;
         absFile = path.join(appDir, filename);
-        relFile = path.posix.join("/material", encodeURIComponent(safeUrlBasename(job.app_name) || "unknown"), filename);
+        relFile = path.posix.join("/material", encodeURIComponent(safeAppName), filename);
         k += 1;
       }
       await fs.writeFile(absFile, Buffer.from(res.data));
       const bucket = byAppName[job.app_name];
       if (bucket && !bucket.local_files.includes(relFile)) bucket.local_files.push(relFile);
       outcome = "success";
-      console.log(`[reference-images] 已保存: ${absFile} (${relFile})`);
+      idPartToFilename.set(idPart, filename);
+      console.log(`[reference-images] 已保存: app=${safeAppName} file=${filename}`);
     } catch {
       outcome = "failed";
     } finally {

@@ -30,6 +30,8 @@ export default function CropPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [records, setRecords] = useState<CutRecordItem[]>([]);
+  const batchLastJobIdKey = "batch:lastJobId";
+  const batchRecentJobIdsKey = "batch:recentJobIds";
   const outputThumbSize = 88;
   const sourceThumbSize = 160;
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
@@ -37,6 +39,7 @@ export default function CropPage() {
   const [downloadFixedCode, setDownloadFixedCode] = useState<string>("404");
   const [downloadZipName, setDownloadZipName] = useState<string>("");
   const [downloading, setDownloading] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [excludedKeys, setExcludedKeys] = useState<Record<string, true>>({});
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewItems, setPreviewItems] = useState<{ k: string; url: string }[]>([]);
@@ -124,6 +127,87 @@ export default function CropPage() {
     }
   };
 
+  const recordIdToRow = useMemo(() => {
+    const m = new Map<string, CutRecordItem>();
+    for (const r of records) m.set(String(r.id), r);
+    return m;
+  }, [records]);
+
+  const excludedKeysScoped = useMemo(() => {
+    const keys = Object.keys(excludedKeys || {});
+    if (!keys.length) return [];
+    if (!selectedRowKeys.length) return keys;
+    const selectedSet = new Set(selectedRowKeys);
+    return keys.filter((k) => {
+      const id = k.split("|", 1)[0];
+      return id && selectedSet.has(id);
+    });
+  }, [excludedKeys, selectedRowKeys]);
+
+  const regenerateExcluded = async () => {
+    if (!excludedKeysScoped.length) {
+      messageApi.warning(selectedRowKeys.length ? "选中记录中没有置灰的图片" : "当前没有置灰的图片");
+      return;
+    }
+    setRegenerating(true);
+    try {
+      const items: Array<{ sourceUrl: string; ratio: string; templateName: string; appName?: string; lang?: string }> = [];
+      for (const k of excludedKeysScoped) {
+        const [id, ratio, templateName] = k.split("|");
+        if (!id || !ratio || !templateName) continue;
+        const row = recordIdToRow.get(id);
+        if (!row?.sourceUrl) continue;
+        items.push({
+          sourceUrl: String(row.sourceUrl),
+          ratio: String(ratio),
+          templateName: String(templateName),
+          appName: row.appName ? String(row.appName) : undefined,
+          lang: row.lang ? String(row.lang) : undefined,
+        });
+      }
+      if (!items.length) {
+        messageApi.warning("没有可重新生成的图片");
+        return;
+      }
+
+      const res = await fetch("/api/cut-jobs/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items, concurrency: 32 }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error((data as any)?.error || "重新生成失败");
+      }
+
+      try {
+        const jobId = String((data as any)?.jobId || "").trim();
+        if (jobId) {
+          localStorage.setItem(batchLastJobIdKey, jobId);
+          const raw = localStorage.getItem(batchRecentJobIdsKey);
+          const arr = raw ? JSON.parse(raw) : [];
+          const prev = Array.isArray(arr) ? arr.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
+          const next = [jobId, ...prev.filter((x: string) => x !== jobId)].slice(0, 50);
+          localStorage.setItem(batchRecentJobIdsKey, JSON.stringify(next));
+        }
+      } catch {
+      }
+
+      setExcludedKeys((prev) => {
+        const next = { ...(prev || {}) };
+        for (const k of excludedKeysScoped) delete next[k];
+        return next;
+      });
+
+      messageApi.success(`已创建重新生成任务: ${String(data.jobId || "") || "-"}`);
+      fetchRecords();
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const toggleExclude = useCallback((k: string) => {
     setExcludedKeys((prev) => {
       const next = { ...prev };
@@ -208,7 +292,8 @@ export default function CropPage() {
         title: "时间",
         dataIndex: "updatedAt",
         key: "updatedAt",
-        width: 150,
+        width: 120,
+        align: "center",
         render: (v: any, row: CutRecordItem) => {
           const s = (v || row.createdAt) ? String(v || row.createdAt) : "";
           if (!s) return <Typography.Text type="secondary">-</Typography.Text>;
@@ -216,12 +301,13 @@ export default function CropPage() {
           return <Typography.Text>{Number.isNaN(d.getTime()) ? s : d.toLocaleString()}</Typography.Text>;
         },
       },
-      { title: "状态", dataIndex: "status", key: "status", width: 80 },
+      { title: "状态", dataIndex: "status", key: "status", width: 80, align: "center" },
       {
         title: "原图",
         dataIndex: "sourceUrl",
         key: "sourceUrl",
-        width: 190,
+        width: 180,
+        align: "center",
         render: (v: any) => {
           const s = v ? String(v) : "";
           return s ? <Image width={sourceThumbSize} style={{ height: "auto" }} src={s} alt={s} /> : <Typography.Text type="secondary">-</Typography.Text>;
@@ -233,6 +319,7 @@ export default function CropPage() {
       title: ratio,
       key: `ratio:${ratio}`,
       width: 380,
+      align: "center",
       render: (_v: any, row: CutRecordItem) => {
         const byTpl = row.outputs && row.outputs[ratio] ? row.outputs[ratio] : undefined;
         if (!byTpl || typeof byTpl !== "object") return <Typography.Text type="secondary">-</Typography.Text>;
@@ -255,6 +342,7 @@ export default function CropPage() {
               flexWrap: "wrap",
               gap: 6,
               overflow: "hidden",
+              justifyContent: "center",
             }}
           >
             {items
@@ -285,11 +373,36 @@ export default function CropPage() {
     }));
 
     base.push(...ratioCols);
+    base.push(
+      {
+        title: "appName",
+        dataIndex: "appName",
+        key: "appName",
+        width: 100,
+        align: "center",
+        render: (v: any) => {
+          const s = v ? String(v) : "";
+          return s ? <Typography.Text>{s}</Typography.Text> : <Typography.Text type="secondary">-</Typography.Text>;
+        },
+      },
+      {
+        title: "lang",
+        dataIndex: "lang",
+        key: "lang",
+        width: 50,
+        align: "center",
+        render: (v: any) => {
+          const s = v ? String(v) : "";
+          return s ? <Typography.Text>{s}</Typography.Text> : <Typography.Text type="secondary">-</Typography.Text>;
+        },
+      },
+    );
     base.push({
       title: "任务",
       dataIndex: "jobId",
       key: "jobId",
-      width: 200,
+      width: 100,
+      align: "center",
       render: (v: any) => {
         const s = v ? String(v) : "";
         return s ? (
@@ -349,6 +462,14 @@ export default function CropPage() {
             />
             <Button size="small" type="primary" disabled={!selectedRowKeys.length} loading={downloading} onClick={downloadSelected}>
               下载选中({selectedRowKeys.length})
+            </Button>
+            <Button
+              size="small"
+              disabled={!excludedKeysScoped.length}
+              loading={regenerating}
+              onClick={regenerateExcluded}
+            >
+              重新生成({excludedKeysScoped.length})
             </Button>
           </Space>
         </Space>

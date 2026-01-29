@@ -19,6 +19,11 @@ export async function POST(req: Request) {
   const col = db.collection<CutRecordDoc>("cut_records");
   const docs = await col.find({ sourceUrl: { $in: uniq } }, { projection: { sourceUrl: 1 } }).toArray();
   const cutUrls = docs.map((d: any) => String(d.sourceUrl || "")).filter(Boolean);
-  return Response.json({ ok: true, cutUrls });
+
+  const fireplayCol = db.collection<{ sourceUrl: string }>("fireplay_upload_records");
+  const fireplayDocs = await fireplayCol.find({ sourceUrl: { $in: uniq } }, { projection: { sourceUrl: 1 } }).toArray();
+  const fireplayUploadedUrls = fireplayDocs.map((d: any) => String(d.sourceUrl || "")).filter(Boolean);
+
+  return Response.json({ ok: true, cutUrls, fireplayUploadedUrls });
 }
 

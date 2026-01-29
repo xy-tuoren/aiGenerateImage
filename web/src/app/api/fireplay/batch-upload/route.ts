@@ -4,6 +4,7 @@ import fs from "fs-extra";
 import FormData from "form-data";
 import path from "path";
 import { chunkArray, mimeFromExt } from "@/lib/server/utils";
+import { getMongoDb } from "@/lib/server/mongodb";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -64,6 +65,7 @@ export async function POST(req: Request) {
     }
 
     const uploadedUrls: string[] = [];
+    const localUrlsForUploaded: string[] = [];
     const chunks = chunkArray(imageUrls, BATCH_MAX_FILES);
 
     for (let batchIndex = 0; batchIndex < chunks.length; batchIndex++) {
@@ -83,8 +85,13 @@ export async function POST(req: Request) {
       if (!uploadJson?.data?.results) {
         throw new Error(uploadJson?.error || "上传到 Fireplay 失败");
       }
-      for (const r of uploadJson.data.results as Array<{ success: boolean; url?: string }>) {
-        if (r?.success && r.url) uploadedUrls.push(String(r.url));
+      const results = uploadJson.data.results as Array<{ success: boolean; url?: string }>;
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        if (r?.success && r.url) {
+          uploadedUrls.push(String(r.url));
+          localUrlsForUploaded.push(String(urls[i] || "").trim());
+        }
       }
     }
 
@@ -102,7 +109,39 @@ export async function POST(req: Request) {
       throw new Error(batchJson?.error || "写入 Fireplay DB 失败");
     }
 
-    return NextResponse.json({ ok: true, uploadedUrls, data: batchJson.data });
+    const uploadedSourceUrls: string[] = [];
+    try {
+      const results = batchJson.data.results as Array<{ success: boolean }>;
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        if (r?.success) uploadedSourceUrls.push(String(localUrlsForUploaded[i] || "").trim());
+      }
+    } catch {
+    }
+
+    if (uploadedSourceUrls.length) {
+      try {
+        const db = await getMongoDb();
+        const col = db.collection("fireplay_upload_records");
+        const now = new Date();
+        const uniq = Array.from(new Set(uploadedSourceUrls.map((x) => String(x || "").trim()).filter(Boolean)));
+        if (uniq.length) {
+          await col.bulkWrite(
+            uniq.map((sourceUrl) => ({
+              updateOne: {
+                filter: { sourceUrl },
+                update: { $set: { sourceUrl, uploadedAt: now, type, ownerId }, $setOnInsert: { createdAt: now } },
+                upsert: true,
+              },
+            })),
+            { ordered: false } as any
+          );
+        }
+      } catch {
+      }
+    }
+
+    return NextResponse.json({ ok: true, uploadedUrls, uploadedSourceUrls, data: batchJson.data });
   } catch (e) {
     const anyErr: any = e;
     const message =

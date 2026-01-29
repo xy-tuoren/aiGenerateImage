@@ -55,8 +55,11 @@ export async function POST(req: Request) {
 
   const imagesRaw = (body as any).images;
   const images = Array.isArray(imagesRaw) ? imagesRaw : [];
-  if (!images.length) {
-    return Response.json({ ok: false, error: "images 不能为空" }, { status: 400 });
+  const itemsRaw = (body as any).items;
+  const items = Array.isArray(itemsRaw) ? itemsRaw : [];
+  const isRegenerate = items.length > 0;
+  if (!images.length && !items.length) {
+    return Response.json({ ok: false, error: "images / items 不能为空" }, { status: 400 });
   }
 
   const concurrency = Math.max(1, Number((body as any).concurrency ?? 8) || 8);
@@ -69,63 +72,95 @@ export async function POST(req: Request) {
   const now = new Date();
   const itemDocs: Omit<CutJobItemDoc, "_id" | "jobId">[] = [];
 
-  for (const it of images) {
-    const url = String((it as any)?.url || "").trim();
-    if (!url) continue;
-    const appName = (it as any)?.appName ? String((it as any).appName) : undefined;
-    const lang = (it as any)?.lang ? String((it as any).lang) : undefined;
+  if (!isRegenerate) {
+    for (const it of images) {
+      const url = String((it as any)?.url || "").trim();
+      if (!url) continue;
+      const appName = (it as any)?.appName ? String((it as any).appName) : undefined;
+      const lang = (it as any)?.lang ? String((it as any).lang) : undefined;
 
-    const abs = publicUrlToAbsPath(url);
-    const exists = await fs.pathExists(abs);
-    if (!exists) {
-      return Response.json({ ok: false, error: `图片不存在: ${url}` }, { status: 400 });
-    }
+      const abs = publicUrlToAbsPath(url);
+      const exists = await fs.pathExists(abs);
+      if (!exists) {
+        return Response.json({ ok: false, error: `图片不存在: ${url}` }, { status: 400 });
+      }
 
-    for (const ratio of ratios) {
-      for (const templateName of templateNames) {
-        itemDocs.push({
-          sourceUrl: url,
-          sourceAbsPath: abs,
-          appName,
-          lang,
-          ratio,
-          templateName,
-          status: "queued",
-          total: 1,
-          done: 0,
-          createdAt: now,
-          updatedAt: now,
-        });
+      for (const ratio of ratios) {
+        for (const templateName of templateNames) {
+          itemDocs.push({
+            sourceUrl: url,
+            sourceAbsPath: abs,
+            appName,
+            lang,
+            ratio,
+            templateName,
+            status: "queued",
+            total: 1,
+            done: 0,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+        if (ratio === "4:5") {
+          itemDocs.push({
+            sourceUrl: url,
+            sourceAbsPath: abs,
+            appName,
+            lang,
+            ratio,
+            templateName: verticalCollageTemplateName,
+            status: "queued",
+            total: 1,
+            done: 0,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
       }
-      if (ratio === "4:5") {
-        itemDocs.push({
-          sourceUrl: url,
-          sourceAbsPath: abs,
-          appName,
-          lang,
-          ratio,
-          templateName: verticalCollageTemplateName,
-          status: "queued",
-          total: 1,
-          done: 0,
-          createdAt: now,
-          updatedAt: now,
-        });
-      }
+      itemDocs.push({
+        sourceUrl: url,
+        sourceAbsPath: abs,
+        appName,
+        lang,
+        ratio: "1:1",
+        templateName: stitchTemplateName,
+        status: "queued",
+        total: 1,
+        done: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
     }
-    itemDocs.push({
-      sourceUrl: url,
-      sourceAbsPath: abs,
-      appName,
-      lang,
-      ratio: "1:1",
-      templateName: stitchTemplateName,
-      status: "queued",
-      total: 1,
-      done: 0,
-      createdAt: now,
-      updatedAt: now,
-    });
+  } else {
+    for (const it of items) {
+      const url = String((it as any)?.sourceUrl || (it as any)?.url || "").trim();
+      if (!url) continue;
+      const ratio = String((it as any)?.ratio || "").trim();
+      const templateName = String((it as any)?.templateName || "").trim();
+      const appName = (it as any)?.appName ? String((it as any).appName) : undefined;
+      const lang = (it as any)?.lang ? String((it as any).lang) : undefined;
+      if (!ratio || !templateName) continue;
+
+      const abs = publicUrlToAbsPath(url);
+      const exists = await fs.pathExists(abs);
+      if (!exists) {
+        return Response.json({ ok: false, error: `图片不存在: ${url}` }, { status: 400 });
+      }
+
+      itemDocs.push({
+        sourceUrl: url,
+        sourceAbsPath: abs,
+        appName,
+        lang,
+        ratio,
+        templateName,
+        status: "queued",
+        total: 1,
+        done: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
   }
 
   if (!itemDocs.length) {
@@ -150,36 +185,62 @@ export async function POST(req: Request) {
   const insertJob = await jobsCol.insertOne(job as any);
   const jobId = insertJob.insertedId as ObjectId;
 
-  // upsert 聚合记录：同一张原图（按 sourceAbsPath）后续再次裁剪会覆盖 outputs
-  const recordOps: any[] = [];
-  for (const it of images) {
-    const url = String((it as any)?.url || "").trim();
-    if (!url) continue;
-    const appName = (it as any)?.appName ? String((it as any).appName) : undefined;
-    const lang = (it as any)?.lang ? String((it as any).lang) : undefined;
-    const abs = publicUrlToAbsPath(url);
-    const reset: any = {};
-    for (const ratio of ratios) {
-      for (const templateName of templateNames) {
-        reset[`outputs.${ratio}.${templateName}`] = { status: "queued", updatedAt: now };
+  if (!isRegenerate) {
+    // upsert 聚合记录：同一张原图（按 sourceAbsPath）后续再次裁剪会覆盖 outputs
+    const recordOps: any[] = [];
+    for (const it of images) {
+      const url = String((it as any)?.url || "").trim();
+      if (!url) continue;
+      const appName = (it as any)?.appName ? String((it as any).appName) : undefined;
+      const lang = (it as any)?.lang ? String((it as any).lang) : undefined;
+      const abs = publicUrlToAbsPath(url);
+      const reset: any = {};
+      for (const ratio of ratios) {
+        for (const templateName of templateNames) {
+          reset[`outputs.${ratio}.${templateName}`] = { status: "queued", updatedAt: now };
+        }
+        if (ratio === "4:5") {
+          reset[`outputs.${ratio}.${verticalCollageTemplateName}`] = { status: "queued", updatedAt: now };
+        }
       }
-      if (ratio === "4:5") {
-        reset[`outputs.${ratio}.${verticalCollageTemplateName}`] = { status: "queued", updatedAt: now };
+      reset[`outputs.1:1.${stitchTemplateName}`] = { status: "queued", updatedAt: now };
+      recordOps.push({
+        updateOne: {
+          filter: { sourceAbsPath: abs },
+          update: {
+            $set: { jobId, sourceUrl: url, sourceAbsPath: abs, appName, lang, status: "queued", updatedAt: now, ...reset },
+            $setOnInsert: { createdAt: now },
+          },
+          upsert: true,
+        },
+      });
+    }
+    if (recordOps.length) await cutRecordsCol.bulkWrite(recordOps as any[], { ordered: false } as any);
+  } else {
+    const byAbs = new Map<string, { sourceUrl: string; sourceAbsPath: string; appName?: string; lang?: string; set: any }>();
+    for (const it of itemDocs) {
+      const abs = String(it.sourceAbsPath);
+      const got = byAbs.get(abs) || { sourceUrl: it.sourceUrl, sourceAbsPath: abs, appName: it.appName, lang: it.lang, set: {} as any };
+      got.sourceUrl = it.sourceUrl;
+      got.appName = it.appName;
+      got.lang = it.lang;
+      got.set[`outputs.${String(it.ratio)}.${String(it.templateName)}`] = { status: "queued", updatedAt: now };
+      byAbs.set(abs, got);
+    }
+    for (const v of byAbs.values()) {
+      try {
+        await cutRecordsCol.updateOne(
+          { sourceAbsPath: v.sourceAbsPath },
+          {
+            $set: { jobId, sourceUrl: v.sourceUrl, sourceAbsPath: v.sourceAbsPath, appName: v.appName, lang: v.lang, status: "queued", updatedAt: now, ...v.set } as any,
+            $setOnInsert: { createdAt: now } as any,
+          } as any,
+          { upsert: true } as any
+        );
+      } catch {
       }
     }
-    reset[`outputs.1:1.${stitchTemplateName}`] = { status: "queued", updatedAt: now };
-    recordOps.push({
-      updateOne: {
-        filter: { sourceAbsPath: abs },
-        update: {
-          $set: { jobId, sourceUrl: url, sourceAbsPath: abs, appName, lang, status: "queued", updatedAt: now, ...reset },
-          $setOnInsert: { createdAt: now },
-        },
-        upsert: true,
-      },
-    });
   }
-  if (recordOps.length) await cutRecordsCol.bulkWrite(recordOps as any[], { ordered: false } as any);
 
   await cutItemsCol.insertMany(itemDocs.map((x) => ({ ...x, jobId })) as any[]);
 
