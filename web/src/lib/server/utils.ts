@@ -15,6 +15,63 @@ function mimeFromFormat(format: string) {
   return 'image/png';
 }
 
+export function mimeFromExt(ext: string): string {
+  const e = String(ext || "").toLowerCase();
+  if (e === ".png") return "image/png";
+  if (e === ".webp") return "image/webp";
+  if (e === ".gif") return "image/gif";
+  if (e === ".svg") return "image/svg+xml";
+  if (e === ".bmp") return "image/bmp";
+  if (e === ".tif" || e === ".tiff") return "image/tiff";
+  if (e === ".jpg" || e === ".jpeg" || e === ".jfif") return "image/jpeg";
+  return "image/jpeg";
+}
+
+export function extFromMime(mimeType: string): string {
+  const t = (mimeType || "").toLowerCase();
+  if (t.includes("png")) return "png";
+  if (t.includes("webp")) return "webp";
+  if (t.includes("gif")) return "gif";
+  if (t.includes("bmp")) return "bmp";
+  if (t.includes("tiff") || t.includes("tif")) return "tiff";
+  if (t.includes("jpeg") || t.includes("jpg")) return "jpg";
+  return "png";
+}
+
+export function guessMimeFromPath(p: string): string {
+  const lower = (p || "").toLowerCase();
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".bmp")) return "image/bmp";
+  if (lower.endsWith(".tif") || lower.endsWith(".tiff")) return "image/tiff";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".jfif")) return "image/jpeg";
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  return "image/jpeg";
+}
+
+export function isImageFileName(name: string) {
+  const lower = String(name || "").toLowerCase();
+  return (
+    lower.endsWith(".png") ||
+    lower.endsWith(".webp") ||
+    lower.endsWith(".gif") ||
+    lower.endsWith(".jpg") ||
+    lower.endsWith(".jpeg") ||
+    lower.endsWith(".jfif") ||
+    lower.endsWith(".bmp") ||
+    lower.endsWith(".tif") ||
+    lower.endsWith(".tiff") ||
+    lower.endsWith(".svg")
+  );
+}
+
+export function chunkArray<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
 /**
  * 将同一张图缩放到目标分辨率的一半高度后，上下各拼接一次（更适合做参考图/预览图）。
  * 规则：先生成一张 targetWidth x floor(targetHeight/2) 的缩放图，然后上下各贴一次；输出画布为 targetWidth x targetHeight。

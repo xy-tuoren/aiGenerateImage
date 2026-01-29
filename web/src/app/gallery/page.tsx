@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import { Button, Image, Select, Space, Typography, message } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
@@ -41,6 +42,54 @@ type GridImage = {
   appName?: string;
   lang?: string;
 };
+
+function useUploadToFireplay(args: {
+  messageApi: any;
+  selectedKeys: string[];
+  keyToImg: Map<string, GridImage>;
+}) {
+  const { messageApi, selectedKeys, keyToImg } = args;
+  const [uploadingFireplay, setUploadingFireplay] = useState(false);
+
+  const onUploadToFireplay = useCallback(async () => {
+    if (!selectedKeys.length) {
+      messageApi.error("请先选择要上传的图片");
+      return;
+    }
+    const picked = selectedKeys.map((k) => keyToImg.get(k)).filter(Boolean) as GridImage[];
+    if (!picked.length) {
+      messageApi.error("选中的图片无效");
+      return;
+    }
+    setUploadingFireplay(true);
+    try {
+      const imageUrls = picked.map((x) => String(x.url || "").trim()).filter(Boolean);
+      const res = await axios.post("/api/fireplay/batch-upload", {
+        imageUrls,
+        type: "app",
+        ownerId: 0,
+      });
+      const data = res.data;
+      if (!data?.ok || !data?.data?.results) {
+        throw new Error(data?.error || "上传到 Fireplay 失败");
+      }
+      const results = data.data.results as Array<{ success: boolean }>;
+      const successCount = results.filter((x) => x.success).length;
+      const failCount = results.length - successCount;
+      messageApi.success(`已上传 Fireplay：成功 ${successCount} 张${failCount ? `，失败 ${failCount} 张` : ""}`);
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.error ||
+        e?.response?.data?.message ||
+        (e instanceof Error ? e.message : String(e));
+      messageApi.error(msg);
+    } finally {
+      setUploadingFireplay(false);
+    }
+  }, [keyToImg, messageApi, selectedKeys]);
+
+  return { uploadingFireplay, onUploadToFireplay };
+}
 
 export default function GalleryPage() {
   const [messageApi, contextHolder] = message.useMessage();
@@ -200,6 +249,8 @@ export default function GalleryPage() {
     for (const img of gridImages) m.set(img.key, img);
     return m;
   }, [gridImages]);
+
+  const { uploadingFireplay, onUploadToFireplay } = useUploadToFireplay({ messageApi, selectedKeys, keyToImg });
 
   const selectedImages = useMemo(() => {
     return selectedKeys.map((k) => keyToImg.get(k)).filter(Boolean) as GridImage[];
@@ -466,7 +517,14 @@ export default function GalleryPage() {
             刷新
           </Button>
           <Button type="primary" onClick={onCreateCut} loading={creatingCut} disabled={!selectMode || !selectedKeys.length}>
-            裁剪所选（生成任务）
+            裁剪
+          </Button>
+          <Button
+            onClick={onUploadToFireplay}
+            loading={uploadingFireplay}
+            disabled={!selectMode || !selectedKeys.length || loading || creatingCut}
+          >
+            上传 Fireplay
           </Button>
           <Typography.Text type="secondary">{loading ? "加载中..." : `${filteredGridImages.length} 张`}</Typography.Text>
           {selectMode ? <Typography.Text type="secondary">已选 {selectedKeys.length} 张</Typography.Text> : null}

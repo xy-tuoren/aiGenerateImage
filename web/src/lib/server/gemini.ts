@@ -1,5 +1,15 @@
+import { addMetadataToImage } from "@/common/utils";
 import { GoogleGenAI } from "@google/genai";
 import sharp from "sharp";
+
+const GEMINI_IMAGE_METADATA = {
+  custom: {
+    tableName: "original_image",
+    id: "d-404",
+    userId: "d-404",
+    designer: "d-404",
+  },
+};
 
 export interface GeminiConfig {
   apiKey?: string;
@@ -129,9 +139,23 @@ export class GeminiClient {
       }
     }
 
+    const mimeType = imagePart.inlineData.mimeType || "";
+    const rawBase64 = imagePart.inlineData.data || "";
+    const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
+    const imageData = addMetadata
+      ? (() => {
+          const rawBuffer = Buffer.from(rawBase64, "base64");
+          const withMetaBuffer = addMetadataToImage(
+            rawBuffer.buffer.slice(rawBuffer.byteOffset, rawBuffer.byteOffset + rawBuffer.byteLength),
+            mimeType,
+            GEMINI_IMAGE_METADATA
+          );
+          return Buffer.from(withMetaBuffer).toString("base64");
+        })()
+      : rawBase64;
     return {
-      mimeType: imagePart.inlineData.mimeType || "",
-      data: imagePart.inlineData.data || "",
+      mimeType,
+      data: imageData,
     };
   }
 }

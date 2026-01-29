@@ -1,6 +1,7 @@
 import * as fs from "fs-extra";
 import sharp from "sharp";
 import { join } from "path";
+import { isImageFileName } from "@/lib/server/utils";
 
 export type WebImageConfig = {
   prompt: string;
@@ -17,21 +18,6 @@ export type WebImageConfig = {
   promptTmpFunName?: string;
   extra?: Record<string, unknown>;
 };
-
-function isImageFileName(name: string) {
-  const lower = String(name || "").toLowerCase();
-  return (
-    lower.endsWith(".png") ||
-    lower.endsWith(".webp") ||
-    lower.endsWith(".gif") ||
-    lower.endsWith(".jpg") ||
-    lower.endsWith(".jpeg") ||
-    lower.endsWith(".jfif") ||
-    lower.endsWith(".bmp") ||
-    lower.endsWith(".tif") ||
-    lower.endsWith(".tiff")
-  );
-}
 
 async function collectImagesFromDirRecursive(dir: string): Promise<string[]> {
   const root = String(dir || "").trim();
@@ -155,29 +141,23 @@ export async function expandConfigByBatchFun(
     }
 
     const maxGroupSize = Math.min(targetImageCount, allImages.length);
-    const combos: string[][] = [];
-    const buildCombos = (targetSize: number, startIndex: number, picked: string[]) => {
-      if (picked.length === targetSize) {
-        combos.push([...picked]);
-        return;
-      }
-      for (let i = startIndex; i < allImages.length; i += 1) {
-        picked.push(allImages[i]);
-        buildCombos(targetSize, i + 1, picked);
-        picked.pop();
-      }
-    };
-    buildCombos(maxGroupSize, 0, []);
-
-    const pairs: Array<{ templateName: string; images: string[] }> = [];
-    for (const imgCombo of combos) {
-      for (const templateName of templateNames) {
-        pairs.push({ templateName, images: imgCombo });
-      }
-    }
     const desiredCountRaw = options?.countOverride !== undefined ? options.countOverride : Number(config.count ?? 1) || 1;
     const desiredCount = Math.max(0, Math.floor(desiredCountRaw));
     if (desiredCount <= 0) return [];
+
+    const combinationCountCapped = (n: number, k: number, cap: number): number => {
+      const nn = Math.max(0, Math.floor(n));
+      let kk = Math.max(0, Math.floor(k));
+      const c = Math.max(0, Math.floor(cap));
+      if (kk > nn) return 0;
+      kk = Math.min(kk, nn - kk);
+      let res = 1;
+      for (let i = 1; i <= kk; i += 1) {
+        res = (res * (nn - kk + i)) / i;
+        if (!Number.isFinite(res) || res > c) return c + 1;
+      }
+      return Math.floor(res);
+    };
 
     const buildConfigByPair = (pair: { templateName: string; images: string[] }) => {
       const next: WebImageConfig = { ...config };
@@ -188,11 +168,63 @@ export async function expandConfigByBatchFun(
     };
 
     const out: WebImageConfig[] = [];
-    const takeCount = Math.min(desiredCount, pairs.length);
-    for (let i = 0; i < takeCount; i += 1) out.push(buildConfigByPair(pairs[i]));
-    for (let i = takeCount; i < desiredCount; i += 1) {
-      const randomPair = pairs[Math.floor(Math.random() * pairs.length)];
-      out.push(buildConfigByPair(randomPair));
+
+    const n = allImages.length;
+    const k = maxGroupSize;
+    const MAX_ENUM_PAIRS = 50000;
+    const combosCap = Math.max(1, Math.floor(MAX_ENUM_PAIRS / Math.max(1, templateNames.length)));
+    const totalCombos = combinationCountCapped(n, k, combosCap);
+    const totalPairs = totalCombos * templateNames.length;
+
+    // 小规模：枚举全部组合并洗牌后取前 N（保证完全不重复）
+    if (totalPairs > 0 && totalPairs <= MAX_ENUM_PAIRS) {
+      const combos: string[][] = [];
+      const buildCombos = (targetSize: number, startIndex: number, picked: string[]) => {
+        if (picked.length === targetSize) {
+          combos.push([...picked]);
+          return;
+        }
+        for (let i = startIndex; i < allImages.length; i += 1) {
+          picked.push(allImages[i]);
+          buildCombos(targetSize, i + 1, picked);
+          picked.pop();
+        }
+      };
+      buildCombos(k, 0, []);
+
+      const pairs: Array<{ templateName: string; images: string[] }> = [];
+      for (const imgCombo of combos) {
+        for (const templateName of templateNames) {
+          pairs.push({ templateName, images: imgCombo });
+        }
+      }
+
+      for (let i = pairs.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = pairs[i];
+        pairs[i] = pairs[j];
+        pairs[j] = tmp;
+      }
+      const takeCount = Math.min(desiredCount, pairs.length);
+      for (let i = 0; i < takeCount; i += 1) out.push(buildConfigByPair(pairs[i]));
+      return out;
+    }
+
+    // 大规模：不枚举全量组合，按需要随机采样（不重复）
+    const takeCount = Math.min(desiredCount, Number.MAX_SAFE_INTEGER);
+    const seen = new Set<string>();
+    const maxAttempts = Math.max(200, takeCount * 50);
+
+    for (let attempts = 0; attempts < maxAttempts && out.length < takeCount; attempts += 1) {
+      const idxSet = new Set<number>();
+      while (idxSet.size < k) idxSet.add(Math.floor(Math.random() * n));
+      const idxArr = [...idxSet].sort((a, b) => a - b);
+      const images = idxArr.map((idx) => allImages[idx]);
+      const templateName = templateNames[Math.floor(Math.random() * templateNames.length)];
+      const key = `${templateName}|${idxArr.join(",")}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(buildConfigByPair({ templateName, images }));
     }
     return out;
   }

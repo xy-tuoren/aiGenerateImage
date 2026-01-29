@@ -5,7 +5,7 @@ import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { GeminiClient } from "@/lib/server/gemini";
 import * as promptFns from "@/common/prompt";
-import { resizeImageByAspectRatio, stitchLongImageToSize } from "@/lib/server/utils";
+import { extFromMime, guessMimeFromPath, isImageFileName, resizeImageByAspectRatio, stitchLongImageToSize } from "@/lib/server/utils";
 
 type ImageConfigDoc = {
   _id: ObjectId;
@@ -135,25 +135,6 @@ type CutRecordDoc = {
   updatedAt: Date;
 };
 
-function extFromMime(mimeType: string) {
-  const t = (mimeType || "").toLowerCase();
-  if (t.includes("png")) return "png";
-  if (t.includes("webp")) return "webp";
-  if (t.includes("gif")) return "gif";
-  if (t.includes("jpeg") || t.includes("jpg")) return "jpg";
-  return "png";
-}
-
-function guessMimeFromPath(p: string) {
-  const lower = (p || "").toLowerCase();
-  if (lower.endsWith(".png")) return "image/png";
-  if (lower.endsWith(".webp")) return "image/webp";
-  if (lower.endsWith(".gif")) return "image/gif";
-  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-  if (lower.endsWith(".jfif")) return "image/jpeg";
-  return "image/jpeg";
-}
-
 function safePathSegment(input: unknown) {
   const s = String(input ?? "").trim();
   const cleaned = s.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_").replace(/\s+/g, " ").trim();
@@ -175,18 +156,6 @@ function aspectRatioToken(aspectRatio: unknown) {
   const w = Number.isInteger(r.w) ? String(r.w) : String(r.w).replaceAll(".", "_");
   const h = Number.isInteger(r.h) ? String(r.h) : String(r.h).replaceAll(".", "_");
   return `${w}x${h}`;
-}
-
-function isImageFileName(name: string) {
-  const lower = String(name || "").toLowerCase();
-  return (
-    lower.endsWith(".png") ||
-    lower.endsWith(".webp") ||
-    lower.endsWith(".gif") ||
-    lower.endsWith(".jpg") ||
-    lower.endsWith(".jpeg") ||
-    lower.endsWith(".jfif")
-  );
 }
 
 async function collectImagesFromDirRecursive(dir: string): Promise<string[]> {
