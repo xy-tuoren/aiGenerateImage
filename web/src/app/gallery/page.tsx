@@ -117,6 +117,7 @@ export default function GalleryPage() {
   const [selectedPreviewOpen, setSelectedPreviewOpen] = useState(false);
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
   const [creatingCut, setCreatingCut] = useState(false);
+  const [downloadingZip, setDownloadingZip] = useState(false);
   const [galleryPage, setGalleryPage] = useState(1);
   const [galleryPageSize, setGalleryPageSize] = useState(100);
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
@@ -512,6 +513,63 @@ export default function GalleryPage() {
     }
   };
 
+  const onDownloadSelected = useCallback(async () => {
+    if (!selectedKeys.length) {
+      messageApi.error("请先选择要下载的图片");
+      return;
+    }
+    const picked = selectedKeys.map((k) => keyToImg.get(k)).filter(Boolean) as GridImage[];
+    if (!picked.length) {
+      messageApi.error("选中的图片无效");
+      return;
+    }
+    setDownloadingZip(true);
+    messageApi.open({ type: "loading", content: `正在打包下载（${picked.length}）...`, duration: 0, key: "downloadZip" });
+    try {
+      const parseFilename = (cd: string | null) => {
+        const raw = String(cd || "");
+        const mStar = raw.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+        if (mStar?.[1]) {
+          try {
+            return decodeURIComponent(mStar[1].trim().replace(/^"|"$/g, ""));
+          } catch {
+          }
+        }
+        const m = raw.match(/filename\s*=\s*"([^"]+)"/i) || raw.match(/filename\s*=\s*([^;]+)/i);
+        return m?.[1] ? String(m[1]).trim() : "";
+      };
+
+      const filenamePrefix = `gallery-${String(appName || "all").trim() || "all"}-${String(lang || "all").trim() || "all"}-${String(aspectRatio || "").trim() || "ratio"}`;
+      const res = await fetch("/api/cut-records/download", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ urls: picked.map((p) => p.url), folderName: "images", filenamePrefix }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        messageApi.error(data?.error || "下载失败");
+        return;
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get("content-disposition");
+      const filename = parseFilename(cd) || "images.zip";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      messageApi.success("已开始下载");
+    } catch (e: any) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      messageApi.destroy("downloadZip");
+      setDownloadingZip(false);
+    }
+  }, [appName, aspectRatio, keyToImg, lang, messageApi, selectedKeys]);
+
   return (
     <AdminShell defaultSelectedKey="/gallery" headerTitle="图片展示">
       {contextHolder}
@@ -565,6 +623,13 @@ export default function GalleryPage() {
             disabled={!selectMode || !selectedKeys.length || loading || creatingCut}
           >
             上传 Fireplay
+          </Button>
+          <Button
+            onClick={onDownloadSelected}
+            loading={downloadingZip}
+            disabled={!selectMode || !selectedKeys.length || loading || creatingCut || uploadingFireplay}
+          >
+            下载
           </Button>
           <Typography.Text type="secondary">{loading ? "加载中..." : `共 ${filteredGridImages.length} 张`}</Typography.Text>
           {selectMode ? <Typography.Text type="secondary">已选 {selectedKeys.length} 张</Typography.Text> : null}

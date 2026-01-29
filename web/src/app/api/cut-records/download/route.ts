@@ -1,5 +1,5 @@
 import * as fs from "fs-extra";
-import { join, normalize } from "path";
+import { basename, join, normalize } from "path";
 import { ObjectId } from "mongodb";
 import archiver from "archiver";
 import sharp from "sharp";
@@ -39,10 +39,88 @@ async function readAsJpegBuffer(absPath: string): Promise<Buffer> {
   return await sharp(buf).flatten({ background: "#ffffff" }).jpeg({ quality: 95 }).toBuffer();
 }
 
+async function readUrlAsJpegBuffer(u: string): Promise<Buffer | null> {
+  const url = String(u || "").trim();
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const ab = await res.arrayBuffer();
+    const buf = Buffer.from(ab);
+    return await sharp(buf).flatten({ background: "#ffffff" }).jpeg({ quality: 95 }).toBuffer();
+  }
+  const abs = publicUrlToAbsPath(url);
+  if (!(await fs.pathExists(abs))) return null;
+  return await readAsJpegBuffer(abs);
+}
+
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
+  }
+
+  const urlsRaw = (body as any).urls;
+  const urls = Array.isArray(urlsRaw) ? urlsRaw.map((x) => String(x)).filter(Boolean) : [];
+  if (urls.length) {
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    const webStream = Readable.toWeb(archive as any) as unknown as ReadableStream;
+
+    let added = 0;
+    (async () => {
+      const pad4 = (n: number) => String(n).padStart(4, "0");
+      const sanitize = (s: string) => s.replace(/[\\/:*?"<>|\s]+/g, "-").replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+      const folderName = sanitize(String((body as any).folderName ?? "images").trim() || "images");
+      const folder = `${folderName}/`;
+
+      try {
+        for (let i = 0; i < urls.length; i++) {
+          try {
+            const u = String(urls[i] || "").trim();
+            if (!u) continue;
+            const jpg = await readUrlAsJpegBuffer(u);
+            if (!jpg) continue;
+            const rawName = (() => {
+              try {
+                if (/^https?:\/\//i.test(u)) return basename(new URL(u).pathname || "");
+              } catch {
+              }
+              return basename(u);
+            })();
+            const base = sanitize(rawName.replace(/\.[^/.]+$/, "")) || `img-${pad4(i + 1)}`;
+            archive.append(jpg, { name: `${folder}${pad4(i + 1)}-${base}.jpg` });
+            added += 1;
+          } catch {
+          }
+        }
+      } finally {
+        archive.finalize();
+      }
+    })();
+
+    archive.on("error", () => {
+      try {
+        archive.abort();
+      } catch {
+      }
+    });
+
+    const pad2 = (n: number) => String(n).padStart(2, "0");
+    const now = new Date();
+    const datePrefix = `${pad2(now.getMonth() + 1)}${pad2(now.getDate())}`;
+    const sanitize = (s: string) => s.replace(/[\\/:*?"<>|\s]+/g, "-").replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+    const prefix = sanitize(String((body as any).filenamePrefix ?? "gallery").trim() || "gallery");
+    const filenameUtf8 = `${datePrefix}-${prefix}.zip`;
+    const filenameAscii = filenameUtf8.replace(/[^\x20-\x7E]+/g, "_");
+    const filenameStar = encodeURIComponent(filenameUtf8).replace(/['()]/g, escape).replace(/\*/g, "%2A");
+    return new Response(webStream as any, {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="${filenameAscii}"; filename*=UTF-8''${filenameStar}`,
+        "Cache-Control": "no-store",
+        "X-Items-Added": String(added),
+      },
+    });
   }
 
   const idsRaw = (body as any).ids;
@@ -148,7 +226,7 @@ export async function POST(req: Request) {
     }
   })();
 
-  archive.on("error", (err: any) => {
+  archive.on("error", () => {
     try {
       archive.abort();
     } catch {
