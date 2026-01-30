@@ -240,7 +240,12 @@ export default function GalleryPage() {
     groups.sort((a, b) => b.latestAt - a.latestAt || (a.gk < b.gk ? -1 : 1));
     const out: GridImage[] = [];
     for (const g of groups) {
-      g.imgs.sort((a, b) => a.index - b.index || String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
+      g.imgs.sort(
+        (a, b) =>
+          String(a.lang ?? "").localeCompare(String(b.lang ?? "")) ||
+          a.index - b.index ||
+          String(a.createdAt || "").localeCompare(String(b.createdAt || ""))
+      );
       out.push(...g.imgs);
     }
     return out;

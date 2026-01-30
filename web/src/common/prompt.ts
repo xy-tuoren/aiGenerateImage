@@ -99,7 +99,7 @@ export function getCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: {
 }
 
 export function getCutVerticalCollagePrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `1、生成一张${getRatioDesc(aspectRatio)}，上下结构且上下都为原图的拼图。
+  return `1、生成一张${getRatioDesc(aspectRatio)}，上下结构且上下都为原图的组合图。
   2、${prompt}
   `;
 }

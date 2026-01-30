@@ -38,7 +38,7 @@ function toClient(doc: ImageConfigDoc) {
 export async function GET() {
   const db = await getMongoDb();
   const col = db.collection<ImageConfigDoc>("image_configs");
-  const docs = await col.find({}, { sort: { createdAt: -1 } }).limit(500).toArray();
+  const docs = await col.find({}, { sort: { updatedAt: -1, createdAt: -1 } }).limit(500).toArray();
   return Response.json({ ok: true, items: docs.map(toClient) });
 }
 

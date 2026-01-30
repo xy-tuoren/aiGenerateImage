@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Card, Image, Input, InputNumber, Space, Table, Typography, message } from "antd";
+import { Button, Card, Image, Input, InputNumber, Select, Space, Table, Typography, message } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
+import { SUPPORTED_LANGUAGES } from "@/common/constants";
 
 type CutRecordOutputItem = {
   status: string;
@@ -47,6 +48,9 @@ export default function CropPage() {
   const [activePreviewKey, setActivePreviewKey] = useState<string | null>(null);
   const [cropPage, setCropPage] = useState(1);
   const [cropPageSize, setCropPageSize] = useState(10);
+  const [appName, setAppName] = useState<string>("");
+  const [lang, setLang] = useState<string>("");
+  const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
 
   const fetchRecords = async () => {
     setRecordsLoading(true);
@@ -132,6 +136,38 @@ export default function CropPage() {
     for (const r of records) m.set(String(r.id), r);
     return m;
   }, [records]);
+
+  const sortedRecords = useMemo(() => {
+    const byJob = new Map<string, CutRecordItem[]>();
+    for (const r of records) {
+      const j = r.jobId ?? "";
+      if (!byJob.has(j)) byJob.set(j, []);
+      byJob.get(j)!.push(r);
+    }
+    const groups = Array.from(byJob.entries()).map(([jobId, list]) => ({
+      jobId,
+      list,
+      latestAt: Math.max(...list.map((x) => new Date(x.updatedAt || x.createdAt || 0).getTime())),
+    }));
+    groups.sort((a, b) => b.latestAt - a.latestAt);
+    const out: CutRecordItem[] = [];
+    for (const g of groups) {
+      g.list.sort(
+        (a, b) =>
+          String(a.lang ?? "").localeCompare(String(b.lang ?? "")) ||
+          new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+      );
+      out.push(...g.list);
+    }
+    return out;
+  }, [records]);
+
+  const filteredRecords = useMemo(() => {
+    let arr = sortedRecords;
+    if (appName) arr = arr.filter((r) => String(r.appName ?? "").trim() === appName);
+    if (lang) arr = arr.filter((r) => String(r.lang ?? "").trim() === lang);
+    return arr;
+  }, [sortedRecords, appName, lang]);
 
   const excludedKeysScoped = useMemo(() => {
     const keys = Object.keys(excludedKeys || {});
@@ -253,6 +289,24 @@ export default function CropPage() {
     fetchRecords();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/app-names", { method: "GET" });
+        const data = await res.json();
+        if (!res.ok || !data?.ok) return;
+        const arr = Array.isArray(data.items) ? data.items : [];
+        setAppNameOptions(arr.map((x: string) => ({ label: String(x), value: String(x) })));
+      } catch {
+        //
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    setCropPage(1);
+  }, [appName, lang]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -443,23 +497,47 @@ export default function CropPage() {
           }}
         />
         <Space wrap style={{ marginBottom: 8 }} size={8}>
+          <Typography.Text strong>appName：</Typography.Text>
+          <Select
+            size="small"
+            allowClear
+            showSearch
+            placeholder="全部"
+            style={{ width: 180 }}
+            value={appName || undefined}
+            options={appNameOptions}
+            filterOption={(input, option) =>
+              (option?.label ?? "").toString().toLowerCase().includes((input || "").toLowerCase())
+            }
+            onChange={(v) => setAppName(String(v ?? ""))}
+          />
+          <Typography.Text strong>lang：</Typography.Text>
+          <Select
+            size="small"
+            allowClear
+            placeholder="全部"
+            style={{ width: 120 }}
+            value={lang || undefined}
+            options={SUPPORTED_LANGUAGES.map((x) => ({ label: x, value: x }))}
+            onChange={(v) => setLang(String(v ?? ""))}
+          />
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchRecords} loading={recordsLoading}>
             刷新
           </Button>
-          <Typography.Text type="secondary">{recordsLoading ? "加载中..." : `${records.length} 条`}</Typography.Text>
+          <Typography.Text type="secondary">{recordsLoading ? "加载中..." : `${filteredRecords.length} 条`}</Typography.Text>
           <Space size={6}>
             <Typography.Text type="secondary">起始序号</Typography.Text>
             <InputNumber size="small" min={1} value={downloadStartFolderIndex} onChange={(v) => setDownloadStartFolderIndex(Number(v || 1))} />
             <Typography.Text type="secondary">固定码</Typography.Text>
             <Input size="small" style={{ width: 90 }} value={downloadFixedCode} onChange={(e) => setDownloadFixedCode(e.target.value)} />
-            <Typography.Text type="secondary">文件名</Typography.Text>
+            {/* <Typography.Text type="secondary">文件名</Typography.Text>
             <Input
               size="small"
               style={{ width: 220 }}
               placeholder="留空则自动，例如 cut-download-xxx.zip"
               value={downloadZipName}
               onChange={(e) => setDownloadZipName(e.target.value)}
-            />
+            /> */}
             <Button size="small" type="primary" disabled={!selectedRowKeys.length} loading={downloading} onClick={downloadSelected}>
               下载选中({selectedRowKeys.length})
             </Button>
@@ -477,7 +555,7 @@ export default function CropPage() {
           size="small"
           rowKey="id"
           loading={recordsLoading}
-          dataSource={records}
+          dataSource={filteredRecords}
           pagination={{
             current: cropPage,
             pageSize: cropPageSize,
