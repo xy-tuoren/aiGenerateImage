@@ -720,7 +720,7 @@ export default function ConfigsPage() {
                 size="small"
                 icon={<PictureOutlined />}
                 onClick={() => {
-                  router.push(`/batch?configIds=${encodeURIComponent(row.id)}`);
+                  router.push(`/batch?configIds=${encodeURIComponent(row.id)}&autoStart=1`);
                 }}
               >
                 生图

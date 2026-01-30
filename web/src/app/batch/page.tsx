@@ -98,6 +98,7 @@ export default function BatchPage() {
   const [historyPromptExpanded, setHistoryPromptExpanded] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<"live" | "history">("live");
   const [starting, setStarting] = useState(false);
+  const [autoStartRequested, setAutoStartRequested] = useState(false);
   const [refreshingAll, setRefreshingAll] = useState(false);
   const [polling, setPolling] = useState(false);
   const pollTimer = useRef<any>(null);
@@ -326,11 +327,28 @@ export default function BatchPage() {
     const fromQs = (searchParams.get("configIds") || "").trim();
     const qsIds = fromQs ? fromQs.split(",").map((s) => s.trim()).filter(Boolean) : [];
     form.setFieldsValue({ concurrency: 64, configIds: qsIds, actualCount: undefined });
+    const autoStart = (searchParams.get("autoStart") || "").trim();
+    if (autoStart && qsIds.length > 0) setAutoStartRequested(true);
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!autoStartRequested || starting) return;
+    setAutoStartRequested(false);
+    onStart();
+    try {
+      const qs = new URLSearchParams(window.location.search);
+      qs.delete("autoStart");
+      const newUrl = qs.toString() ? `/batch?${qs.toString()}` : "/batch";
+      router.replace(newUrl);
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStartRequested, starting]);
 
   useEffect(() => {
     const onStorage = (ev: StorageEvent) => {

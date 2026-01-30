@@ -337,7 +337,7 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
   if (!byAppName) {
     const all = await fetchAdCostMonthAll(params);
     const sites = Array.from(new Set(all.map((x) => (x?.project || "").trim()).filter(Boolean)));
-    const packageIdToAppNamesMap = await fetchPackageIdToAppNamesMap({ site: sites });
+    const packageIdToAppNamesMap = await fetchPackageIdToAppNamesMap({ site: sites, forceRefresh });
 
     byAppName = {};
     for (const it of all) {
@@ -430,7 +430,6 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
         const bucket = byAppName[job.app_name];
         if (bucket && !bucket.local_files.includes(existingRel)) bucket.local_files.push(existingRel);
         outcome = "skipped";
-        console.log(`[reference-images] 已存在(跳过): app=${safeAppName} file=${existingFilenameByIdPart}`);
         return;
       }
 
@@ -439,7 +438,6 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
         if (bucket && !bucket.local_files.includes(relFile)) bucket.local_files.push(relFile);
         outcome = "skipped";
         idPartToFilename.set(idPart, filename);
-        console.log(`[reference-images] 已存在(跳过): app=${safeAppName} file=${filename}`);
         return;
       }
 
@@ -465,7 +463,6 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
         if (bucket && !bucket.local_files.includes(relFile)) bucket.local_files.push(relFile);
         outcome = "skipped";
         idPartToFilename.set(idPart, filename);
-        console.log(`[reference-images] 已存在(跳过): app=${safeAppName} file=${filename}`);
         return;
       }
       let k = 2;
