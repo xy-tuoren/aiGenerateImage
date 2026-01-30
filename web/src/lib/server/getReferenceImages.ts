@@ -366,13 +366,27 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
   const publicMaterialDir = path.join(process.cwd(), "public", "material");
   await fs.ensureDir(publicMaterialDir);
 
-  const downloadJobs: Array<{ app_name: string; url: string; cost: number }> = [];
+  const rawDownloadJobs: Array<{ app_name: string; url: string; cost: number }> = [];
   for (const [app_name, bucket] of Object.entries(byAppName)) {
     for (const it of bucket.items) {
       const url = (it?.url || "").trim();
       if (!url) continue;
-      downloadJobs.push({ app_name, url, cost: it.cost });
+      rawDownloadJobs.push({ app_name, url, cost: it.cost });
     }
+  }
+
+  // 同一 app 下，只按“前缀数字 idPart”去重，避免并发时重复下载不同 cost 的同一张图
+  const downloadJobs: Array<{ app_name: string; url: string; cost: number }> = [];
+  const seenAppId = new Set<string>();
+  for (const job of rawDownloadJobs) {
+    const safeAppName = safeUrlBasename(job.app_name) || "unknown";
+    const lastSeg = extractLastPathSegmentFromUrl(job.url);
+    const idPart =
+      (lastSeg.match(/^(\d+)/)?.[1] || "").trim() || createHash("sha1").update(job.url).digest("hex").slice(0, 16);
+    const key = `${safeAppName}::${idPart}`;
+    if (seenAppId.has(key)) continue;
+    seenAppId.add(key);
+    downloadJobs.push(job);
   }
 
   const totalJobs = downloadJobs.length;
@@ -394,9 +408,8 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
       for (const name of names) {
         const base = String(name || "").trim();
         if (!base) continue;
-        const dashIdx = base.indexOf("-");
-        if (dashIdx <= 0) continue;
-        const idPart = base.slice(0, dashIdx).trim();
+        const m = base.match(/^(\d+)/);
+        const idPart = (m?.[1] || "").trim();
         if (!idPart) continue;
         if (!map.has(idPart)) map.set(idPart, base);
       }
@@ -406,7 +419,7 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
     appDirIdPartToFilenameCache.set(appDir, map);
     return map;
   };
-
+ 
   await asyncLib.eachLimit(downloadJobs, downloadConcurrency, async (job) => {
     let outcome: "success" | "skipped" | "failed" = "failed";
     try {
@@ -415,7 +428,8 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
       await fs.ensureDir(appDir);
       const url = job.url;
       const lastSeg = extractLastPathSegmentFromUrl(url);
-      const idPart = /^\d+$/.test(lastSeg) ? lastSeg : createHash("sha1").update(url).digest("hex").slice(0, 16);
+      const idPart =
+        (lastSeg.match(/^(\d+)/)?.[1] || "").trim() || createHash("sha1").update(url).digest("hex").slice(0, 16);
       const { costInt } = formatCostForFilename(job.cost);
       const guessedExt = pickExtFromUrlOrContentType(url);
       const baseStem = `${idPart}-${costInt}`;
@@ -441,6 +455,11 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
         return;
       }
 
+      if (guessedExt === ".gif") {
+        outcome = "skipped";
+        return;
+      }
+
       const res = await axios.get<ArrayBuffer>(url, {
         responseType: "arraybuffer",
         timeout: downloadTimeoutMs,
@@ -453,6 +472,10 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
       }
       const contentType = (res.headers?.["content-type"] as string | undefined) || "";
       const ext = pickExtFromUrlOrContentType(url, contentType);
+      if (ext === ".gif") {
+        outcome = "skipped";
+        return;
+      }
       if (ext !== guessedExt) {
         filename = `${baseStem}${ext}`;
         absFile = path.join(appDir, filename);

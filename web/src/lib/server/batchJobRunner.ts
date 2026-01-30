@@ -1,6 +1,6 @@
 import * as asyncLib from "async";
 import * as fs from "fs-extra";
-import { join } from "path";
+import path, { join } from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { GeminiClient } from "@/lib/server/gemini";
@@ -222,6 +222,15 @@ async function readReferenceImagesToBase64(refs: string[]) {
   return expanded.length ? await Promise.all(expanded.map((p) => readReferenceImageToBase64(p))) : [];
 }
 
+const publicDir = join(process.cwd(), "public");
+const materialDir = join(publicDir, "material");
+
+function isUnderMaterial(absPath: string): boolean {
+  const resolved = path.resolve(absPath);
+  const resolvedMaterial = path.resolve(materialDir);
+  return resolved === resolvedMaterial || resolved.startsWith(resolvedMaterial + path.sep);
+}
+
 async function prepareReferenceImages(
   refs: string[],
   opts: { jobId: ObjectId; configId: ObjectId; index: number; appName?: string; lang?: string }
@@ -256,6 +265,14 @@ async function prepareReferenceImages(
     } else {
       buf = await fs.readFile(r);
       mimeType = guessMimeFromPath(r);
+    }
+
+    if (!isHttp && isUnderMaterial(r)) {
+      const relFromPublic = path.relative(publicDir, r);
+      const publicUrl = "/" + relFromPublic.replaceAll("\\", "/");
+      publicUrls.push(publicUrl);
+      forModel.push({ data: buf.toString("base64"), mimeType });
+      continue;
     }
 
     const ext = extFromMime(mimeType);

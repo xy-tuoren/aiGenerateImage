@@ -607,6 +607,7 @@ export default function GalleryPage() {
             style={{ width: 140 }}
             placeholder="lang"
             allowClear
+            showSearch
             value={lang || undefined}
             options={SUPPORTED_LANGUAGES.map((x) => ({ label: x, value: x }))}
             onChange={(v) => setLang(String(v || ""))}

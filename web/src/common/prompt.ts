@@ -27,16 +27,14 @@ export function getAppDefaultPrompt3({ appName, lang, prompt, aspectRatio }: { a
 
 //背景与主体有对比色凸显主体。
 export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改图中元素、背景。好的图片设计有几个原则:
+  return `1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整排版布局采用不同的设计元素、背景。好的图片设计有几个原则:
     - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。
     - 图片的元素层次要分明。
-    - 文字要简明了图中所有文字加起来不能超过3条。
-    - 单条文字长度必须简参照参考图文字长度不能乱改。
+    - 文字要简明了不宜过多。
   2、图片将用于${appName}应用推广，所以参考图无论是什么应用图标一定要是${appName}的图标。
   3、图片内出现的所有可见文字必须 100% 为${lang}语言，禁止出现任何其他语言。
   4、图片中只能出现一张图不能是多张图拼接而成的。
-  5、生成一张${getRatioDesc(aspectRatio)}的图片。
-  6、${prompt}
+  5、${prompt}
   `;
 }
 
@@ -102,4 +100,9 @@ export function getCutVerticalCollagePrompt({ appName, lang, prompt, aspectRatio
   return `1、生成一张${getRatioDesc(aspectRatio)}，上下结构且上下都为原图的组合图。
   2、${prompt}
   `;
+}
+
+
+export function getBackgroundPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
+  return `生成一张新图更换背景其他不变`;
 }

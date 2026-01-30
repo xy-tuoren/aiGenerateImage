@@ -205,17 +205,16 @@ export async function expandConfigByBatchFun(
         pairs[i] = pairs[j];
         pairs[j] = tmp;
       }
-      const takeCount = Math.min(desiredCount, pairs.length);
-      for (let i = 0; i < takeCount; i += 1) out.push(buildConfigByPair(pairs[i]));
+      // 参考图不够组合时用已有组合循环填充，仍达到 desiredCount 条
+      for (let i = 0; i < desiredCount; i += 1) out.push(buildConfigByPair(pairs[i % pairs.length]));
       return out;
     }
 
-    // 大规模：不枚举全量组合，按需要随机采样（不重复）
-    const takeCount = Math.min(desiredCount, Number.MAX_SAFE_INTEGER);
+    // 大规模：不枚举全量组合，按需要随机采样（不重复），不足时用已有组合重复填充
     const seen = new Set<string>();
-    const maxAttempts = Math.max(200, takeCount * 50);
+    const maxAttempts = Math.max(200, desiredCount * 50);
 
-    for (let attempts = 0; attempts < maxAttempts && out.length < takeCount; attempts += 1) {
+    for (let attempts = 0; attempts < maxAttempts && out.length < desiredCount; attempts += 1) {
       const idxSet = new Set<number>();
       while (idxSet.size < k) idxSet.add(Math.floor(Math.random() * n));
       const idxArr = [...idxSet].sort((a, b) => a - b);
@@ -225,6 +224,11 @@ export async function expandConfigByBatchFun(
       if (seen.has(key)) continue;
       seen.add(key);
       out.push(buildConfigByPair({ templateName, images }));
+    }
+    // 参考图不够组合时用已有组合循环填充到 desiredCount
+    while (out.length < desiredCount && out.length > 0) {
+      const pick = out[Math.floor(Math.random() * out.length)];
+      out.push(buildConfigByPair({ templateName: pick.promptTmpFunName ?? "", images: pick.referenceImages ?? [] }));
     }
     return out;
   }

@@ -1,6 +1,39 @@
 import { addMetadataToImage } from "@/common/utils";
 import { GoogleGenAI } from "@google/genai";
+import * as asyncLib from "async";
 import sharp from "sharp";
+
+const GEMINI_CONCURRENCY = 64;
+
+type QueuedGeminiTask = {
+  run: () => Promise<unknown>;
+  resolve: (value: unknown) => void;
+  reject: (reason: Error) => void;
+};
+
+/** 全局限制：同时进行中的 Gemini 生图请求数不超过 GEMINI_CONCURRENCY */
+function withGeminiLimit<T>(fn: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    geminiRequestQueue.push({
+      run: fn as () => Promise<unknown>,
+      resolve: resolve as (value: unknown) => void,
+      reject,
+    });
+  });
+}
+
+const geminiRequestQueue = asyncLib.queue<QueuedGeminiTask>((task, callback) => {
+  task
+    .run()
+    .then((result) => {
+      task.resolve(result);
+      callback();
+    })
+    .catch((err) => {
+      task.reject(err instanceof Error ? err : new Error(String(err)));
+      callback(err instanceof Error ? err : new Error(String(err)));
+    });
+}, GEMINI_CONCURRENCY);
 
 const GEMINI_IMAGE_METADATA = {
   custom: {
@@ -100,63 +133,65 @@ export class GeminiClient {
       }
     }
 
-    const data = await this.genAI.models.generateContent({
-      model: this.model,
-      ...body,
-    });
+    return withGeminiLimit(async () => {
+      const data = await this.genAI.models.generateContent({
+        model: this.model,
+        ...body,
+      });
 
-    const candidates = data.candidates;
-    if (!candidates || !candidates.length) {
-      throw new Error("Gemini 返回结果中没有 candidates");
-    }
-
-    const contentParts = candidates[0].content?.parts;
-    if (!contentParts || !contentParts.length) {
-      throw new Error("Gemini 返回结果中没有内容");
-    }
-
-    const imagePart = contentParts.find((p: any) => p.inlineData?.data);
-    if (!imagePart || !imagePart.inlineData) {
-      throw new Error("Gemini 返回结果中没有图片数据 inlineData");
-    }
-
-    const debugSize = String(process.env.DEBUG_GEMINI_IMAGE_SIZE || "").toLowerCase();
-    if (debugSize === "1" || debugSize === "true" || debugSize === "yes") {
-      try {
-        const buf = Buffer.from(imagePart.inlineData.data || "", "base64");
-        const meta = await sharp(buf).metadata();
-        console.log("[gemini:image]", {
-          model: this.model,
-          mimeType: imagePart.inlineData.mimeType || "",
-          format: meta.format,
-          width: meta.width,
-          height: meta.height,
-          sizeBytes: buf.length,
-          promptChars: String(prompt || "").length,
-        });
-      } catch (e) {
-        console.log("[gemini:image] metadata failed:", e instanceof Error ? e.message : String(e));
+      const candidates = data.candidates;
+      if (!candidates || !candidates.length) {
+        throw new Error("Gemini 返回结果中没有 candidates");
       }
-    }
 
-    const mimeType = imagePart.inlineData.mimeType || "";
-    const rawBase64 = imagePart.inlineData.data || "";
-    const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
-    const imageData = addMetadata
-      ? (() => {
-          const rawBuffer = Buffer.from(rawBase64, "base64");
-          const withMetaBuffer = addMetadataToImage(
-            rawBuffer.buffer.slice(rawBuffer.byteOffset, rawBuffer.byteOffset + rawBuffer.byteLength),
-            mimeType,
-            GEMINI_IMAGE_METADATA
-          );
-          return Buffer.from(withMetaBuffer).toString("base64");
-        })()
-      : rawBase64;
-    return {
-      mimeType,
-      data: imageData,
-    };
+      const contentParts = candidates[0].content?.parts;
+      if (!contentParts || !contentParts.length) {
+        throw new Error("Gemini 返回结果中没有内容");
+      }
+
+      const imagePart = contentParts.find((p: any) => p.inlineData?.data);
+      if (!imagePart || !imagePart.inlineData) {
+        throw new Error("Gemini 返回结果中没有图片数据 inlineData");
+      }
+
+      const debugSize = String(process.env.DEBUG_GEMINI_IMAGE_SIZE || "").toLowerCase();
+      if (debugSize === "1" || debugSize === "true" || debugSize === "yes") {
+        try {
+          const buf = Buffer.from(imagePart.inlineData.data || "", "base64");
+          const meta = await sharp(buf).metadata();
+          console.log("[gemini:image]", {
+            model: this.model,
+            mimeType: imagePart.inlineData.mimeType || "",
+            format: meta.format,
+            width: meta.width,
+            height: meta.height,
+            sizeBytes: buf.length,
+            promptChars: String(prompt || "").length,
+          });
+        } catch (e) {
+          console.log("[gemini:image] metadata failed:", e instanceof Error ? e.message : String(e));
+        }
+      }
+
+      const mimeType = imagePart.inlineData.mimeType || "";
+      const rawBase64 = imagePart.inlineData.data || "";
+      const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
+      const imageData = addMetadata
+        ? (() => {
+            const rawBuffer = Buffer.from(rawBase64, "base64");
+            const withMetaBuffer = addMetadataToImage(
+              rawBuffer.buffer.slice(rawBuffer.byteOffset, rawBuffer.byteOffset + rawBuffer.byteLength),
+              mimeType,
+              GEMINI_IMAGE_METADATA
+            );
+            return Buffer.from(withMetaBuffer).toString("base64");
+          })()
+        : rawBase64;
+      return {
+        mimeType,
+        data: imageData,
+      };
+    });
   }
 }
 
