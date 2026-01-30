@@ -14,7 +14,10 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const namesOnly = searchParams.get("names") === "1";
+    const folderPathOnly = searchParams.get("folderPath") === "1";
+    const pathsForUrls = searchParams.get("paths") === "1";
     const qAppName = String(searchParams.get("appName") || "").trim();
+    const urlsParam = searchParams.get("urls") || "";
     const qPageRaw = Number(searchParams.get("page") || "1");
     const qPageSizeRaw = Number(searchParams.get("pageSize") || "100");
     const page = Number.isFinite(qPageRaw) && qPageRaw > 0 ? Math.floor(qPageRaw) : 1;
@@ -46,6 +49,40 @@ export async function GET(req: Request) {
 
     if (namesOnly) {
       return NextResponse.json({ ok: true, appNames: appDirs }, { headers: cacheHeaders });
+    }
+
+    const cwd = process.cwd();
+    if (folderPathOnly && qAppName) {
+      const exists = appDirs.includes(qAppName);
+      if (!exists) {
+        return NextResponse.json({ ok: false, error: "appName 不存在" }, { status: 400 });
+      }
+      const absFolder = path.join(publicMaterialDir, qAppName);
+      const folderPath = path.relative(cwd, absFolder);
+      return NextResponse.json({ ok: true, folderPath }, { headers: cacheHeaders });
+    }
+
+    if (pathsForUrls && qAppName && urlsParam) {
+      const exists = appDirs.includes(qAppName);
+      if (!exists) {
+        return NextResponse.json({ ok: false, error: "appName 不存在" }, { status: 400 });
+      }
+      const urlList = urlsParam.split(",").map((u) => String(u || "").trim()).filter(Boolean);
+      const paths: string[] = [];
+      const appDir = path.join(publicMaterialDir, qAppName);
+      for (const u of urlList) {
+        const match = u.match(/^\/material\/[^/]+\/(.+)$/);
+        if (!match) continue;
+        try {
+          const filename = decodeURIComponent(match[1]);
+          if (filename && isImageFileName(filename)) {
+            paths.push(path.relative(cwd, path.join(appDir, filename)));
+          }
+        } catch {
+          // skip invalid
+        }
+      }
+      return NextResponse.json({ ok: true, paths }, { headers: cacheHeaders });
     }
 
     if (qAppName) {

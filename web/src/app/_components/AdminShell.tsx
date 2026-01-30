@@ -39,7 +39,7 @@ export default function AdminShell({ children, defaultSelectedKey, headerTitle }
             {headerTitle || "批量生成图片 - 内部后台"}
           </Typography.Title>
         </Header>
-        <Content style={{ padding: 24 }}>{children}</Content>
+        <Content style={{ padding: 16 }}>{children}</Content>
       </Layout>
     </Layout>
   );
