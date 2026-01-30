@@ -636,12 +636,14 @@ export default function BatchPage() {
           if (!s) return <Typography.Text type="secondary">-</Typography.Text>;
           const k = String((row as any).id || `${(row as any).jobId || ""}|${(row as any).configId || ""}`);
           const expanded = Boolean(historyPromptExpanded[k]);
-          const canToggle = s.length > 60;
+          const canToggle = s.length > 30;
           return (
             <div>
-              <Typography.Paragraph style={{ margin: 0, maxWidth: 250 }} ellipsis={expanded ? false : { rows: 2 }}>
-                {s}
-              </Typography.Paragraph>
+              <Tooltip title={s} placement="topLeft">
+                <Typography.Paragraph style={{ margin: 0, maxWidth: 250 }} ellipsis={expanded ? false : { rows: 2 }}>
+                  {s}
+                </Typography.Paragraph>
+              </Tooltip>
               {canToggle ? (
                 <Typography.Link
                   onClick={() => {
