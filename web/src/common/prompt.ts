@@ -54,7 +54,7 @@ export function getReferencePrompt({ appName, lang, prompt, aspectRatio }: { app
 
 // 2、如果参考图中有当地语言标志性建筑或者风景在翻译为其他语言的时候需要修改标志性建筑或者风景，但修改时应该尽量保持与原图相似：选择风格、类型、视觉效果相近的地标建筑或风景，保持原图的整体构图、色调、氛围和视觉风格，确保修改后的图片与原图差距尽可能小。
 export function getTextTranslatePrompt({ lang, prompt, aspectRatio }: { lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `1、生成一张新图片，将参考图中的文字翻译为${lang}语言,你只需要翻译图中的文字然后给一张新图。
+  return `1、生成一张新图片，将参考图中的文字翻译为${lang}语言,注意参考图中任何元素中的文字如(手机中的文字、背景的文字、提示文字、地铁站名、广告牌文字等)都需要翻译，不要遗漏。
   2、${prompt}
   `;
 }
