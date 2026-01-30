@@ -14,6 +14,7 @@ type ConfigItem = {
   id: string;
   appName?: string;
   lang?: string;
+  langs?: string[];
   batchFun?: string;
   imageConfig?: { aspectRatio?: string; [k: string]: any };
   prompt?: string;
@@ -377,7 +378,8 @@ export default function BatchPage() {
 
   const configOptions = useMemo(() => {
     return configs.map((c) => {
-      const label = `${c.appName || ""}/${c.lang || ""}/${c.imageConfig?.aspectRatio || ""}/${c.count ?? ""}/${c.batchFun || ""}`;
+      const langs = Array.isArray(c.langs) ? c.langs : (c.lang ? [c.lang] : []);
+      const label = `${c.appName || ""}/${langs.join(",")}/${c.imageConfig?.aspectRatio || ""}/${c.count ?? ""}/${c.batchFun || ""}`;
       return { label, value: c.id };
     });
   }, [configs]);
@@ -390,7 +392,7 @@ export default function BatchPage() {
       messageApi.error("configIds 为空，无法重试");
       return;
     }
-    setRetryingKey(String((row as any).configId || cfgIds[0] || ""));
+    setRetryingKey(String((row as any).id || (row as any).configId || cfgIds[0] || ""));
     try {
       const res = await fetch(`/api/batch-jobs/${encodeURIComponent(jobId)}/retry`, {
         method: "POST",
@@ -481,7 +483,7 @@ export default function BatchPage() {
               size="small"
               type="primary"
               disabled={!canRetry}
-              loading={retryingKey === String((row as any).configId || "")}
+              loading={retryingKey === String((row as any).id || (row as any).configId || "")}
               onClick={() => onRetry(row)}
             >
               重试
@@ -496,13 +498,16 @@ export default function BatchPage() {
     const byKey = new Map<string, JobItem>();
     const statusRank = (s: string) => (s === "failed" ? 4 : s === "running" ? 3 : s === "queued" ? 2 : s === "completed" ? 1 : 0);
     for (const it of src) {
-      const key = String((it as any).sourceConfigId || it.configId || "").trim();
-      if (!key) continue;
-      const prev = byKey.get(key);
+      const baseId = String((it as any).sourceConfigId || it.configId || "").trim();
+      if (!baseId) continue;
+      const lang = String((it as any).configMeta?.lang || "").trim();
+      const groupKey = `${baseId}|${lang}`;
+      const prev = byKey.get(groupKey);
       if (!prev) {
-        byKey.set(key, {
+        byKey.set(groupKey, {
           ...it,
-          configId: key,
+          id: groupKey,
+          configId: baseId,
           subConfigIds: [String(it.configId || "").trim()].filter(Boolean),
           images: Array.isArray(it.images) ? [...it.images] : [],
           total: Number(it.total) || 0,
@@ -518,7 +523,7 @@ export default function BatchPage() {
       const mergedSub = [...(Array.isArray(prev.subConfigIds) ? prev.subConfigIds : []), String(it.configId || "").trim()].filter(Boolean);
       const mergedImgs = [...(Array.isArray(prev.images) ? prev.images : []), ...(Array.isArray(it.images) ? it.images : [])];
       mergedImgs.sort((a, b) => new Date((b as any).createdAt || 0 as any).getTime() - new Date((a as any).createdAt || 0 as any).getTime());
-      byKey.set(key, {
+      byKey.set(groupKey, {
         ...prev,
         total: nextTotal,
         done: nextDone,

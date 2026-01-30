@@ -19,6 +19,7 @@ type ImageConfigDoc = {
   nextPromptFun?: string[];
   appName?: string;
   lang?: string;
+  langs?: string[];
   batchFun?: string;
   promptTmpFunName?: string;
   extra?: Record<string, unknown>;
@@ -70,33 +71,41 @@ export async function POST(req: NextRequest) {
     if (!src) continue;
     const effectiveCount = actualCount !== undefined ? actualCount : Math.max(0, Number(src.count ?? 1) || 0);
 
-    const cfgForExpand: any = {
-      prompt: src.prompt,
-      referenceImages: src.referenceImages,
-      generationConfig: src.generationConfig,
-      imageConfig: src.imageConfig,
-      responseModalities: src.responseModalities,
-      output: src.output,
-      count: src.count,
-      nextPromptFun: src.nextPromptFun,
-      appName: src.appName,
-      lang: src.lang,
-      batchFun: src.batchFun,
-      promptTmpFunName: src.promptTmpFunName,
-      extra: src.extra,
-    };
+    const srcLangs = Array.isArray((src as any).langs)
+      ? (src as any).langs.map((s: any) => String(s ?? "").trim()).filter(Boolean)
+      : [];
+    const langList = Array.from(new Set((srcLangs.length ? srcLangs : (src.lang ? [String(src.lang).trim()] : [])).filter(Boolean)));
+    const effectiveLangs = langList.length ? langList : [undefined];
 
-    const isCombination = typeof cfgForExpand.batchFun === "string" && cfgForExpand.batchFun.startsWith("combination");
-    const expanded = await expandConfigByBatchFun(cfgForExpand, { countOverride: isCombination ? effectiveCount : undefined });
-    for (const e of expanded) {
-      const cfgId = new ObjectId();
-      const perCount = isCombination ? 1 : (actualCount !== undefined ? effectiveCount : Math.max(0, Number(e.count ?? src.count ?? 1) || 0));
-      expandedJobConfigs.push({
-        configId: cfgId,
-        sourceConfigId: src._id,
-        config: { ...e, count: perCount },
-        total: perCount,
-      });
+    for (const lang of effectiveLangs) {
+      const cfgForExpand: any = {
+        prompt: src.prompt,
+        referenceImages: src.referenceImages,
+        generationConfig: src.generationConfig,
+        imageConfig: src.imageConfig,
+        responseModalities: src.responseModalities,
+        output: src.output,
+        count: src.count,
+        nextPromptFun: src.nextPromptFun,
+        appName: src.appName,
+        lang: lang ? String(lang) : undefined,
+        batchFun: src.batchFun,
+        promptTmpFunName: src.promptTmpFunName,
+        extra: src.extra,
+      };
+
+      const isCombination = typeof cfgForExpand.batchFun === "string" && cfgForExpand.batchFun.startsWith("combination");
+      const expanded = await expandConfigByBatchFun(cfgForExpand, { countOverride: isCombination ? effectiveCount : undefined });
+      for (const e of expanded) {
+        const cfgId = new ObjectId();
+        const perCount = isCombination ? 1 : (actualCount !== undefined ? effectiveCount : Math.max(0, Number(e.count ?? src.count ?? 1) || 0));
+        expandedJobConfigs.push({
+          configId: cfgId,
+          sourceConfigId: src._id,
+          config: { ...e, count: perCount },
+          total: perCount,
+        });
+      }
     }
   }
 

@@ -16,6 +16,7 @@ type ImageConfigDoc = {
   nextPromptFun?: string[];
   appName?: string;
   lang?: string;
+  langs?: string[];
   batchFun?: string;
   promptTmpFunName?: string;
   extra?: Record<string, any>;
@@ -70,6 +71,14 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   const countRaw = body.count;
   const countNum = countRaw === undefined || countRaw === null || countRaw === "" ? undefined : Number(countRaw);
 
+  const lang0 = body.lang ? String(body.lang).trim() : "";
+  const langsRaw = (body as any).langs;
+  const langs0 = Array.isArray(langsRaw)
+    ? langsRaw.map((s: any) => String(s ?? "").trim()).filter(Boolean)
+    : [];
+  const langs = Array.from(new Set((langs0.length ? langs0 : (lang0 ? [lang0] : [])).filter(Boolean)));
+  const lang = langs.length ? langs[0] : (lang0 || undefined);
+
   const now = new Date();
   const patch: Partial<ImageConfigDoc> = {
     prompt,
@@ -80,7 +89,8 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     count: typeof countNum === "number" && !Number.isNaN(countNum) ? countNum : undefined,
     nextPromptFun: Array.isArray(body.nextPromptFun) ? body.nextPromptFun : undefined,
     appName: body.appName ? String(body.appName) : undefined,
-    lang: body.lang ? String(body.lang) : undefined,
+    lang,
+    langs: langs.length ? langs : undefined,
     batchFun: body.batchFun ? String(body.batchFun) : undefined,
     promptTmpFunName: body.promptTmpFunName ? String(body.promptTmpFunName) : undefined,
     extra: body.extra && typeof body.extra === "object" ? body.extra : undefined,

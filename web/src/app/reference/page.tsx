@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Image, Select, Space, Typography, message } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { ReloadOutlined, CloudDownloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
 
 const PAGE_SIZE = 100;
@@ -11,6 +11,7 @@ export default function ReferenceGalleryPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [fetchingReferenceImages, setFetchingReferenceImages] = useState(false);
   const [appNames, setAppNames] = useState<string[]>([]);
   const [appName, setAppName] = useState<string>("");
   const [images, setImages] = useState<string[]>([]);
@@ -82,6 +83,32 @@ export default function ReferenceGalleryPage() {
     [messageApi]
   );
 
+  const handleFetchReferenceImages = useCallback(async () => {
+    setFetchingReferenceImages(true);
+    try {
+      const res = await fetch("/api/reference-images", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        messageApi.error(data?.error || "获取参考图失败");
+        return;
+      }
+      messageApi.success(`获取参考图成功：app=${data?.appNames || 0} items=${data?.totalItems || 0} files=${data?.totalFiles || 0}`);
+      fetchAppNames();
+      if (appName) {
+        setLoadedPageCount(0);
+        fetchImages(appName, 1, false);
+      }
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setFetchingReferenceImages(false);
+    }
+  }, [appName, fetchAppNames, fetchImages, messageApi]);
+
   useEffect(() => {
     fetchAppNames();
   }, [fetchAppNames]);
@@ -138,6 +165,14 @@ export default function ReferenceGalleryPage() {
             loading={loading}
           >
             刷新
+          </Button>
+          <Button
+            icon={<CloudDownloadOutlined />}
+            loading={fetchingReferenceImages}
+            disabled={loading || loadingMore}
+            onClick={handleFetchReferenceImages}
+          >
+            获取参考图
           </Button>
           <Typography.Text type="secondary">
             {loading ? "加载中..." : appName ? `${appName}：${total} 张` : `共 ${appNames.length} 个 app`}
