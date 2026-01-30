@@ -5,7 +5,7 @@ import { join } from "path";
 export async function GET() {
   try {
     // refImageDatas 文件夹相对于 web 目录的路径
-    const refImageDatasPath = join(process.cwd(), "..", "refImageDatas");
+    const refImageDatasPath = join(process.cwd(), "public", "material");
     const folders = await fs.readdir(refImageDatasPath, { withFileTypes: true });
     const folderNames = folders
       .filter((item) => item.isDirectory())
