@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button, Image, Select, Space, Typography, message } from "antd";
-import { ReloadOutlined, CloudDownloadOutlined, CopyOutlined } from "@ant-design/icons";
+import { Button, Image, Select, Space, Tooltip, Typography, message } from "antd";
+import { ReloadOutlined, CloudDownloadOutlined, CopyOutlined, SortAscendingOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
 
 const PAGE_SIZE = 100;
@@ -19,7 +19,14 @@ export default function ReferenceGalleryPage() {
   const [loadedPageCount, setLoadedPageCount] = useState(0);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [copyingPath, setCopyingPath] = useState(false);
+  const [sortByCost, setSortByCost] = useState<"default" | "asc" | "desc">("default");
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+  const gridWrapRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{ active: boolean; moved: boolean; startX: number; startY: number; curX: number; curY: number }>({ active: false, moved: false, startX: 0, startY: 0, curX: 0, curY: 0 });
+  const suppressClickRef = useRef(false);
+  const dragRafRef = useRef<number | null>(null);
+  const dragBoxRef = useRef<{ active: boolean; x: number; y: number; w: number; h: number }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
+  const [dragBox, setDragBox] = useState<{ active: boolean; x: number; y: number; w: number; h: number }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
 
   const appNameOptions = useMemo(() => appNames.map((x) => ({ label: x, value: x })), [appNames]);
   const hasMore = loadedPageCount * PAGE_SIZE < total;
@@ -29,6 +36,16 @@ export default function ReferenceGalleryPage() {
 
   const togglePick = useCallback((key: string) => {
     setSelectedKeys((prev) => (prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]));
+  }, []);
+
+  const addPicks = useCallback((keys: string[]) => {
+    const arr = Array.isArray(keys) ? keys.map((x) => String(x || "").trim()).filter(Boolean) : [];
+    if (!arr.length) return;
+    setSelectedKeys((prev) => {
+      const set = new Set(prev);
+      for (const k of arr) set.add(k);
+      return Array.from(set);
+    });
   }, []);
 
   const getCostFromImageUrl = useCallback((imageUrl: string) => {
@@ -52,6 +69,19 @@ export default function ReferenceGalleryPage() {
     }
     return map;
   }, [images, getCostFromImageUrl]);
+
+  const sortedImages = useMemo(() => {
+    if (sortByCost === "default") return images;
+    return [...images].sort((a, b) => {
+      const costA = imageCostMap.get(a) ?? "";
+      const costB = imageCostMap.get(b) ?? "";
+      const numA = parseInt(costA, 10);
+      const numB = parseInt(costB, 10);
+      const valA = Number.isFinite(numA) ? numA : sortByCost === "asc" ? Infinity : -Infinity;
+      const valB = Number.isFinite(numB) ? numB : sortByCost === "asc" ? Infinity : -Infinity;
+      return sortByCost === "asc" ? valA - valB : valB - valA;
+    });
+  }, [images, imageCostMap, sortByCost]);
 
   const fetchAppNames = useCallback(async () => {
     setLoading(true);
@@ -155,6 +185,73 @@ export default function ReferenceGalleryPage() {
   useEffect(() => {
     setSelectedKeys([]);
   }, [appName]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const st = dragStateRef.current;
+      if (!st.active) return;
+      const wrap = gridWrapRef.current;
+      if (!wrap) return;
+      const rect = wrap.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      st.curX = x;
+      st.curY = y;
+      const dx = x - st.startX;
+      const dy = y - st.startY;
+      if (!st.moved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+        st.moved = true;
+        suppressClickRef.current = true;
+      }
+      dragBoxRef.current = { active: true, x: st.startX, y: st.startY, w: dx, h: dy };
+      if (dragRafRef.current) return;
+      dragRafRef.current = window.requestAnimationFrame(() => {
+        dragRafRef.current = null;
+        setDragBox({ ...dragBoxRef.current });
+      });
+    };
+    const onUp = () => {
+      const st = dragStateRef.current;
+      if (!st.active) return;
+      st.active = false;
+      const wrap = gridWrapRef.current;
+      const moved = st.moved;
+      const sx = st.startX, sy = st.startY, ex = st.curX, ey = st.curY;
+      dragBoxRef.current = { ...dragBoxRef.current, active: false };
+      if (dragRafRef.current) {
+        window.cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+      setDragBox((prev) => ({ ...prev, active: false }));
+      if (!wrap) return;
+      if (!moved) return;
+      const rect = wrap.getBoundingClientRect();
+      const left = rect.left + Math.min(sx, ex);
+      const right = rect.left + Math.max(sx, ex);
+      const top = rect.top + Math.min(sy, ey);
+      const bottom = rect.top + Math.max(sy, ey);
+      const nodes = Array.from(wrap.querySelectorAll("[data-grid-key]")) as HTMLElement[];
+      const picked: string[] = [];
+      for (const el of nodes) {
+        const k = el.getAttribute("data-grid-key") || "";
+        if (!k) continue;
+        const r = el.getBoundingClientRect();
+        const hit = !(r.right < left || r.left > right || r.bottom < top || r.top > bottom);
+        if (hit) picked.push(k);
+      }
+      if (picked.length) addPicks(picked);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      if (dragRafRef.current) {
+        window.cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+    };
+  }, [addPicks]);
 
   const handleCopyReferencePath = useCallback(async () => {
     if (!appName) {
@@ -269,6 +366,15 @@ export default function ReferenceGalleryPage() {
           >
             复制参考图路径
           </Button>
+          {appName ? (
+            <Tooltip title={sortByCost === "default" ? "按 cost 排序（当前：默认）" : sortByCost === "asc" ? "按 cost 排序（当前：升序）" : "按 cost 排序（当前：降序）"}>
+              <Button
+                type={sortByCost === "default" ? "default" : "primary"}
+                icon={<SortAscendingOutlined style={sortByCost === "desc" ? { transform: "rotate(180deg)" } : undefined} />}
+                onClick={() => setSortByCost((prev) => (prev === "default" ? "asc" : prev === "asc" ? "desc" : "default"))}
+              />
+            </Tooltip>
+          ) : null}
           <Typography.Text type="secondary">
             {loading ? "加载中..." : appName ? `${appName}：${total} 张` : `共 ${appNames.length} 个 app`}
           </Typography.Text>
@@ -279,7 +385,7 @@ export default function ReferenceGalleryPage() {
           <div style={{ padding: 10, background: "#f5f5f5", borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)" }}>
             <Space wrap size={10} align="center" style={{ width: "100%" }}>
               <Typography.Text strong>当前已选（{selectedImages.length}）</Typography.Text>
-              <Typography.Text type="secondary">右键可选/取消</Typography.Text>
+              <Typography.Text type="secondary">左键拖动框选，右键可选/取消</Typography.Text>
               <Button size="small" onClick={() => setSelectedKeys([])} disabled={loading}>
                 清空已选
               </Button>
@@ -314,14 +420,50 @@ export default function ReferenceGalleryPage() {
         {appName ? (
           <>
             <Image.PreviewGroup>
-              <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 12, width: "100%" }}>
-                {images.map((url) => {
+              <div
+                ref={gridWrapRef}
+                style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 12, width: "100%", userSelect: dragBox.active ? "none" : undefined, cursor: dragBox.active ? "crosshair" : undefined }}
+                onMouseDown={(e) => {
+                  if (e.button !== 0) return;
+                  const wrap = gridWrapRef.current;
+                  if (!wrap) return;
+                  const rect = wrap.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const y = e.clientY - rect.top;
+                  dragStateRef.current = { active: true, moved: false, startX: x, startY: y, curX: x, curY: y };
+                  suppressClickRef.current = false;
+                  dragBoxRef.current = { active: true, x, y, w: 0, h: 0 };
+                  setDragBox({ active: true, x, y, w: 0, h: 0 });
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
+                {dragBox.active ? (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: Math.min(dragBox.x, dragBox.x + dragBox.w),
+                      top: Math.min(dragBox.y, dragBox.y + dragBox.h),
+                      width: Math.abs(dragBox.w),
+                      height: Math.abs(dragBox.h),
+                      background: "rgba(0,160,255,0.22)",
+                      border: "2px solid rgba(0,160,255,0.95)",
+                      boxShadow: "0 0 0 2px rgba(255,255,255,0.65) inset, 0 8px 20px rgba(0,160,255,0.25)",
+                      outline: "1px dashed rgba(0,0,0,0.25)",
+                      borderRadius: 6,
+                      pointerEvents: "none",
+                      zIndex: 10,
+                    }}
+                  />
+                ) : null}
+                {sortedImages.map((url) => {
                   const key = `${appName}|${url}`;
                   const selected = selectedKeySet.has(key);
                   const cost = imageCostMap.get(url) ?? "";
                   return (
                     <div
                       key={key}
+                      data-grid-key={key}
                       style={{
                         position: "relative",
                         cursor: "default",
@@ -335,6 +477,13 @@ export default function ReferenceGalleryPage() {
                       onContextMenu={(e) => {
                         e.preventDefault();
                         togglePick(key);
+                      }}
+                      onClick={(e) => {
+                        if (suppressClickRef.current) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          suppressClickRef.current = false;
+                        }
                       }}
                     >
                       <Image width="100%" height="100%" style={{ width: "100%", height: "100%", objectFit: "cover" }} src={url} alt={url} loading="lazy" />

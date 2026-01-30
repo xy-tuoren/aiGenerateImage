@@ -146,6 +146,11 @@ export default function GalleryPage() {
       }
       const arr = Array.isArray(data.items) ? data.items : [];
       setItems(arr);
+      setPreviewOpen(false);
+      setPreviewIndex(0);
+      setSelectedPreviewOpen(false);
+      setSelectedPreviewIndex(0);
+      setGalleryPage(1);
       try {
         const urls = arr.map((x: any) => String(x?.url || "").trim()).filter(Boolean);
         if (urls.length) {
