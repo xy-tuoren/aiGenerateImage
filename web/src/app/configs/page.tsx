@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AutoComplete, Button, Card, Drawer, Form, Input, InputNumber, Popconfirm, Select, Space, Table, Typography, message } from "antd";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AutoComplete, Button, Card, Drawer, Dropdown, Form, Input, InputNumber, Popconfirm, Select, Space, Table, Typography, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { PlusOutlined, PictureOutlined, EditOutlined, CopyOutlined, DeleteOutlined, CloudDownloadOutlined } from "@ant-design/icons";
+import { PlusOutlined, PictureOutlined, EditOutlined, CopyOutlined, DeleteOutlined, CloudDownloadOutlined, UploadOutlined, FolderOutlined, FileImageOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { ASPECT_RATIO_OPTIONS, BATCH_FUN_OPTIONS, IMAGE_SIZE_OPTIONS, RESPONSE_MODALITIES_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
 import AdminShell from "@/app/_components/AdminShell";
@@ -14,7 +14,7 @@ type ConfigItem = {
   prompt: string;
   referenceImages?: string[];
   generationConfig?: { temperature?: number; [k: string]: unknown };
-  imageConfig?: { imageSize?: string; aspectRatio?: string; [k: string]: unknown };
+  imageConfig?: { imageSize?: string; aspectRatio?: string; [k: string]: unknown }; 
   responseModalities?: string[];
   count?: number;
   nextPromptFun?: string[];
@@ -55,6 +55,9 @@ export default function ConfigsPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [configPage, setConfigPage] = useState(1);
   const [configPageSize, setConfigPageSize] = useState(10);
+  const [uploadingReferenceImages, setUploadingReferenceImages] = useState(false);
+  const refFolderInput = useRef<HTMLInputElement>(null);
+  const refFilesInput = useRef<HTMLInputElement>(null);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -93,6 +96,45 @@ export default function ConfigsPage() {
       setFetchingReferenceImages(false);
     }
   }, [messageApi]);
+
+  const uploadReferenceFiles = useCallback(
+    async (files: File[]) => {
+      if (!files.length) return;
+      const imageExt = /\.(png|jpe?g|gif|webp|bmp|tiff?|svg)$/i;
+      const list = files.filter((f) => imageExt.test(f.name) || (f.type && f.type.startsWith("image/")));
+      if (!list.length) {
+        messageApi.warning("未包含有效图片文件");
+        return;
+      }
+      setUploadingReferenceImages(true);
+      try {
+        const formData = new FormData();
+        list.forEach((f) => formData.append("files", f));
+        const res = await fetch("/api/reference-images/upload", { method: "POST", body: formData });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          messageApi.error(data?.error || "上传失败");
+          return;
+        }
+        const paths: string[] = Array.isArray(data.paths) ? data.paths : [];
+        if (!paths.length) {
+          messageApi.warning("没有可用的路径返回");
+          return;
+        }
+        const current = form.getFieldValue("referenceImagesText") || "";
+        const lines = (current + "\n" + paths.join("\n")).split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+        form.setFieldValue("referenceImagesText", [...new Set(lines)].join("\n"));
+        messageApi.success(`已添加 ${paths.length} 个路径`);
+      } catch (e) {
+        messageApi.error(e instanceof Error ? e.message : "上传失败");
+      } finally {
+        setUploadingReferenceImages(false);
+        if (refFolderInput.current) refFolderInput.current.value = "";
+        if (refFilesInput.current) refFilesInput.current.value = "";
+      }
+    },
+    [form, messageApi]
+  );
 
   const handleCopy = useCallback(async (row: ConfigItem) => {
     try {
@@ -1029,8 +1071,60 @@ export default function ConfigsPage() {
             <Input.TextArea rows={5} placeholder="描述要生成的图片" />
           </Form.Item>
 
-          <Form.Item name="referenceImagesText" label="referenceImages（每行一个路径/URL）">
-            <Input.TextArea rows={4} placeholder="D:\\batchGenerateImage\\referenceImages\\...\nhttps://..." />
+          <Form.Item
+            name="referenceImagesText"
+            label={
+              <Space>
+                <span>referenceImages（每行一个路径/URL）</span>
+                <Dropdown
+                  menu={{
+                    items: [
+                      {
+                        key: "folder",
+                        icon: <FolderOutlined />,
+                        label: "选择文件夹",
+                        onClick: () => refFolderInput.current?.click(),
+                      },
+                      {
+                        key: "files",
+                        icon: <FileImageOutlined />,
+                        label: "选择多张图片",
+                        onClick: () => refFilesInput.current?.click(),
+                      },
+                    ],
+                  }}
+                >
+                  <Button size="small" icon={<UploadOutlined />} loading={uploadingReferenceImages}>
+                    上传
+                  </Button>
+                </Dropdown>
+                <input
+                  ref={refFolderInput}
+                  type="file"
+                  multiple
+                  {...({ webkitdirectory: "", directory: "" } as any)}
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const files = e.target.files ? Array.from(e.target.files) : [];
+                    uploadReferenceFiles(files);
+                  }}
+                />
+                <input
+                  ref={refFilesInput}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const files = e.target.files ? Array.from(e.target.files) : [];
+                    uploadReferenceFiles(files);
+                  }}
+                />
+              </Space>
+            }
+          >
+            <Input.TextArea rows={4} placeholder="public/material/...\nhttps://..." />
           </Form.Item>
 
           <Form.Item name="generationConfig_temperature" label="generationConfig.temperature">

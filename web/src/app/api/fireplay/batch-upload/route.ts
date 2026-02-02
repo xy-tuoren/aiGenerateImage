@@ -47,12 +47,6 @@ async function readImageAsBuffer(src: string): Promise<{ buffer: Buffer; fileNam
 export async function POST(req: Request) {
   try {
     const authHeader = getFireplayAuthHeader(req);
-    // if (!authHeader) {
-    //   return NextResponse.json(
-    //     { ok: false, error: "缺少 Fireplay 授权：请设置服务端环境变量 FIREPLAY_API_TOKEN（或在请求头带 Authorization）" },
-    //     { status: 401 }
-    //   );
-    // }
     const body: any = await req.json().catch(() => ({}));
     const imageUrls: string[] = Array.isArray(body?.imageUrls)
       ? body.imageUrls.map((x: any) => String(x || "").trim()).filter(Boolean)
