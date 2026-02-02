@@ -277,6 +277,8 @@ export default function GalleryPage() {
     return filteredGridImages.slice(0, galleryPage * galleryPageSize);
   }, [filteredGridImages, galleryPage]);
 
+  const previewItems = useMemo(() => paginatedGridImages.map((x) => x.url), [paginatedGridImages]);
+
   const hasMore = (galleryPage * galleryPageSize) < filteredGridImages.length;
 
   useEffect(() => {
@@ -706,6 +708,7 @@ export default function GalleryPage() {
         ) : null}
 
         <Image.PreviewGroup
+          items={previewItems}
           preview={{
             open: previewOpen,
             current: previewIndex,
@@ -775,6 +778,7 @@ export default function GalleryPage() {
                   width="100%"
                   height="100%"
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  preview={false}
                   src={img.url}
                   alt={img.url}
                 />

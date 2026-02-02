@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AutoComplete, Button, Card, Drawer, Dropdown, Form, Input, InputNumber, Popconfirm, Select, Space, Table, Typography, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { PlusOutlined, PictureOutlined, EditOutlined, CopyOutlined, DeleteOutlined, CloudDownloadOutlined, UploadOutlined, FolderOutlined, FileImageOutlined } from "@ant-design/icons";
+import { PlusOutlined, PictureOutlined, EditOutlined, CopyOutlined, DeleteOutlined, UploadOutlined, FolderOutlined, FileImageOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { ASPECT_RATIO_OPTIONS, BATCH_FUN_OPTIONS, IMAGE_SIZE_OPTIONS, RESPONSE_MODALITIES_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
 import AdminShell from "@/app/_components/AdminShell";
@@ -38,7 +38,6 @@ export default function ConfigsPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ConfigItem[]>([]);
-  const [fetchingReferenceImages, setFetchingReferenceImages] = useState(false);
   const [savingCellMap, setSavingCellMap] = useState<Record<string, boolean>>({});
   const [tableEditMode, setTableEditMode] = useState(false);
   const [editModeBaseMap, setEditModeBaseMap] = useState<Record<string, ConfigItem>>({});
@@ -73,27 +72,6 @@ export default function ConfigsPage() {
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
-    }
-  }, [messageApi]);
-
-  const handleFetchReferenceImages = useCallback(async () => {
-    setFetchingReferenceImages(true);
-    try {
-      const res = await fetch("/api/reference-images", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) {
-        messageApi.error(data?.error || "获取参考图失败");
-        return;
-      }
-      messageApi.success(`获取参考图成功：app=${data?.appNames || 0} items=${data?.totalItems || 0} files=${data?.totalFiles || 0}`);
-    } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
-    } finally {
-      setFetchingReferenceImages(false);
     }
   }, [messageApi]);
 
@@ -878,14 +856,6 @@ export default function ConfigsPage() {
           <Space wrap>
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
               新增配置
-            </Button>
-            <Button
-              icon={<CloudDownloadOutlined />}
-              loading={fetchingReferenceImages}
-              disabled={loading || deletingBatch || savingEditMode || submitting}
-              onClick={handleFetchReferenceImages}
-            >
-              获取参考图
             </Button>
             {!tableEditMode ? (
               <Button
