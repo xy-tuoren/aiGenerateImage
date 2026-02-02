@@ -541,6 +541,9 @@ export default function CropPage() {
             <Button size="small" type="primary" disabled={!selectedRowKeys.length} loading={downloading} onClick={downloadSelected}>
               下载选中({selectedRowKeys.length})
             </Button>
+            <Button size="small" disabled={!selectedRowKeys.length} onClick={() => setSelectedRowKeys([])}>
+              清空选择
+            </Button>
             <Button
               size="small"
               disabled={!excludedKeysScoped.length}

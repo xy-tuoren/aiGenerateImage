@@ -28,7 +28,7 @@ export function getAppDefaultPrompt3({ appName, lang, prompt, aspectRatio }: { a
 //背景与主体有对比色凸显主体。
 //图片中只能出现一张图不能是多张图拼接而成的。
 export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `1、你是一个精通app推广的图片广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整排版布局,采用不同的设计元素跟背景,好的图片设计有几个原则:
+  return `1、你是一个精通app推广的图片广告设计师，这是你过去制作的广告图片，参考图仅作为创意的来源，你需要调整构图修改元素、背景等,好的图片设计有几个原则:
     - 推广应用的图标以及文字一定要在核心位置并且图标以及要大一些。
     - 图片的元素层次要分明。
     - 推广文案要简洁明了加起来不能超过3条并且单条文字长度不超过10个字符。
