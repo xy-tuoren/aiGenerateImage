@@ -87,6 +87,8 @@ export default function BatchPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const lastJobIdKey = "batch:lastJobId";
   const recentJobIdsKey = "batch:recentJobIds";
+  const STUCK_RETRY_MS = 90 * 1000;
+  const STUCK_RETRY_SECONDS = Math.round(STUCK_RETRY_MS / 1000);
 
   const [configsLoading, setConfigsLoading] = useState(false);
   const [configs, setConfigs] = useState<ConfigItem[]>([]);
@@ -104,6 +106,8 @@ export default function BatchPage() {
   const [polling, setPolling] = useState(false);
   const pollTimer = useRef<any>(null);
   const [retryingKey, setRetryingKey] = useState<string>("");
+  const [retryingAll, setRetryingAll] = useState(false);
+  const liveActivityRef = useRef<Record<string, { sig: string; at: number }>>({});
   const [form] = Form.useForm();
   const [livePage, setLivePage] = useState(1);
   const [livePageSize, setLivePageSize] = useState(10);
@@ -412,6 +416,55 @@ export default function BatchPage() {
     }
   };
 
+  const onRetryAllFailedOrStuck = async () => {
+    const jobId = String(job?.id || "").trim();
+    if (!jobId) return;
+    const now = Date.now();
+    const cfgIds = Array.from(
+      new Set(
+        liveItems
+          .filter((row) => {
+            const total = Number(row.total) || 0;
+            const done = Number(row.done) || 0;
+            if (!(done < total)) return false;
+            if (row.status === "failed") return true;
+            if (row.status === "completed") return false;
+            if (row.error) return true;
+            const rowId = String((row as any).id || row.configId || "").trim();
+            const actAt = rowId ? (liveActivityRef.current[rowId]?.at || 0) : 0;
+            return Boolean(actAt) && now - actAt >= STUCK_RETRY_MS;
+          })
+          .flatMap((row) => (Array.isArray((row as any).subConfigIds) ? (row as any).subConfigIds : []))
+          .map((x: any) => String(x || "").trim())
+          .filter(Boolean)
+      )
+    );
+
+    if (!cfgIds.length) {
+      messageApi.info("当前任务没有失败或超时的配置可重试");
+      return;
+    }
+
+    setRetryingAll(true);
+    try {
+      const res = await fetch(`/api/batch-jobs/${encodeURIComponent(jobId)}/retry`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ configIds: cfgIds }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "重试");
+      messageApi.success(`已重试 ${Number(data?.retried || 0)} 个配置`);
+      await fetchJob(jobId);
+      startPolling(jobId);
+      fetchJobList();
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRetryingAll(false);
+    }
+  };
+
   const columns: ColumnsType<JobItem> = [
       {
         title: "配置",
@@ -477,7 +530,11 @@ export default function BatchPage() {
         render: (_v, row) => {
           const total = Number(row.total) || 0;
           const done = Number(row.done) || 0;
-          const canRetry = Boolean(job?.id) && done < total && (row.status === "failed" || job?.status === "failed");
+          const rowId = String((row as any).id || row.configId || "");
+          const actAt = liveActivityRef.current[rowId]?.at || 0;
+          const rowStuck = Boolean(actAt) && Date.now() - actAt >= STUCK_RETRY_MS && row.status !== "completed" && row.status !== "failed";
+          const hasError = Boolean(row.error) || Boolean(job?.error);
+          const canRetry = Boolean(job?.id) && done < total && (row.status === "failed" || job?.status === "failed" || rowStuck || hasError);
           return (
             <Button
               size="small"
@@ -536,6 +593,36 @@ export default function BatchPage() {
     }
     return Array.from(byKey.values());
   }, [items]);
+
+  useEffect(() => {
+    const now = Date.now();
+    const jobCreatedAtMs = (() => {
+      const s = job?.createdAt ? String(job.createdAt) : "";
+      if (!s) return 0;
+      const t = new Date(s).getTime();
+      return Number.isFinite(t) ? t : 0;
+    })();
+    for (const row of liveItems) {
+      const rowId = String((row as any).id || row.configId || "").trim();
+      if (!rowId) continue;
+      const total = Number(row.total) || 0;
+      const done = Number(row.done) || 0;
+      const st = String(row.status || "");
+      const latestAt = (() => {
+        const createdAt = Array.isArray(row.images) && row.images[0]?.createdAt ? String(row.images[0].createdAt) : "";
+        if (!createdAt) return 0;
+        const t = new Date(createdAt).getTime();
+        return Number.isFinite(t) ? t : 0;
+      })();
+      const sig = `${st}|${done}|${total}|${latestAt}`;
+      const prev = liveActivityRef.current[rowId];
+      if (!prev) {
+        liveActivityRef.current[rowId] = { sig, at: jobCreatedAtMs || now };
+      } else if (prev.sig !== sig) {
+        liveActivityRef.current[rowId] = { sig, at: now };
+      }
+    }
+  }, [liveItems, job?.createdAt]);
 
   const historyColumns: ColumnsType<HistoryItem> = useMemo(
     () => [
@@ -842,6 +929,17 @@ export default function BatchPage() {
                     disabled={configsLoading || jobListLoading || starting}
                   >
                     刷新
+                  </Button>
+                </Tooltip>
+                <Tooltip title={`重试当前任务中失败或超时（${STUCK_RETRY_SECONDS}秒无变化）的配置`}>
+                  <Button
+                    size="small"
+                    type="primary"
+                    onClick={onRetryAllFailedOrStuck}
+                    loading={retryingAll}
+                    disabled={!job?.id || starting || refreshingAll || configsLoading || jobListLoading}
+                  >
+                    一键重试失败/超时
                   </Button>
                 </Tooltip>
               </Space.Compact>

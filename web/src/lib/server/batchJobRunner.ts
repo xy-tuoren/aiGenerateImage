@@ -333,6 +333,27 @@ export async function startCutJob(input: { jobId: string; concurrency: number })
   cutRunningMap.set(jobId, p);
 }
 
+const envInt = (name: string, fallback: number) => {
+  const raw = String(process.env[name] ?? "").trim();
+  const n = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.floor(n));
+};
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+const formatRetryingError = (msg: string, retryNo: number, retryMax: number) => {
+  const base = msg || "unknown error";
+  if (!retryMax || retryMax <= 0) return base;
+  return `${base}（正在自动重试 ${retryNo}/${retryMax}）`;
+};
+
+const formatRetryFailedError = (msg: string, retryMax: number) => {
+  const base = msg || "unknown error";
+  if (!retryMax || retryMax <= 0) return base;
+  return `${base}（已自动重试 ${retryMax} 次仍失败）`;
+};
+
 async function runBatchJob(input: StartJobInput) {
   const db = await getMongoDb();
   const jobObjectId = new ObjectId(input.jobId);
@@ -389,106 +410,127 @@ async function runBatchJob(input: StartJobInput) {
     const jc = jobCfgMap.get(String(config._id));
     const sourceConfigId = jc?.sourceConfigId;
     let referenceImageUrls: string[] | undefined;
-    try {
-      const referenceImagesRaw = Array.isArray(config.referenceImages) ? config.referenceImages : [];
-      const prepared = await prepareReferenceImages(referenceImagesRaw, { jobId: jobObjectId, configId: config._id, index: task.index, appName: config.appName, lang: config.lang });
-      const referenceImages = prepared.forModel;
-      referenceImageUrls = prepared.publicUrls;
-
-      const client = new GeminiClient({});
-      const generated = await client.generateImage(prompt, {
-        responseModalities: Array.isArray(config.responseModalities) ? config.responseModalities : ["IMAGE"],
-        imageConfig: config.imageConfig,
-        generationConfig: {
-          ...(config.generationConfig && typeof config.generationConfig === "object" ? config.generationConfig : {}),
-          temperature:
-            (config.generationConfig as any)?.temperature === undefined || (config.generationConfig as any)?.temperature === null || (config.generationConfig as any)?.temperature === ""
-              ? 1
-              : Number((config.generationConfig as any)?.temperature),
-        },
-        referenceImages,
-      });
-
-      const ext = extFromMime(generated.mimeType);
-      let imageBase64 = generated.data;
+    const maxRetryTimes = envInt("BATCH_IMAGE_RETRY_TIMES", 3);
+    for (let attempt = 0; attempt <= maxRetryTimes; attempt += 1) {
       try {
-        const ar = String((config.imageConfig as any)?.aspectRatio || "");
-        imageBase64 = await resizeImageByAspectRatio(imageBase64, ar);
-      } catch {
-      }
-      const ts = Date.now();
-      const ratio = aspectRatioToken((config.imageConfig as any)?.aspectRatio);
-      const baseName = `${ts}-${ratio}.${ext}`;
-      const appNameSeg = safePathSegment(config.appName);
-      const langSeg = safePathSegment(config.lang);
-      const relDir = join("generated", appNameSeg, langSeg, String(jobObjectId));
-      const absDir = join(process.cwd(), "public", relDir);
-      await fs.ensureDir(absDir);
-      let filename = baseName;
-      let absFile = join(absDir, filename);
-      if (await fs.pathExists(absFile)) {
-        let i = 2;
-        while (true) {
-          filename = `${ts}-${ratio}-${i}.${ext}`;
-          absFile = join(absDir, filename);
-          if (!(await fs.pathExists(absFile))) break;
-          i += 1;
-        }
-      }
-      await fs.writeFile(absFile, Buffer.from(imageBase64, "base64"));
+        const referenceImagesRaw = Array.isArray(config.referenceImages) ? config.referenceImages : [];
+        const prepared = await prepareReferenceImages(referenceImagesRaw, { jobId: jobObjectId, configId: config._id, index: task.index, appName: config.appName, lang: config.lang });
+        const referenceImages = prepared.forModel;
+        referenceImageUrls = prepared.publicUrls;
 
-      const url = `/${relDir.replaceAll("\\", "/")}/${filename}`;
-      const now = new Date();
-      await imagesCol.insertOne({
-        jobId: jobObjectId,
-        configId: config._id,
-        sourceConfigId,
-        index: task.index,
-        url,
-        filePath: absFile,
-        mimeType: generated.mimeType,
-        createdAt: now,
-        prompt,
-        appName: config.appName,
-        lang: config.lang,
-        batchFun,
-        aspectRatio,
-        referenceImages: referenceImageUrls,
-      });
-      await recordsCol.insertOne({
-        jobId: jobObjectId,
-        configId: config._id,
-        sourceConfigId,
-        index: task.index,
-        status: "completed",
-        prompt,
-        url,
-        mimeType: generated.mimeType,
-        createdAt: now,
-        appName: config.appName,
-        lang: config.lang,
-        batchFun,
-        aspectRatio,
-        referenceImages: referenceImageUrls,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      await recordsCol.insertOne({
-        jobId: jobObjectId,
-        configId: config._id,
-        sourceConfigId,
-        index: task.index,
-        status: "failed",
-        prompt,
-        error: msg,
-        createdAt: new Date(),
-        appName: config.appName,
-        lang: config.lang,
-        batchFun,
-        aspectRatio,
-        referenceImages: referenceImageUrls,
-      });
-      throw err instanceof Error ? err : new Error(msg);
+        const client = new GeminiClient({});
+        const generated = await client.generateImage(prompt, {
+          responseModalities: Array.isArray(config.responseModalities) ? config.responseModalities : ["IMAGE"],
+          imageConfig: config.imageConfig,
+          generationConfig: {
+            ...(config.generationConfig && typeof config.generationConfig === "object" ? config.generationConfig : {}),
+            temperature:
+              (config.generationConfig as any)?.temperature === undefined || (config.generationConfig as any)?.temperature === null || (config.generationConfig as any)?.temperature === ""
+                ? 1
+                : Number((config.generationConfig as any)?.temperature),
+          },
+          referenceImages,
+        });
+
+        const ext = extFromMime(generated.mimeType);
+        let imageBase64 = generated.data;
+        try {
+          const ar = String((config.imageConfig as any)?.aspectRatio || "");
+          imageBase64 = await resizeImageByAspectRatio(imageBase64, ar);
+        } catch {
+        }
+        const ts = Date.now();
+        const ratio = aspectRatioToken((config.imageConfig as any)?.aspectRatio);
+        const baseName = `${ts}-${ratio}.${ext}`;
+        const appNameSeg = safePathSegment(config.appName);
+        const langSeg = safePathSegment(config.lang);
+        const relDir = join("generated", appNameSeg, langSeg, String(jobObjectId));
+        const absDir = join(process.cwd(), "public", relDir);
+        await fs.ensureDir(absDir);
+        let filename = baseName;
+        let absFile = join(absDir, filename);
+        if (await fs.pathExists(absFile)) {
+          let i = 2;
+          while (true) {
+            filename = `${ts}-${ratio}-${i}.${ext}`;
+            absFile = join(absDir, filename);
+            if (!(await fs.pathExists(absFile))) break;
+            i += 1;
+          }
+        }
+        await fs.writeFile(absFile, Buffer.from(imageBase64, "base64"));
+
+        const url = `/${relDir.replaceAll("\\", "/")}/${filename}`;
+        const now = new Date();
+        await imagesCol.insertOne({
+          jobId: jobObjectId,
+          configId: config._id,
+          sourceConfigId,
+          index: task.index,
+          url,
+          filePath: absFile,
+          mimeType: generated.mimeType,
+          createdAt: now,
+          prompt,
+          appName: config.appName,
+          lang: config.lang,
+          batchFun,
+          aspectRatio,
+          referenceImages: referenceImageUrls,
+        });
+        await recordsCol.insertOne({
+          jobId: jobObjectId,
+          configId: config._id,
+          sourceConfigId,
+          index: task.index,
+          status: "completed",
+          prompt,
+          url,
+          mimeType: generated.mimeType,
+          createdAt: now,
+          appName: config.appName,
+          lang: config.lang,
+          batchFun,
+          aspectRatio,
+          referenceImages: referenceImageUrls,
+        });
+
+        break;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        const isLast = attempt >= maxRetryTimes;
+        if (isLast) {
+          const finalMsg = formatRetryFailedError(msg, maxRetryTimes);
+          await recordsCol.insertOne({
+            jobId: jobObjectId,
+            configId: config._id,
+            sourceConfigId,
+            index: task.index,
+            status: "failed",
+            prompt,
+            error: finalMsg,
+            createdAt: new Date(),
+            appName: config.appName,
+            lang: config.lang,
+            batchFun,
+            aspectRatio,
+            referenceImages: referenceImageUrls,
+          });
+          throw err instanceof Error ? err : new Error(finalMsg);
+        }
+        try {
+          const now = new Date();
+          const retryNo = attempt + 1;
+          const retryingMsg = formatRetryingError(msg, retryNo, maxRetryTimes);
+          await jobConfigsCol.updateOne(
+            { jobId: jobObjectId, configId: config._id },
+            { $set: { status: "running", error: retryingMsg, updatedAt: now } } as any
+          );
+        } catch {
+        }
+        const delay = Math.min(5000, 800 * Math.pow(2, attempt));
+        await sleep(delay);
+      }
     }
 
     await jobsCol.updateOne(
@@ -535,11 +577,11 @@ async function runBatchJob(input: StartJobInput) {
   if (!tasks.length) {
     await jobsCol.updateOne(
       { _id: jobObjectId },
-      { $set: { status: "completed", updatedAt: new Date() } }
+      { $set: { status: "completed", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
     await jobConfigsCol.updateMany(
       { jobId: jobObjectId },
-      { $set: { status: "completed", updatedAt: new Date() } }
+      { $set: { status: "completed", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
     return;
   }
@@ -559,11 +601,11 @@ async function runBatchJob(input: StartJobInput) {
   if (jobAfter?.status !== "failed") {
     await jobsCol.updateOne(
       { _id: jobObjectId },
-      { $set: { status: "completed", updatedAt: new Date() } }
+      { $set: { status: "completed", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
     await jobConfigsCol.updateMany(
       { jobId: jobObjectId },
-      { $set: { status: "completed", updatedAt: new Date() } }
+      { $set: { status: "completed", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
   }
 }
@@ -699,12 +741,34 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
       } else {
       const refImgs = await readReferenceImagesToBase64([String(item.sourceAbsPath)]);
       const referenceImages = refImgs.length ? refImgs : undefined;
-      const client = new GeminiClient({});
-      const generated = await client.generateImage(prompt, {
-        responseModalities: ["IMAGE"],
-        imageConfig: { aspectRatio: item.ratio, imageSize: "1K" },
-        referenceImages,
-      });
+      const maxRetryTimes = envInt("BATCH_IMAGE_RETRY_TIMES", 3);
+      let generated: any;
+      for (let attempt = 0; attempt <= maxRetryTimes; attempt += 1) {
+        try {
+          const client = new GeminiClient({});
+          generated = await client.generateImage(prompt, {
+            responseModalities: ["IMAGE"],
+            imageConfig: { aspectRatio: item.ratio, imageSize: "1K" },
+            referenceImages,
+          });
+          break;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (attempt >= maxRetryTimes) throw err instanceof Error ? err : new Error(formatRetryFailedError(msg, maxRetryTimes));
+          try {
+            const now = new Date();
+            const retryNo = attempt + 1;
+            const retryingMsg = formatRetryingError(msg, retryNo, maxRetryTimes);
+            await cutItemsCol.updateOne(
+              { _id: task.itemId },
+              { $set: { status: "running", error: retryingMsg, updatedAt: now } } as any
+            );
+          } catch {
+          }
+          const delay = Math.min(5000, 800 * Math.pow(2, attempt));
+          await sleep(delay);
+        }
+      }
 
       const ext = extFromMime(generated.mimeType);
       let imageBase64 = generated.data;
