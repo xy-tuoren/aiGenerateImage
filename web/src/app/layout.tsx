@@ -16,6 +16,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "批量生成图片 - 内部后台",
   description: "batchGenerateImage 内部工具后台",
+  // 自定义图标：把图标放到 public 目录后取消下面注释并修改路径
+  // icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({

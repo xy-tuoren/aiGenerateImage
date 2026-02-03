@@ -85,11 +85,11 @@ export function getCentralPositionPrompt({ appName, lang, prompt, aspectRatio }:
 }
 
 export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `生成一张${getRatioDesc(aspectRatio)}，提取${appName}应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。`;
+  return `生成一张${getRatioDesc(aspectRatio)}。提取并突出${appName}应用图标（如有则同时保留与图标紧密相关的主标题文字），图标需处于画面核心位置并明显放大；保留部分背景作为衬托；除图标/必要文字/部分背景外，其它元素全部移除。若参考图中图标缺失或不清晰，则补全为${appName}应用图标并自然融入画面。`;
 }
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appName}应用图标以外的一个最大占比元素以及文字组合的构图需要保留部分背景，其他元素不需要了。`;
+  return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appName}应用图标以外的一个最大占比元素与文字的组合构图，需要保留部分背景；若最终只能提取到文字或背景（缺少明确主体元素），必须保留文字并在画面核心位置新增/补全并突出${appName}应用图标，同时随机添加 1 个与图片风格一致的辅助元素（例如：下载/立即体验等按钮、徽标贴纸、卡片容器、简洁图形/图标、进度条/评分标签等）作为视觉主体的一部分。`;
 }
 
 export function getCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
@@ -104,4 +104,66 @@ export function getCutVerticalCollagePrompt({ appName, lang, prompt, aspectRatio
 
 export function getBackgroundPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   return `生成一张新图更换背景其他不变`;
+}
+
+export function getAppAdsDesignerGemini3Prompt({
+  appName,
+  lang,
+  prompt,
+  aspectRatio
+}: {
+  appName?: string;
+  lang?: string;
+  prompt?: string;
+  aspectRatio?: string;
+  [key: string]: any
+}) {
+  return `
+  # Role: AI UI/UX Ad Designer & Localization Specialist (Gemini 3)
+  
+  # Project: "${appName}" Ad Adaptation
+  - Target Language: ${lang} (STRICT)
+  - Visual Style Reference: Derived from the input image (layout, color palette, UI vibe).
+  - **Core Creative Concept**: "${prompt}"
+  
+  # CRITICAL PROBLEM TO SOLVE: Texture Text
+  The reference image likely contains "ambient text" (labels, menu items, UI data) in a specific source language.
+  You must NOT copy these pixels directly if they do not match the target language.
+  
+  # Reasoning Logic (Chain of Thought)
+  1. Analyze User Request:
+     - The user wants an image described as: "${prompt}".
+     - It must look like the app "${appName}" (using the reference image's UI style).
+  2. Analyze Text Layers:
+     - Layer A: Main Headline (Must be written in ${lang}).
+     - Layer B: Background UI/Map details (Likely contains foreign text pixels from the reference).
+  3. Reconstruction Strategy:
+     - I must GENERATE A NEW scene based on "${prompt}".
+     - I will apply the *style* of the reference image to this new scene.
+     - For small details (like station names/dates):
+       - Check: Is the reference text already in ${lang}?
+         - YES -> Keep or enhance it.
+         - NO -> Translate it to ${lang} OR replace it with abstract lines/shapes.
+       - FORBIDDEN: Copying text pixels directly from the reference image without checking the language.
+  
+  # Generation Directives
+  
+  ## 1. Visual Content (The Scene)
+  - **Execute the Core Concept**: Generate the image strictly based on the description: "${prompt}".
+  - **Style Integration**: Apply the visual aesthetic (colors, lighting, UI elements) from the reference image to this concept.
+  
+  ## 2. Main Copy (The Headline)
+  - Render the main advertising slogan in ${lang} (if specified in the prompt) or create a placeholder title in ${lang}.
+  - Ensure it is the focal point.
+  
+  ## 3. Background & UI Elements
+  - Re-render the interface: If the prompt implies a UI (like a map or list), draw a generic interface that matches the reference style.
+  - Text Sanitization: 
+    - Any visible text on the screen/map MUST be in ${lang}.
+    - If the text is too small to render clearly in ${lang}, turn it into abstract geometrical lines or blurred shapes.
+    - ABSOLUTELY NO characters from other languages allowed (unless they are universally used symbols like numbers).
+  
+  # Prompt for Generation
+  (Generate the image now based on the concept "${prompt}", ensuring all text elements are strictly localized to ${lang}.)
+  `;
 }

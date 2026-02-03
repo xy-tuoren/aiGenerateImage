@@ -510,13 +510,24 @@ export default function BatchPage() {
         title: "最新图片",
         key: "images",
         render: (_v, row) => {
-          const imgs = Array.isArray(row.images) ? row.images.slice(0, 12) : [];
-          if (!imgs.length) return <Typography.Text type="secondary">-</Typography.Text>;
+          const all = Array.isArray(row.images) ? row.images : [];
+          const show = all.slice(0, 12);
+          const rest = all.slice(12);
+          if (!show.length) return <Typography.Text type="secondary">-</Typography.Text>;
           return (
             <Image.PreviewGroup>
               <Space wrap size={8}>
-                {imgs.map((img) => (
+                {show.map((img) => (
                   <Image key={img.url} width={64} alt="生成图" height={64} style={{ objectFit: "cover" }} src={img.url} fallback={IMAGE_FALLBACK_SVG} />
+                ))}
+                {rest.map((img) => (
+                  <Image
+                    key={`${img.url}|hidden`}
+                    alt="生成图"
+                    src={img.url}
+                    fallback={IMAGE_FALLBACK_SVG}
+                    style={{ display: "none" }}
+                  />
                 ))}
               </Space>
             </Image.PreviewGroup>
