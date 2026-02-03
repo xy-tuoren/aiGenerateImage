@@ -44,6 +44,24 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
 const COOKIE_NAME = "bg_session";
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
+export function computePwdSig(username: string, password: string) {
+  const secret = getAuthSecret();
+  if (!secret) return "";
+  const u = String(username || "").trim();
+  const p = String(password || "").trim();
+  if (!u || !p) return "";
+  // 用服务端 secret 做 HMAC，避免泄露可逆/可穷举的密码信息
+  return crypto.createHmac("sha256", secret).update(`pwd:${u}:${p}`).digest("hex");
+}
+
+function timingSafeEqualText(a: string, b: string) {
+  const sa = String(a || "");
+  const sb = String(b || "");
+  if (sa.length !== sb.length) return false;
+  // 使用 Buffer + timingSafeEqual，避免时序侧信道
+  return crypto.timingSafeEqual(Buffer.from(sa, "utf8"), Buffer.from(sb, "utf8"));
+}
+
 function base64UrlEncode(input: Buffer | string) {
   const buf = typeof input === "string" ? Buffer.from(input, "utf8") : input;
   return buf.toString("base64").replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
@@ -106,7 +124,7 @@ export function getSessionMaxAgeSeconds() {
   return SESSION_MAX_AGE_SECONDS;
 }
 
-export function buildSessionToken(user: SessionUser) {
+export function buildSessionToken(user: SessionUser, pwdSig?: string) {
   const secret = getAuthSecret();
   if (!secret) return "";
   const nowSec = Math.floor(Date.now() / 1000);
@@ -116,6 +134,7 @@ export function buildSessionToken(user: SessionUser) {
     username: String(user.username || "").trim(),
     iat: nowSec,
     exp: nowSec + SESSION_MAX_AGE_SECONDS,
+    ps: String(pwdSig || "").trim() || undefined,
   };
   const payloadJson = JSON.stringify(payload);
   const payloadB64 = base64UrlEncode(payloadJson);
@@ -124,7 +143,7 @@ export function buildSessionToken(user: SessionUser) {
   return `${payloadB64}.${sig}`;
 }
 
-export function parseSessionToken(token: string): SessionUser | null {
+function parseSessionTokenPayload(token: string): any | null {
   const raw = String(token || "").trim();
   const idx = raw.lastIndexOf(".");
   if (idx <= 0) return null;
@@ -140,20 +159,43 @@ export function parseSessionToken(token: string): SessionUser | null {
     if (!Number.isFinite(exp) || exp <= 0) return null;
     const nowSec = Math.floor(Date.now() / 1000);
     if (nowSec > exp) return null;
-    const userId = String(obj?.userId || "").trim();
-    const username = String(obj?.username || "").trim();
-    if (!userId || !username) return null;
-    return { userId, username };
+    return obj;
   } catch {
     return null;
   }
+}
+
+export function parseSessionToken(token: string): SessionUser | null {
+  const obj = parseSessionTokenPayload(token);
+  if (!obj) return null;
+  const userId = String(obj?.userId || "").trim();
+  const username = String(obj?.username || "").trim();
+  if (!userId || !username) return null;
+  return { userId, username };
 }
 
 export function getUserFromRequest(req: Request): SessionUser | null {
   const cookieHeader = req.headers.get("cookie") || "";
   const token = getCookieValue(cookieHeader, COOKIE_NAME);
   if (!token) return null;
-  return parseSessionToken(token);
+  const obj = parseSessionTokenPayload(token);
+  if (!obj) return null;
+  const userId = String(obj?.userId || "").trim();
+  const username = String(obj?.username || "").trim();
+  if (!userId || !username) return null;
+
+  // 若 token 带密码签名，则校验当前密码是否一致；不一致则强制下线
+  const ps = String(obj?.ps || "").trim();
+  if (ps) {
+    const users = readUsersFromEnv();
+    const hit = users.find((u) => u.username === username);
+    if (!hit?.password) return null;
+    const expectedPs = computePwdSig(username, hit.password);
+    if (!expectedPs) return null;
+    if (!timingSafeEqualText(ps, expectedPs)) return null;
+  }
+
+  return { userId, username };
 }
 
 export function readUsersFromEnv(): EnvAuthUser[] {

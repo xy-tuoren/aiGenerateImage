@@ -90,7 +90,7 @@ export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { 
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appName}应用图标以外的一个最大占比元素与文字的组合构图，需要保留部分背景；
-  若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appName}应用图标，同时随机添加 1 个与图片风格一致的辅助元素（例如：下载/立即体验等按钮、徽标贴纸、卡片容器、简洁图形/图标、进度条/评分标签等）作为视觉主体的一部分但是文字一定要为${lang}语言。
+  若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appName}应用图标，同时随机添加 1 个与图片风格一致的辅助元素（例如：下载/立即体验等按钮、徽标贴纸、卡片容器、简洁图形/图标、进度条/评分标签等）作为视觉主体的一部分,文字的语言要跟参考图一致。
 `;
 }
 

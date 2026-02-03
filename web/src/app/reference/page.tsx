@@ -34,6 +34,18 @@ export default function ReferenceGalleryPage() {
   const selectedImages = useMemo(() => images.filter((url) => selectedKeys.includes(`${appName}|${url}`)), [images, appName, selectedKeys]);
   const selectedPreviewImages = useMemo(() => selectedImages.slice(0, 80), [selectedImages]);
 
+  const uniqKeepOrder = useCallback((arr: string[]) => {
+    const set = new Set<string>();
+    const out: string[] = [];
+    for (const x of arr) {
+      if (!x) continue;
+      if (set.has(x)) continue;
+      set.add(x);
+      out.push(x);
+    }
+    return out;
+  }, []);
+
   const togglePick = useCallback((key: string) => {
     setSelectedKeys((prev) => (prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]));
   }, []);
@@ -128,10 +140,10 @@ export default function ReferenceGalleryPage() {
         const newTotal = typeof data?.total === "number" ? data.total : 0;
         setTotal(newTotal);
         if (append) {
-          setImages((prev) => [...prev, ...list]);
+          setImages((prev) => uniqKeepOrder([...prev, ...list]));
           setLoadedPageCount((p) => p + 1);
         } else {
-          setImages(list);
+          setImages(uniqKeepOrder(list));
           setLoadedPageCount(1);
         }
       } catch (e) {
@@ -141,7 +153,7 @@ export default function ReferenceGalleryPage() {
         else setLoading(false);
       }
     },
-    [messageApi]
+    [messageApi, uniqKeepOrder]
   );
 
   const handleFetchReferenceImages = useCallback(async () => {
