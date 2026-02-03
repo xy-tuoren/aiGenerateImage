@@ -1186,7 +1186,7 @@ export default function GalleryPage() {
   }, [appName, aspectRatio, keyToImg, lang, messageApi, selectedKeys]);
 
   return (
-    <AdminShell defaultSelectedKey="/gallery" headerTitle="图片展示">
+    <AdminShell defaultSelectedKey="/gallery" headerTitle="图片广场">
       {contextHolder}
       {dropUploadActive ? (
         <div

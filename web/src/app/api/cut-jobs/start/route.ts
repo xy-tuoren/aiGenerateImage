@@ -8,6 +8,13 @@ import { requireApiAccess } from "@/lib/server/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const envInt = (name: string, fallback: number) => {
+  const raw = String(process.env[name] ?? "").trim();
+  const n = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(1, Math.floor(n));
+};
+
 type CutJobItemDoc = {
   _id?: ObjectId;
   userId: string;
@@ -84,7 +91,9 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "images / items 不能为空" }, { status: 400 });
   }
 
-  const concurrency = Math.max(1, Number((body as any).concurrency ?? 8) || 8);
+  const nonAdminMax = envInt("NON_ADMIN_CONCURRENCY_MAX", 10);
+  const concurrencyRaw = Math.max(1, Number((body as any).concurrency ?? 8) || 8);
+  const concurrency = guard.authz.isSuperAdmin ? concurrencyRaw : Math.min(concurrencyRaw, nonAdminMax);
 
   const templateNames = ["getCutLogoFinalPrompt", "getCutOtherFinalPrompt", "getCutScaleFinalPrompt"];
   const ratios = ["1:1", "4:5"];
@@ -202,6 +211,8 @@ export async function POST(req: Request) {
   const job = {
     userId: user.userId,
     username: user.username,
+    role: guard.authz.role,
+    isSuperAdmin: guard.authz.isSuperAdmin,
     status: "queued",
     concurrency,
     total,

@@ -8,6 +8,13 @@ import { requireApiAccess } from "@/lib/server/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const envInt = (name: string, fallback: number) => {
+  const raw = String(process.env[name] ?? "").trim();
+  const n = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(1, Math.floor(n));
+};
+
 type ImageConfigDoc = {
   _id: ObjectId;
   userId: string;
@@ -44,7 +51,9 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: false, error: "configIds 不能为空" }, { status: 400 });
   }
 
-  const concurrency = Math.max(1, Number((body as any).concurrency ?? 3) || 3);
+  const nonAdminMax = envInt("NON_ADMIN_CONCURRENCY_MAX", 10);
+  const concurrencyRaw = Math.max(1, Number((body as any).concurrency ?? 3) || 3);
+  const concurrency = guard.authz.isSuperAdmin ? concurrencyRaw : Math.min(concurrencyRaw, nonAdminMax);
   const actualCountRaw = (body as any).actualCount;
   const actualCountNum = actualCountRaw === undefined || actualCountRaw === null || actualCountRaw === "" ? undefined : Number(actualCountRaw);
   const actualCount = typeof actualCountNum === "number" && Number.isFinite(actualCountNum) ? Math.max(0, Math.floor(actualCountNum)) : undefined;
@@ -119,6 +128,8 @@ export async function POST(req: NextRequest) {
   const job = {
     userId: user.userId,
     username: user.username,
+    role: guard.authz.role,
+    isSuperAdmin: guard.authz.isSuperAdmin,
     status: "queued",
     concurrency,
     total,

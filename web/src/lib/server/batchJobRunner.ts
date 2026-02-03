@@ -375,6 +375,14 @@ async function runBatchJob(input: StartJobInput) {
 
   const jobDoc = await jobsCol.findOne({ _id: jobObjectId } as any);
   const userId = String((jobDoc as any)?.userId || "").trim();
+  const jobRole = String((jobDoc as any)?.role || "").trim();
+  const jobIsAdmin =
+    Boolean((jobDoc as any)?.isSuperAdmin) ||
+    String((jobDoc as any)?.username || "").trim() === "admin" ||
+    String(jobRole || "").trim().toLowerCase() === "admin" ||
+    String(jobRole || "").trim().toLowerCase() === "super" ||
+    String(jobRole || "").trim().toLowerCase() === "root" ||
+    String(jobRole || "").trim().toLowerCase() === "superadmin";
 
   await jobsCol.updateOne(
     { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
@@ -443,7 +451,7 @@ async function runBatchJob(input: StartJobInput) {
                 : Number((config.generationConfig as any)?.temperature),
           },
           referenceImages,
-        });
+        }, { role: jobRole || undefined, isAdmin: jobIsAdmin });
 
         const ext = extFromMime(generated.mimeType);
         let imageBase64 = generated.data;
@@ -648,6 +656,14 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
 
   const jobDoc = await jobsCol.findOne({ _id: jobObjectId } as any);
   const userId = String((jobDoc as any)?.userId || "").trim();
+  const jobRole = String((jobDoc as any)?.role || "").trim();
+  const jobIsAdmin =
+    Boolean((jobDoc as any)?.isSuperAdmin) ||
+    String((jobDoc as any)?.username || "").trim() === "admin" ||
+    String(jobRole || "").trim().toLowerCase() === "admin" ||
+    String(jobRole || "").trim().toLowerCase() === "super" ||
+    String(jobRole || "").trim().toLowerCase() === "root" ||
+    String(jobRole || "").trim().toLowerCase() === "superadmin";
 
   await jobsCol.updateOne(
     { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
@@ -798,7 +814,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
             responseModalities: ["IMAGE"],
             imageConfig: { aspectRatio: item.ratio, imageSize: "1K" },
             referenceImages,
-          });
+          }, { role: jobRole || undefined, isAdmin: jobIsAdmin });
           break;
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);

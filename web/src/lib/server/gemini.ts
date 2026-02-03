@@ -1,39 +1,94 @@
 import { addMetadataToImage, DEFAULT_IMAGE_METADATA } from "@/common/utils";
 import { GoogleGenAI } from "@google/genai";
-import * as asyncLib from "async";
 import sharp from "sharp";
 
 const GEMINI_CONCURRENCY = 64;
+const NON_ADMIN_CONCURRENCY_MAX = (() => {
+  const raw = String(process.env.NON_ADMIN_CONCURRENCY_MAX ?? "").trim();
+  const n = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return 10;
+  return Math.max(1, Math.floor(n));
+})();
 
 type QueuedGeminiTask = {
   run: () => Promise<unknown>;
   resolve: (value: unknown) => void;
   reject: (reason: Error) => void;
+  isAdmin: boolean;
 };
 
-/** 全局限制：同时进行中的 Gemini 生图请求数不超过 GEMINI_CONCURRENCY */
-function withGeminiLimit<T>(fn: () => Promise<T>): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    geminiRequestQueue.push({
-      run: fn as () => Promise<unknown>,
-      resolve: resolve as (value: unknown) => void,
-      reject,
-    });
+type GeminiQueueContext = {
+  role?: string;
+  isAdmin?: boolean;
+};
+
+function isAdminRole(role: unknown) {
+  const r = String(role || "").trim().toLowerCase();
+  return r === "admin" || r === "super" || r === "root" || r === "superadmin";
+}
+
+const pendingAdmin: QueuedGeminiTask[] = [];
+const pendingOther: QueuedGeminiTask[] = [];
+let runningCount = 0;
+let runningAdminCount = 0;
+let runningOtherCount = 0;
+let drainScheduled = false;
+
+function scheduleDrain() {
+  if (drainScheduled) return;
+  drainScheduled = true;
+  queueMicrotask(() => {
+    drainScheduled = false;
+    drainGeminiQueue();
   });
 }
 
-const geminiRequestQueue = asyncLib.queue<QueuedGeminiTask>((task, callback) => {
-  task
-    .run()
-    .then((result) => {
-      task.resolve(result);
-      callback();
-    })
-    .catch((err) => {
-      task.reject(err instanceof Error ? err : new Error(String(err)));
-      callback(err instanceof Error ? err : new Error(String(err)));
-    });
-}, GEMINI_CONCURRENCY);
+function drainGeminiQueue() {
+  while (runningCount < GEMINI_CONCURRENCY) {
+    const task = (() => {
+      if (pendingAdmin.length > 0) return pendingAdmin.shift();
+      if (runningAdminCount > 0) return undefined;
+      if (pendingOther.length > 0 && runningOtherCount < NON_ADMIN_CONCURRENCY_MAX) return pendingOther.shift();
+      return undefined;
+    })();
+    if (!task) return;
+
+    runningCount += 1;
+    if (task.isAdmin) runningAdminCount += 1;
+    else runningOtherCount += 1;
+
+    task
+      .run()
+      .then((result) => {
+        task.resolve(result);
+      })
+      .catch((err) => {
+        task.reject(err instanceof Error ? err : new Error(String(err)));
+      })
+      .finally(() => {
+        runningCount -= 1;
+        if (task.isAdmin) runningAdminCount -= 1;
+        else runningOtherCount -= 1;
+        scheduleDrain();
+      });
+  }
+}
+
+/** 全局限制：同时进行中的 Gemini 生图请求数不超过 GEMINI_CONCURRENCY */
+function withGeminiLimit<T>(fn: () => Promise<T>, ctx?: GeminiQueueContext): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const isAdmin = ctx?.isAdmin === true || isAdminRole(ctx?.role);
+    const task: QueuedGeminiTask = {
+      run: fn as () => Promise<unknown>,
+      resolve: resolve as (value: unknown) => void,
+      reject,
+      isAdmin,
+    };
+    if (isAdmin) pendingAdmin.push(task);
+    else pendingOther.push(task);
+    scheduleDrain();
+  });
+}
 
 export interface GeminiConfig {
   apiKey?: string;
@@ -73,7 +128,7 @@ export class GeminiClient {
     this.model = config.model || "gemini-3-pro-image-preview";
   }
 
-  async generateImage(prompt: string, options: GenerateImageOptions = {}): Promise<GeneratedImage> {
+  async generateImage(prompt: string, options: GenerateImageOptions = {}, ctx?: GeminiQueueContext): Promise<GeneratedImage> {
     const parts: any[] = [{ text: prompt }];
 
     if (options.referenceImages && options.referenceImages.length > 0) {
@@ -182,7 +237,7 @@ export class GeminiClient {
         mimeType,
         data: imageData,
       };
-    });
+    }, ctx);
   }
 }
 
