@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ type CutRecordOutputItem = {
 
 type CutRecordDoc = {
   _id?: ObjectId;
+  userId: string;
   jobId?: ObjectId;
   sourceUrl: string;
   sourceAbsPath: string;
@@ -50,6 +52,8 @@ function deriveStatus(outputs: CutRecordDoc["outputs"]): "queued" | "running" | 
 }
 
 export async function GET(req: Request) {
+  const user = getUserFromRequest(req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const limitRaw = searchParams.get("limit");
   const limit = Math.min(5000, Math.max(1, Number(limitRaw ?? 200) || 200));
@@ -59,6 +63,7 @@ export async function GET(req: Request) {
   const jobId = (searchParams.get("jobId") || "").trim();
 
   const filter: any = {};
+  filter.userId = user.userId;
   if (status) {
     if (status !== "queued" && status !== "running" && status !== "completed" && status !== "failed") {
       return Response.json({ ok: false, error: "status 非法" }, { status: 400 });

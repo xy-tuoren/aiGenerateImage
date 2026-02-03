@@ -6,6 +6,7 @@ import sharp from "sharp";
 import { Readable } from "stream";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { extFromMime } from "@/lib/server/utils";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,11 +21,19 @@ type CutRecordOutputItem = {
 
 type CutRecordDoc = {
   _id?: ObjectId;
+  userId: string;
   sourceUrl: string;
   sourceAbsPath: string;
   appName?: string;
   lang?: string;
   outputs?: Record<string, Record<string, CutRecordOutputItem>>;
+};
+
+type GenerationRecordDoc = {
+  _id?: ObjectId;
+  userId: string;
+  url?: string;
+  status?: string;
 };
 
 function publicUrlToAbsPath(u: string) {
@@ -56,14 +65,26 @@ async function readUrlAsRawBuffer(u: string): Promise<{ buf: Buffer; mimeType?: 
 }
 
 export async function POST(req: Request) {
+  const user = getUserFromRequest(req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
   }
 
   const urlsRaw = (body as any).urls;
-  const urls = Array.isArray(urlsRaw) ? urlsRaw.map((x) => String(x)).filter(Boolean) : [];
-  if (urls.length) {
+  const urls0 = Array.isArray(urlsRaw) ? urlsRaw.map((x) => String(x)).filter(Boolean) : [];
+  if (urls0.length) {
+    const db = await getMongoDb();
+    const genCol = db.collection<GenerationRecordDoc>("generation_records");
+    const uniq = Array.from(new Set(urls0.map((x) => String(x || "").trim()).filter(Boolean)));
+    const docs = uniq.length
+      ? await genCol.find({ userId: user.userId, status: "completed", url: { $in: uniq } } as any, { projection: { url: 1 } as any }).toArray()
+      : [];
+    const allowed = new Set(docs.map((d: any) => String(d?.url || "").trim()).filter(Boolean));
+    const urls = urls0.map((x) => String(x || "").trim()).filter((u) => u && allowed.has(u));
+    if (!urls.length) return Response.json({ ok: false, error: "无权限下载" }, { status: 403 });
+
     const archive = archiver("zip", { zlib: { level: 9 } });
     const webStream = Readable.toWeb(archive as any) as unknown as ReadableStream;
 
@@ -145,7 +166,7 @@ export async function POST(req: Request) {
   const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   if (!objectIds.length) return Response.json({ ok: false, error: "ids 非法" }, { status: 400 });
 
-  const docs = await col.find({ _id: { $in: objectIds } }).toArray();
+  const docs = await col.find({ userId: user.userId, _id: { $in: objectIds } } as any).toArray();
   const byId = new Map<string, CutRecordDoc>();
   for (const d of docs) if (d?._id) byId.set(String(d._id), d);
 

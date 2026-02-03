@@ -1,10 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Layout, Menu, Typography } from "antd";
-import { HomeOutlined, SettingOutlined, PictureOutlined } from "@ant-design/icons";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, Layout, Menu, Space, Typography } from "antd";
+import { SettingOutlined, PictureOutlined } from "@ant-design/icons";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type AdminShellProps = {
   children: ReactNode;
@@ -14,7 +15,52 @@ type AdminShellProps = {
 
 export default function AdminShell({ children, defaultSelectedKey, headerTitle }: AdminShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { Header, Content, Sider } = Layout;
+  const [me, setMe] = useState<{ userId: string; username: string } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  const nextPath = useMemo(() => {
+    const p = String(pathname || "").trim();
+    return p || "/configs";
+  }, [pathname]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me", { method: "GET" });
+        const data = await res.json().catch(() => null);
+        if (!mounted) return;
+        if (!res.ok || !data?.ok) {
+          setMe(null);
+          setAuthChecked(true);
+          router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
+          return;
+        }
+        setMe(data.user || null);
+        setAuthChecked(true);
+      } catch {
+        if (!mounted) return;
+        setMe(null);
+        setAuthChecked(true);
+        router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [nextPath, router]);
+
+  const onLogout = useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+    } finally {
+      setMe(null);
+      router.replace("/login");
+    }
+  }, [router]);
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -34,10 +80,16 @@ export default function AdminShell({ children, defaultSelectedKey, headerTitle }
         />
       </Sider>
       <Layout>
-        <Header style={{ display: "flex", alignItems: "center", background: "#001529" }}>
+        <Header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#001529" }}>
           <Typography.Title level={4} style={{ color: "#fff", margin: 0 }}>
             {headerTitle || "批量生成图片 - 内部后台"}
           </Typography.Title>
+          <Space size={10}>
+            {me?.username ? <Typography.Text style={{ color: "rgba(255,255,255,0.85)" }}>{me.username}</Typography.Text> : null}
+            <Button size="small" onClick={onLogout} disabled={!authChecked}>
+              退出登录
+            </Button>
+          </Space>
         </Header>
         <Content style={{ padding: 16 }}>{children}</Content>
       </Layout>

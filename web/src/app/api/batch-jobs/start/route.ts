@@ -3,12 +3,14 @@ import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { startBatchJob } from "@/lib/server/batchJobRunner";
 import { expandConfigByBatchFun } from "@/lib/server/batchFunExpand";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type ImageConfigDoc = {
   _id: ObjectId;
+  userId: string;
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, unknown>;
@@ -26,6 +28,8 @@ type ImageConfigDoc = {
 };
 
 export async function POST(req: NextRequest) {
+  const user = getUserFromRequest(req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
@@ -50,7 +54,7 @@ export async function POST(req: NextRequest) {
   const jobConfigsCol = db.collection("batch_job_configs");
 
   const configObjectIds = configIds.map((id) => new ObjectId(id));
-  const configs = await configsCol.find({ _id: { $in: configObjectIds } }).toArray();
+  const configs = await configsCol.find({ _id: { $in: configObjectIds }, userId: user.userId } as any).toArray();
   const cfgMap = new Map<string, ImageConfigDoc>(configs.map((c) => [String(c._id), c]));
   const missing = configIds.filter((id) => !cfgMap.has(id));
   if (missing.length) {
@@ -112,6 +116,8 @@ export async function POST(req: NextRequest) {
   const total = expandedJobConfigs.reduce((sum, x) => sum + x.total, 0);
 
   const job = {
+    userId: user.userId,
+    username: user.username,
     status: "queued",
     concurrency,
     total,
@@ -123,6 +129,8 @@ export async function POST(req: NextRequest) {
   const jobId = insertJob.insertedId as ObjectId;
 
   const jobConfigDocs = expandedJobConfigs.map((x) => ({
+    userId: user.userId,
+    username: user.username,
     jobId,
     configId: x.configId,
     sourceConfigId: x.sourceConfigId,

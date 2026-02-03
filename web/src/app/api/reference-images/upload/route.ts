@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "fs-extra";
 import path from "path";
 import { isImageFileName } from "@/lib/server/utils";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,6 +27,8 @@ function safeFileName(name: string): string {
 
 export async function POST(req: Request) {
   try {
+    const user = getUserFromRequest(req);
+    if (!user) return NextResponse.json({ ok: false, error: "未登录" }, { status: 401 });
     const formData = await req.formData();
     const files = formData.getAll("files");
     if (!files || !Array.isArray(files) || files.length === 0) {

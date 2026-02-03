@@ -3,12 +3,14 @@ import { join, normalize } from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { startCutJob } from "@/lib/server/batchJobRunner";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type CutJobItemDoc = {
   _id?: ObjectId;
+  userId: string;
   jobId: ObjectId;
   sourceUrl: string;
   sourceAbsPath: string;
@@ -28,6 +30,7 @@ type CutJobItemDoc = {
 
 type CutRecordDoc = {
   _id?: ObjectId;
+  userId: string;
   jobId?: ObjectId;
   sourceUrl: string;
   sourceAbsPath: string;
@@ -48,6 +51,8 @@ function publicUrlToAbsPath(u: string) {
 }
 
 export async function POST(req: Request) {
+  const user = getUserFromRequest(req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
@@ -88,6 +93,7 @@ export async function POST(req: Request) {
       for (const ratio of ratios) {
         for (const templateName of templateNames) {
           itemDocs.push({
+            userId: user.userId,
             sourceUrl: url,
             sourceAbsPath: abs,
             appName,
@@ -103,6 +109,7 @@ export async function POST(req: Request) {
         }
         if (ratio === "4:5") {
           itemDocs.push({
+            userId: user.userId,
             sourceUrl: url,
             sourceAbsPath: abs,
             appName,
@@ -118,6 +125,7 @@ export async function POST(req: Request) {
         }
       }
       itemDocs.push({
+        userId: user.userId,
         sourceUrl: url,
         sourceAbsPath: abs,
         appName,
@@ -148,6 +156,7 @@ export async function POST(req: Request) {
       }
 
       itemDocs.push({
+        userId: user.userId,
         sourceUrl: url,
         sourceAbsPath: abs,
         appName,
@@ -174,6 +183,8 @@ export async function POST(req: Request) {
 
   const total = itemDocs.length;
   const job = {
+    userId: user.userId,
+    username: user.username,
     status: "queued",
     concurrency,
     total,
@@ -206,9 +217,9 @@ export async function POST(req: Request) {
       reset[`outputs.1:1.${stitchTemplateName}`] = { status: "queued", updatedAt: now };
       recordOps.push({
         updateOne: {
-          filter: { sourceAbsPath: abs },
+          filter: { userId: user.userId, sourceAbsPath: abs },
           update: {
-            $set: { jobId, sourceUrl: url, sourceAbsPath: abs, appName, lang, status: "queued", updatedAt: now, ...reset },
+            $set: { userId: user.userId, jobId, sourceUrl: url, sourceAbsPath: abs, appName, lang, status: "queued", updatedAt: now, ...reset },
             $setOnInsert: { createdAt: now },
           },
           upsert: true,
@@ -230,9 +241,9 @@ export async function POST(req: Request) {
     for (const v of byAbs.values()) {
       try {
         await cutRecordsCol.updateOne(
-          { sourceAbsPath: v.sourceAbsPath },
+          { userId: user.userId, sourceAbsPath: v.sourceAbsPath } as any,
           {
-            $set: { jobId, sourceUrl: v.sourceUrl, sourceAbsPath: v.sourceAbsPath, appName: v.appName, lang: v.lang, status: "queued", updatedAt: now, ...v.set } as any,
+            $set: { userId: user.userId, jobId, sourceUrl: v.sourceUrl, sourceAbsPath: v.sourceAbsPath, appName: v.appName, lang: v.lang, status: "queued", updatedAt: now, ...v.set } as any,
             $setOnInsert: { createdAt: now } as any,
           } as any,
           { upsert: true } as any

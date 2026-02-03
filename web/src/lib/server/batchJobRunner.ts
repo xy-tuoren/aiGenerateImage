@@ -10,6 +10,7 @@ import { extFromMime, guessMimeFromPath, isImageFileName, resizeImageByAspectRat
 
 type ImageConfigDoc = {
   _id: ObjectId;
+  userId?: string;
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, unknown>;
@@ -27,6 +28,8 @@ type ImageConfigDoc = {
 
 type BatchJobDoc = {
   _id?: ObjectId;
+  userId?: string;
+  username?: string;
   status: "queued" | "running" | "completed" | "failed";
   concurrency: number;
   total: number;
@@ -38,6 +41,8 @@ type BatchJobDoc = {
 
 type BatchJobConfigDoc = {
   _id?: ObjectId;
+  userId?: string;
+  username?: string;
   jobId: ObjectId;
   configId: ObjectId;
   sourceConfigId?: ObjectId;
@@ -52,6 +57,7 @@ type BatchJobConfigDoc = {
 
 type GeneratedImageDoc = {
   _id?: ObjectId;
+  userId?: string;
   jobId: ObjectId;
   configId: ObjectId;
   sourceConfigId?: ObjectId;
@@ -70,6 +76,7 @@ type GeneratedImageDoc = {
 
 type GenerationRecordDoc = {
   _id?: ObjectId;
+  userId?: string;
   jobId: ObjectId;
   configId: ObjectId;
   sourceConfigId?: ObjectId;
@@ -105,6 +112,7 @@ const cutRunningMap = global.__cutJobRunning ?? (global.__cutJobRunning = new Ma
 
 type CutJobItemDoc = {
   _id?: ObjectId;
+  userId?: string;
   jobId: ObjectId;
   sourceUrl: string;
   sourceAbsPath: string;
@@ -125,6 +133,7 @@ type CutJobItemDoc = {
 
 type CutRecordDoc = {
   _id?: ObjectId;
+  userId?: string;
   jobId?: ObjectId;
   sourceUrl: string;
   sourceAbsPath: string;
@@ -364,14 +373,17 @@ async function runBatchJob(input: StartJobInput) {
   const imagesCol = db.collection<GeneratedImageDoc>("generated_images");
   const recordsCol = db.collection<GenerationRecordDoc>("generation_records");
 
+  const jobDoc = await jobsCol.findOne({ _id: jobObjectId } as any);
+  const userId = String((jobDoc as any)?.userId || "").trim();
+
   await jobsCol.updateOne(
-    { _id: jobObjectId },
+    { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
     { $set: { status: "running", updatedAt: new Date() }, $unset: { error: "" } as any }
   );
 
   const configObjectIds = input.configIds.map((id) => new ObjectId(id));
   const jobConfigs = await jobConfigsCol
-    .find({ jobId: jobObjectId, configId: { $in: configObjectIds } })
+    .find({ jobId: jobObjectId, ...(userId ? { userId } : {}), configId: { $in: configObjectIds } } as any)
     .toArray();
   const jobCfgMap = new Map<string, BatchJobConfigDoc>(jobConfigs.map((jc) => [String(jc.configId), jc]));
 
@@ -380,7 +392,7 @@ async function runBatchJob(input: StartJobInput) {
     return !jc || !jc.config;
   });
   const configs = needFetchFromConfigsCol.length
-    ? await configsCol.find({ _id: { $in: needFetchFromConfigsCol } }).toArray()
+    ? await configsCol.find({ ...(userId ? { userId } : {}), _id: { $in: needFetchFromConfigsCol } } as any).toArray()
     : [];
   const fetchedConfigMap = new Map<string, ImageConfigDoc>(configs.map((c) => [String(c._id), c]));
 
@@ -401,7 +413,7 @@ async function runBatchJob(input: StartJobInput) {
     if (!config) throw new Error(`配置不存在: ${task.configId}`);
 
     await jobConfigsCol.updateOne(
-      { jobId: jobObjectId, configId: new ObjectId(task.configId) },
+      { jobId: jobObjectId, ...(userId ? { userId } : {}), configId: new ObjectId(task.configId) } as any,
       { $set: { status: "running", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
 
@@ -477,6 +489,7 @@ async function runBatchJob(input: StartJobInput) {
         const url = `/${relDir.replaceAll("\\", "/")}/${filename}`;
         const now = new Date();
         await imagesCol.insertOne({
+          ...(userId ? { userId } : {}),
           jobId: jobObjectId,
           configId: config._id,
           sourceConfigId,
@@ -493,6 +506,7 @@ async function runBatchJob(input: StartJobInput) {
           referenceImages: referenceImageUrls,
         });
         await recordsCol.insertOne({
+          ...(userId ? { userId } : {}),
           jobId: jobObjectId,
           configId: config._id,
           sourceConfigId,
@@ -516,6 +530,7 @@ async function runBatchJob(input: StartJobInput) {
         if (isLast) {
           const finalMsg = formatRetryFailedError(msg, maxRetryTimes);
           await recordsCol.insertOne({
+            ...(userId ? { userId } : {}),
             jobId: jobObjectId,
             configId: config._id,
             sourceConfigId,
@@ -537,7 +552,7 @@ async function runBatchJob(input: StartJobInput) {
           const retryNo = attempt + 1;
           const retryingMsg = formatRetryingError(msg, retryNo, maxRetryTimes);
           await jobConfigsCol.updateOne(
-            { jobId: jobObjectId, configId: config._id },
+            { jobId: jobObjectId, ...(userId ? { userId } : {}), configId: config._id } as any,
             { $set: { status: "running", error: retryingMsg, updatedAt: now } } as any
           );
         } catch {
@@ -548,11 +563,11 @@ async function runBatchJob(input: StartJobInput) {
     }
 
     await jobsCol.updateOne(
-      { _id: jobObjectId },
+      { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
       { $inc: { done: 1 }, $set: { updatedAt: new Date() } }
     );
     await jobConfigsCol.updateOne(
-      { jobId: jobObjectId, configId: config._id },
+      { jobId: jobObjectId, ...(userId ? { userId } : {}), configId: config._id } as any,
       { $inc: { done: 1 }, $set: { updatedAt: new Date() } }
     );
   }, Math.max(1, Number(input.concurrency) || 1));
@@ -561,12 +576,12 @@ async function runBatchJob(input: StartJobInput) {
     const msg = err instanceof Error ? err.message : String(err);
     const now = new Date();
     await jobsCol.updateOne(
-      { _id: jobObjectId },
+      { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
       { $set: { status: "failed", error: msg, updatedAt: now } }
     );
     if (task?.configId) {
       await jobConfigsCol.updateOne(
-        { jobId: jobObjectId, configId: new ObjectId(task.configId) },
+        { jobId: jobObjectId, ...(userId ? { userId } : {}), configId: new ObjectId(task.configId) } as any,
         { $set: { status: "failed", error: msg, updatedAt: now } }
       );
     }
@@ -578,7 +593,7 @@ async function runBatchJob(input: StartJobInput) {
     const overrideCount = input.countOverrideMap ? input.countOverrideMap[String(configId)] : undefined;
     const count = Math.max(0, overrideCount !== undefined ? Number(overrideCount) : Number(cfg?.count ?? 1) || 0);
     if (input.onlyMissing) {
-      const completedIdxs = await recordsCol.distinct("index" as any, { jobId: jobObjectId, configId: new ObjectId(configId), status: "completed" } as any);
+      const completedIdxs = await recordsCol.distinct("index" as any, { ...(userId ? { userId } : {}), jobId: jobObjectId, configId: new ObjectId(configId), status: "completed" } as any);
       const completedSet = new Set<number>((Array.isArray(completedIdxs) ? completedIdxs : []).map((x: any) => Number(x)).filter((n: any) => Number.isFinite(n)));
       for (let i = 0; i < count; i += 1) {
         if (!completedSet.has(i)) tasks.push({ configId, index: i });
@@ -590,11 +605,11 @@ async function runBatchJob(input: StartJobInput) {
 
   if (!tasks.length) {
     await jobsCol.updateOne(
-      { _id: jobObjectId },
+      { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
       { $set: { status: "completed", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
     await jobConfigsCol.updateMany(
-      { jobId: jobObjectId },
+      { jobId: jobObjectId, ...(userId ? { userId } : {}) } as any,
       { $set: { status: "completed", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
     return;
@@ -604,7 +619,7 @@ async function runBatchJob(input: StartJobInput) {
     q.drain(() => resolve());
   });
   await jobConfigsCol.updateMany(
-    { jobId: jobObjectId, configId: { $in: configObjectIds } },
+    { jobId: jobObjectId, ...(userId ? { userId } : {}), configId: { $in: configObjectIds } } as any,
     { $set: { status: "queued", updatedAt: new Date() } }
   );
 
@@ -614,11 +629,11 @@ async function runBatchJob(input: StartJobInput) {
   const jobAfter = await jobsCol.findOne({ _id: jobObjectId });
   if (jobAfter?.status !== "failed") {
     await jobsCol.updateOne(
-      { _id: jobObjectId },
+      { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
       { $set: { status: "completed", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
     await jobConfigsCol.updateMany(
-      { jobId: jobObjectId },
+      { jobId: jobObjectId, ...(userId ? { userId } : {}) } as any,
       { $set: { status: "completed", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
   }
@@ -631,15 +646,18 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
   const cutItemsCol = db.collection<CutJobItemDoc>("cut_job_items");
   const cutRecordsCol = db.collection<CutRecordDoc>("cut_records");
 
+  const jobDoc = await jobsCol.findOne({ _id: jobObjectId } as any);
+  const userId = String((jobDoc as any)?.userId || "").trim();
+
   await jobsCol.updateOne(
-    { _id: jobObjectId },
+    { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
     { $set: { status: "running", updatedAt: new Date() }, $unset: { error: "" } as any }
   );
 
-  const items = await cutItemsCol.find({ jobId: jobObjectId, status: { $ne: "completed" } } as any).toArray();
+  const items = await cutItemsCol.find({ jobId: jobObjectId, ...(userId ? { userId } : {}), status: { $ne: "completed" } } as any).toArray();
   if (!items.length) {
     await jobsCol.updateOne(
-      { _id: jobObjectId },
+      { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
       { $set: { status: "completed", updatedAt: new Date() } }
     );
     return;
@@ -657,9 +675,10 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
     try {
       const pathKey = `outputs.${item.ratio}.${item.templateName}`;
       await cutRecordsCol.updateOne(
-        { sourceAbsPath: String(item.sourceAbsPath) },
+        { ...(userId ? { userId } : {}), sourceAbsPath: String(item.sourceAbsPath) } as any,
         {
           $set: {
+            ...(userId ? { userId } : {}),
             jobId: jobObjectId,
             sourceUrl: item.sourceUrl,
             sourceAbsPath: item.sourceAbsPath,
@@ -749,9 +768,10 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
         try {
           const pathKey = `outputs.${item.ratio}.${item.templateName}`;
           await cutRecordsCol.updateOne(
-            { sourceAbsPath: String(item.sourceAbsPath) },
+            { ...(userId ? { userId } : {}), sourceAbsPath: String(item.sourceAbsPath) } as any,
             {
               $set: {
+                ...(userId ? { userId } : {}),
                 jobId: jobObjectId,
                 sourceUrl: item.sourceUrl,
                 sourceAbsPath: item.sourceAbsPath,
@@ -858,9 +878,10 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
       try {
         const pathKey = `outputs.${item.ratio}.${item.templateName}`;
         await cutRecordsCol.updateOne(
-          { sourceAbsPath: String(item.sourceAbsPath) },
+          { ...(userId ? { userId } : {}), sourceAbsPath: String(item.sourceAbsPath) } as any,
           {
             $set: {
+              ...(userId ? { userId } : {}),
               jobId: jobObjectId,
               sourceUrl: item.sourceUrl,
               sourceAbsPath: item.sourceAbsPath,
@@ -886,9 +907,10 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
       try {
         const pathKey = `outputs.${item.ratio}.${item.templateName}`;
         await cutRecordsCol.updateOne(
-          { sourceAbsPath: String(item.sourceAbsPath) },
+          { ...(userId ? { userId } : {}), sourceAbsPath: String(item.sourceAbsPath) } as any,
           {
             $set: {
+              ...(userId ? { userId } : {}),
               jobId: jobObjectId,
               sourceUrl: item.sourceUrl,
               sourceAbsPath: item.sourceAbsPath,
@@ -908,7 +930,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
     }
 
     await jobsCol.updateOne(
-      { _id: jobObjectId },
+      { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
       { $inc: { done: 1 }, $set: { updatedAt: new Date() } }
     );
   }, Math.max(1, Number(input.concurrency) || 1));
@@ -917,7 +939,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
     const msg = err instanceof Error ? err.message : String(err);
     const now = new Date();
     await jobsCol.updateOne(
-      { _id: jobObjectId },
+      { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
       { $set: { status: "failed", error: msg, updatedAt: now } }
     );
   });
@@ -932,7 +954,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
   const jobAfter = await jobsCol.findOne({ _id: jobObjectId });
   if (jobAfter?.status !== "failed") {
     await jobsCol.updateOne(
-      { _id: jobObjectId },
+      { _id: jobObjectId, ...(userId ? { userId } : {}) } as any,
       { $set: { status: "completed", updatedAt: new Date() } }
     );
   }

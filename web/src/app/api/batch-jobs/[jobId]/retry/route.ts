@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { startBatchJob, startCutJob } from "@/lib/server/batchJobRunner";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,6 +11,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ jobId: string 
   if (!jobId || !ObjectId.isValid(jobId)) {
     return Response.json({ ok: false, error: "jobId 非法" }, { status: 400 });
   }
+  const user = getUserFromRequest(req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
   const configIdsRaw = body && typeof body === "object" ? (body as any).configIds : undefined;
@@ -20,7 +23,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ jobId: string 
   const jobConfigsCol = db.collection("batch_job_configs");
 
   const _id = new ObjectId(jobId);
-  const job = await jobsCol.findOne({ _id });
+  const job = await jobsCol.findOne({ _id, userId: user.userId } as any);
   if (!job) return Response.json({ ok: false, error: "job 不存在" }, { status: 404 });
   const jobType = String((job as any)?.extra?.type || "");
   if (jobType === "cut") {
@@ -29,7 +32,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ jobId: string 
     const concurrency = Math.max(1, Number((job as any).concurrency ?? 1) || 1);
 
     const targetSourceUrls = configIds.length ? configIds : [];
-    const filter: any = { jobId: _id, status: { $ne: "completed" } };
+    const filter: any = { jobId: _id, userId: user.userId, status: { $ne: "completed" } };
     if (targetSourceUrls.length) filter.sourceUrl = { $in: targetSourceUrls };
 
     const items = await cutItemsCol.find(filter, { projection: { _id: 1, sourceAbsPath: 1, sourceUrl: 1, ratio: 1, templateName: 1 } as any, limit: 5000 } as any).toArray();
@@ -48,7 +51,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ jobId: string 
       try {
         const pathKey = `outputs.${String(it.ratio)}.${String(it.templateName)}`;
         await cutRecordsCol.updateOne(
-          { sourceAbsPath: String(it.sourceAbsPath) },
+          { sourceAbsPath: String(it.sourceAbsPath), userId: user.userId } as any,
           { $set: { status: "queued", updatedAt: now, [pathKey]: { status: "queued", updatedAt: now } } as any } as any,
           { upsert: true } as any
         );
@@ -56,9 +59,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ jobId: string 
       }
     }
 
-    const completedCount = await cutItemsCol.countDocuments({ jobId: _id, status: "completed" } as any);
+    const completedCount = await cutItemsCol.countDocuments({ jobId: _id, userId: user.userId, status: "completed" } as any);
     await jobsCol.updateOne(
-      { _id },
+      { _id, userId: user.userId } as any,
       { $set: { status: "queued", done: completedCount, updatedAt: now }, $unset: { error: "" } as any } as any
     );
 
@@ -71,15 +74,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ jobId: string 
   const validConfigIds = configIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   const targetConfigObjectIds = validConfigIds.length
     ? validConfigIds
-    : await jobConfigsCol.distinct("configId" as any, { jobId: _id, $expr: { $lt: ["$done", "$total"] } } as any);
+    : await jobConfigsCol.distinct("configId" as any, { jobId: _id, userId: user.userId, $expr: { $lt: ["$done", "$total"] } } as any);
 
   const targetIds = (Array.isArray(targetConfigObjectIds) ? targetConfigObjectIds : []).filter((x: any) => x && ObjectId.isValid(String(x))).map((x: any) => new ObjectId(String(x)));
   if (!targetIds.length) return Response.json({ ok: true, retried: 0 });
 
   const now = new Date();
-  await jobsCol.updateOne({ _id }, { $set: { status: "queued", updatedAt: now }, $unset: { error: "" } as any } as any);
+  await jobsCol.updateOne({ _id, userId: user.userId } as any, { $set: { status: "queued", updatedAt: now }, $unset: { error: "" } as any } as any);
   await jobConfigsCol.updateMany(
-    { jobId: _id, configId: { $in: targetIds } } as any,
+    { jobId: _id, userId: user.userId, configId: { $in: targetIds } } as any,
     { $set: { status: "queued", updatedAt: now }, $unset: { error: "" } as any } as any
   );
 

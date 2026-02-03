@@ -5,6 +5,7 @@ import FormData from "form-data";
 import path from "path";
 import { chunkArray, mimeFromExt } from "@/lib/server/utils";
 import { getMongoDb } from "@/lib/server/mongodb";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -46,6 +47,8 @@ async function readImageAsBuffer(src: string): Promise<{ buffer: Buffer; fileNam
 
 export async function POST(req: Request) {
   try {
+    const user = getUserFromRequest(req);
+    if (!user) return NextResponse.json({ ok: false, error: "未登录" }, { status: 401 });
     const authHeader = getFireplayAuthHeader(req);
     const body: any = await req.json().catch(() => ({}));
     const imageUrls: string[] = Array.isArray(body?.imageUrls)
@@ -123,8 +126,8 @@ export async function POST(req: Request) {
           await col.bulkWrite(
             uniq.map((sourceUrl) => ({
               updateOne: {
-                filter: { sourceUrl },
-                update: { $set: { sourceUrl, uploadedAt: now, type, ownerId }, $setOnInsert: { createdAt: now } },
+                filter: { userId: user.userId, sourceUrl },
+                update: { $set: { userId: user.userId, sourceUrl, uploadedAt: now, type, ownerId }, $setOnInsert: { createdAt: now } },
                 upsert: true,
               },
             })),

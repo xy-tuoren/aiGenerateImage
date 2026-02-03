@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 type ImageConfigDoc = {
   _id?: ObjectId;
+  userId: string;
+  username?: string;
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, any>;
@@ -35,14 +38,18 @@ function toClient(doc: ImageConfigDoc) {
   return { id: _id ? String(_id) : undefined, ...rest };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const user = getUserFromRequest(req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
   const db = await getMongoDb();
   const col = db.collection<ImageConfigDoc>("image_configs");
-  const docs = await col.find({}, { sort: { updatedAt: -1, createdAt: -1 } }).limit(500).toArray();
+  const docs = await col.find({ userId: user.userId }, { sort: { updatedAt: -1, createdAt: -1 } }).limit(500).toArray();
   return Response.json({ ok: true, items: docs.map(toClient) });
 }
 
 export async function POST(req: NextRequest) {
+  const user = getUserFromRequest(req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
@@ -72,6 +79,8 @@ export async function POST(req: NextRequest) {
 
   const now = new Date();
   const doc: ImageConfigDoc = {
+    userId: user.userId,
+    username: user.username,
     prompt,
     referenceImages,
     generationConfig: normalizeGenerationConfig(body.generationConfig),

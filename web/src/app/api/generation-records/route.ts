@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,6 +56,8 @@ type BatchJobConfigDoc = {
 };
 
 export async function GET(req: Request) {
+  const user = getUserFromRequest(req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const limitRaw = searchParams.get("limit");
   const limit = Math.min(5000, Math.max(1, Number(limitRaw ?? 200) || 200));
@@ -71,6 +74,7 @@ export async function GET(req: Request) {
   const jobConfigsCol = db.collection<BatchJobConfigDoc>("batch_job_configs");
 
   const filter: any = {};
+  filter.userId = user.userId;
   if (jobId) {
     if (!ObjectId.isValid(jobId)) return Response.json({ ok: false, error: "jobId 非法" }, { status: 400 });
     filter.jobId = new ObjectId(jobId);
@@ -115,6 +119,7 @@ export async function GET(req: Request) {
       : await jobConfigsCol
           .find(
             {
+              userId: user.userId,
               ...(filter.jobId ? { jobId: filter.jobId } : {}),
               ...(filter.configId ? { configId: filter.configId } : {}),
               status: "failed",
@@ -154,7 +159,7 @@ export async function GET(req: Request) {
   const jobCfgMetas = configObjectIds.length
     ? await jobConfigsCol
         .find(
-          { configId: { $in: configObjectIds } } as any,
+          { userId: user.userId, configId: { $in: configObjectIds } } as any,
           { projection: { configId: 1, sourceConfigId: 1, config: 1 } as any }
         )
         .toArray()

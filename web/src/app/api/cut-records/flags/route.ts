@@ -1,4 +1,5 @@
 import { getMongoDb } from "@/lib/server/mongodb";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,6 +9,8 @@ type CutRecordDoc = {
 };
 
 export async function POST(req: Request) {
+  const user = getUserFromRequest(req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
   const urlsRaw = (body as any).urls;
@@ -17,11 +20,11 @@ export async function POST(req: Request) {
 
   const db = await getMongoDb();
   const col = db.collection<CutRecordDoc>("cut_records");
-  const docs = await col.find({ sourceUrl: { $in: uniq } }, { projection: { sourceUrl: 1 } }).toArray();
+  const docs = await col.find({ userId: user.userId, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } }).toArray();
   const cutUrls = docs.map((d: any) => String(d.sourceUrl || "")).filter(Boolean);
 
   const fireplayCol = db.collection<{ sourceUrl: string }>("fireplay_upload_records");
-  const fireplayDocs = await fireplayCol.find({ sourceUrl: { $in: uniq } }, { projection: { sourceUrl: 1 } }).toArray();
+  const fireplayDocs = await fireplayCol.find({ userId: user.userId, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } }).toArray();
   const fireplayUploadedUrls = fireplayDocs.map((d: any) => String(d.sourceUrl || "")).filter(Boolean);
 
   return Response.json({ ok: true, cutUrls, fireplayUploadedUrls });

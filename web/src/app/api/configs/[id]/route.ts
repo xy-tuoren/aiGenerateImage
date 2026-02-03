@@ -1,12 +1,15 @@
 import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type ImageConfigDoc = {
   _id?: ObjectId;
+  userId: string;
+  username?: string;
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, any>;
@@ -43,9 +46,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (!id || !ObjectId.isValid(id)) {
     return Response.json({ ok: false, error: "id 非法" }, { status: 400 });
   }
+  const user = getUserFromRequest(_req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
   const db = await getMongoDb();
   const col = db.collection<ImageConfigDoc>("image_configs");
-  const doc = await col.findOne({ _id: new ObjectId(id) });
+  const doc = await col.findOne({ _id: new ObjectId(id), userId: user.userId });
   if (!doc) return Response.json({ ok: false, error: "配置不存在" }, { status: 404 });
   return Response.json({ ok: true, item: toClient(doc) });
 }
@@ -55,6 +60,8 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   if (!id || !ObjectId.isValid(id)) {
     return Response.json({ ok: false, error: "id 非法" }, { status: 400 });
   }
+  const user = getUserFromRequest(req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
@@ -100,11 +107,11 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   const db = await getMongoDb();
   const col = db.collection<ImageConfigDoc>("image_configs");
   const _id = new ObjectId(id);
-  const old = await col.findOne({ _id });
+  const old = await col.findOne({ _id, userId: user.userId });
   if (!old) return Response.json({ ok: false, error: "配置不存在" }, { status: 404 });
 
-  await col.updateOne({ _id }, { $set: patch });
-  const next = await col.findOne({ _id });
+  await col.updateOne({ _id, userId: user.userId }, { $set: patch });
+  const next = await col.findOne({ _id, userId: user.userId });
   return Response.json({ ok: true, item: toClient(next as any) });
 }
 
@@ -113,11 +120,13 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   if (!id || !ObjectId.isValid(id)) {
     return Response.json({ ok: false, error: "id 非法" }, { status: 400 });
   }
+  const user = getUserFromRequest(_req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
   const db = await getMongoDb();
   const col = db.collection<ImageConfigDoc>("image_configs");
   const _id = new ObjectId(id);
-  const old = await col.findOne({ _id });
+  const old = await col.findOne({ _id, userId: user.userId });
   if (!old) return Response.json({ ok: false, error: "配置不存在" }, { status: 404 });
-  await col.deleteOne({ _id });
+  await col.deleteOne({ _id, userId: user.userId });
   return Response.json({ ok: true });
 }

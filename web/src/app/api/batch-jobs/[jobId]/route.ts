@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
+import { getUserFromRequest } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,8 @@ export async function GET(
   if (!jobId || !ObjectId.isValid(jobId)) {
     return Response.json({ ok: false, error: "jobId 非法" }, { status: 400 });
   }
+  const user = getUserFromRequest(_req);
+  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
 
   const db = await getMongoDb();
   const jobsCol = db.collection("batch_jobs");
@@ -21,12 +24,12 @@ export async function GET(
   const cutItemsCol = db.collection("cut_job_items");
 
   const _id = new ObjectId(jobId);
-  const job = await jobsCol.findOne({ _id });
+  const job = await jobsCol.findOne({ _id, userId: user.userId } as any);
   if (!job) return Response.json({ ok: false, error: "job 不存在" }, { status: 404 });
 
   const jobType = String((job as any)?.extra?.type || "");
   if (jobType === "cut") {
-    const cutItems = await cutItemsCol.find({ jobId: _id }, { sort: { createdAt: -1 }, limit: 5000 } as any).toArray();
+    const cutItems = await cutItemsCol.find({ jobId: _id, userId: user.userId } as any, { sort: { createdAt: -1 }, limit: 5000 } as any).toArray();
     const items = (cutItems as any[]).map((it) => ({
       id: String(it._id),
       configId: String(it.sourceUrl || ""),
@@ -60,18 +63,17 @@ export async function GET(
     });
   }
 
-  const jobConfigs = await jobConfigsCol.find({ jobId: _id }).toArray();
-  const configIds = jobConfigs.map((c: any) => c.configId).filter(Boolean);
+  const jobConfigs = await jobConfigsCol.find({ jobId: _id, userId: user.userId } as any).toArray();
   const needLookupIds = jobConfigs.filter((jc: any) => !jc?.config).map((jc: any) => jc.configId).filter(Boolean);
   const configs = needLookupIds.length
     ? await configsCol
-        .find({ _id: { $in: needLookupIds } }, { projection: { prompt: 1, appName: 1, lang: 1, batchFun: 1, imageConfig: 1, referenceImages: 1 } as any })
+        .find({ _id: { $in: needLookupIds }, userId: user.userId } as any, { projection: { prompt: 1, appName: 1, lang: 1, batchFun: 1, imageConfig: 1, referenceImages: 1 } as any })
         .toArray()
     : [];
   const configMap = new Map<string, any>(configs.map((c: any) => [String(c._id), c]));
 
   const latestImages = await imagesCol
-    .find({ jobId: _id }, { sort: { createdAt: -1 }, limit: 200 } as any)
+    .find({ jobId: _id, userId: user.userId } as any, { sort: { createdAt: -1 }, limit: 200 } as any)
     .toArray();
   const imagesByConfig = new Map<string, any[]>();
   for (const img of latestImages as any[]) {
