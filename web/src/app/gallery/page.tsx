@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Button, Image, Select, Space, Typography, message } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
@@ -42,6 +42,89 @@ type GridImage = {
   appName?: string;
   lang?: string;
 };
+
+const GridTile = memo(
+  function GridTile(props: {
+    img: GridImage;
+    idx: number;
+    selected: boolean;
+    onTogglePick: (k: string) => void;
+    onOpenPreview: (idx: number) => void;
+  }) {
+    const { img, idx, selected, onTogglePick, onOpenPreview } = props;
+
+    const onContextMenu = useCallback(
+      (e: any) => {
+        e.preventDefault();
+        onTogglePick(img.key);
+      },
+      [img.key, onTogglePick]
+    );
+
+    const onClick = useCallback(() => {
+      onOpenPreview(idx);
+    }, [idx, onOpenPreview]);
+
+    return (
+      <div
+        data-grid-key={img.key}
+        style={{
+          position: "relative",
+          cursor: "default",
+          width: "100%",
+          aspectRatio: "16 / 9",
+          overflow: "hidden",
+          borderRadius: 10,
+          border: selected ? "3px solid #1677ff" : "1px solid rgba(0,0,0,0.06)",
+          boxShadow: selected ? "0 0 0 3px rgba(22,119,255,0.22)" : undefined,
+        }}
+        onContextMenu={onContextMenu}
+        onClick={onClick}
+      >
+        <Image
+          width="100%"
+          height="100%"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          preview={false}
+          src={img.url}
+          alt={img.url}
+          loading="lazy"
+          decoding="async"
+        />
+        {selected ? <div style={{ position: "absolute", inset: 0, background: "rgba(22,119,255,0.16)", pointerEvents: "none" }} /> : null}
+        {selected ? (
+          <div
+            style={{
+              position: "absolute",
+              top: 8,
+              left: 8,
+              width: 26,
+              height: 26,
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.85)",
+              background: "#1677ff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              fontSize: 16,
+              fontWeight: 700,
+              userSelect: "none",
+            }}
+          >
+            ✓
+          </div>
+        ) : null}
+      </div>
+    );
+  },
+  (a, b) =>
+    a.img === b.img &&
+    a.idx === b.idx &&
+    a.selected === b.selected &&
+    a.onTogglePick === b.onTogglePick &&
+    a.onOpenPreview === b.onOpenPreview
+);
 
 function useUploadToFireplay(args: {
   messageApi: any;
@@ -328,6 +411,49 @@ export default function GalleryPage() {
       return [...prev, k];
     });
   }, []);
+
+  const onOpenPreviewAt = useCallback((idx: number) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    setPreviewIndex(idx);
+    setPreviewOpen(true);
+  }, []);
+
+  const onPreviewOpenChange = useCallback((open: boolean) => {
+    setPreviewOpen(Boolean(open));
+    if (!open) setPreviewIndex(0);
+  }, []);
+
+  const onPreviewChange = useCallback((cur: number) => setPreviewIndex(Number(cur) || 0), []);
+
+  const previewConfig = useMemo(
+    () => ({
+      open: previewOpen,
+      current: previewIndex,
+      onOpenChange: onPreviewOpenChange,
+      onChange: onPreviewChange,
+    }),
+    [onPreviewChange, onPreviewOpenChange, previewIndex, previewOpen]
+  );
+
+  const onSelectedPreviewOpenChange = useCallback((open: boolean) => {
+    setSelectedPreviewOpen(Boolean(open));
+    if (!open) setSelectedPreviewIndex(0);
+  }, []);
+
+  const onSelectedPreviewChange = useCallback((cur: number) => setSelectedPreviewIndex(Number(cur) || 0), []);
+
+  const selectedPreviewConfig = useMemo(
+    () => ({
+      open: selectedPreviewOpen,
+      current: selectedPreviewIndex,
+      onOpenChange: onSelectedPreviewOpenChange,
+      onChange: onSelectedPreviewChange,
+    }),
+    [onSelectedPreviewChange, onSelectedPreviewOpenChange, selectedPreviewIndex, selectedPreviewOpen]
+  );
 
   const addPicks = useCallback((keys: string[]) => {
     const arr = Array.isArray(keys) ? keys.map((x) => String(x || "").trim()).filter(Boolean) : [];
@@ -671,15 +797,7 @@ export default function GalleryPage() {
               </Button>
               <div style={{ flex: "1 1 100%" }} />
               <Image.PreviewGroup
-                preview={{
-                  open: selectedPreviewOpen,
-                  current: selectedPreviewIndex,
-                  onOpenChange: (open) => {
-                    setSelectedPreviewOpen(Boolean(open));
-                    if (!open) setSelectedPreviewIndex(0);
-                  },
-                  onChange: (cur) => setSelectedPreviewIndex(Number(cur) || 0),
-                }}
+                preview={selectedPreviewConfig}
               >
                 <Space wrap size={8}>
                   {selectedPreviewImages.map((img, i) => (
@@ -691,7 +809,15 @@ export default function GalleryPage() {
                         setSelectedPreviewOpen(true);
                       }}
                     >
-                      <Image width={92} height={52} style={{ width: 92, height: 52, objectFit: "cover" }} src={img.url} alt={img.url} />
+                      <Image
+                        width={92}
+                        height={52}
+                        style={{ width: 92, height: 52, objectFit: "cover" }}
+                        src={img.url}
+                        alt={img.url}
+                        loading="lazy"
+                        decoding="async"
+                      />
                       <div
                         title="移除"
                         onClick={(e) => { e.stopPropagation(); togglePick(img.key); }}
@@ -709,15 +835,7 @@ export default function GalleryPage() {
 
         <Image.PreviewGroup
           items={previewItems}
-          preview={{
-            open: previewOpen,
-            current: previewIndex,
-            onOpenChange: (open) => {
-              setPreviewOpen(Boolean(open));
-              if (!open) setPreviewIndex(0);
-            },
-            onChange: (cur) => setPreviewIndex(Number(cur) || 0),
-          }}
+          preview={previewConfig}
         >
           <div
             ref={gridWrapRef}
@@ -757,58 +875,14 @@ export default function GalleryPage() {
               />
             ) : null}
             {paginatedGridImages.map((img, idx) => (
-              <div
+              <GridTile
                 key={img.key}
-                data-grid-key={img.key}
-                style={{ position: "relative", cursor: "default", width: "100%", aspectRatio: "16 / 9", overflow: "hidden", borderRadius: 10, border: selectedKeySet.has(img.key) ? "3px solid #1677ff" : "1px solid rgba(0,0,0,0.06)", boxShadow: selectedKeySet.has(img.key) ? "0 0 0 3px rgba(22,119,255,0.22)" : undefined }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  togglePick(img.key);
-                }}
-                onClick={() => {
-                  if (suppressClickRef.current) {
-                    suppressClickRef.current = false;
-                    return;
-                  }
-                  setPreviewIndex(idx);
-                  setPreviewOpen(true);
-                }}
-              >
-                <Image
-                  width="100%"
-                  height="100%"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  preview={false}
-                  src={img.url}
-                  alt={img.url}
-                />
-                {selectedKeySet.has(img.key) ? (
-                  <div style={{ position: "absolute", inset: 0, background: "rgba(22,119,255,0.16)", pointerEvents: "none" }} />
-                ) : null}
-                {selectedKeySet.has(img.key) ? (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 8,
-                      left: 8,
-                      width: 26,
-                      height: 26,
-                      borderRadius: 8,
-                      border: "1px solid rgba(255,255,255,0.85)",
-                      background: "#1677ff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontSize: 16,
-                      fontWeight: 700,
-                      userSelect: "none",
-                    }}
-                  >
-                    ✓
-                  </div>
-                ) : null}
-              </div>
+                img={img}
+                idx={idx}
+                selected={selectedKeySet.has(img.key)}
+                onTogglePick={togglePick}
+                onOpenPreview={onOpenPreviewAt}
+              />
             ))}
           </div>
         </Image.PreviewGroup>

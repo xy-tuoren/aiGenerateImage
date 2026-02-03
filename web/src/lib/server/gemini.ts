@@ -1,4 +1,4 @@
-import { addMetadataToImage } from "@/common/utils";
+import { addMetadataToImage, DEFAULT_IMAGE_METADATA } from "@/common/utils";
 import { GoogleGenAI } from "@google/genai";
 import * as asyncLib from "async";
 import sharp from "sharp";
@@ -34,15 +34,6 @@ const geminiRequestQueue = asyncLib.queue<QueuedGeminiTask>((task, callback) => 
       callback(err instanceof Error ? err : new Error(String(err)));
     });
 }, GEMINI_CONCURRENCY);
-
-const GEMINI_IMAGE_METADATA = {
-  custom: {
-    tableName: "original_image",
-    id: "d-404",
-    userId: "d-404",
-    designer: "d-404",
-  },
-};
 
 export interface GeminiConfig {
   apiKey?: string;
@@ -182,7 +173,7 @@ export class GeminiClient {
             const withMetaBuffer = addMetadataToImage(
               rawBuffer.buffer.slice(rawBuffer.byteOffset, rawBuffer.byteOffset + rawBuffer.byteLength),
               mimeType,
-              GEMINI_IMAGE_METADATA
+              DEFAULT_IMAGE_METADATA
             );
             return Buffer.from(withMetaBuffer).toString("base64");
           })()

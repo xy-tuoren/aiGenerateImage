@@ -5,6 +5,7 @@ import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { GeminiClient } from "@/lib/server/gemini";
 import * as promptFns from "@/common/prompt";
+import { addMetadataToImage, DEFAULT_IMAGE_METADATA } from "@/common/utils";
 import { extFromMime, guessMimeFromPath, isImageFileName, resizeImageByAspectRatio, stitchLongImageToSize } from "@/lib/server/utils";
 
 type ImageConfigDoc = {
@@ -434,10 +435,23 @@ async function runBatchJob(input: StartJobInput) {
 
         const ext = extFromMime(generated.mimeType);
         let imageBase64 = generated.data;
+        const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
         try {
           const ar = String((config.imageConfig as any)?.aspectRatio || "");
           imageBase64 = await resizeImageByAspectRatio(imageBase64, ar);
         } catch {
+        }
+        if (addMetadata) {
+          try {
+            const buf = Buffer.from(imageBase64, "base64");
+            const withMeta = addMetadataToImage(
+              buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+              generated.mimeType,
+              DEFAULT_IMAGE_METADATA
+            );
+            imageBase64 = Buffer.from(withMeta).toString("base64");
+          } catch {
+          }
         }
         const ts = Date.now();
         const ratio = aspectRatioToken((config.imageConfig as any)?.aspectRatio);
@@ -679,6 +693,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
       if (item.templateName === "stitchLongImage1024") {
         const sourceBuf = await fs.readFile(String(item.sourceAbsPath));
         const stitched = await stitchLongImageToSize(sourceBuf, 1024, 1024, { background: "#ffffff", format: "jpeg" });
+        const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
 
         const ext = extFromMime(stitched.mimeType);
         const ts = Date.now();
@@ -701,7 +716,20 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
             i += 1;
           }
         }
-        await fs.writeFile(absFile, Buffer.from(stitched.data, "base64"));
+        let outBase64 = stitched.data;
+        if (addMetadata) {
+          try {
+            const buf = Buffer.from(outBase64, "base64");
+            const withMeta = addMetadataToImage(
+              buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+              stitched.mimeType,
+              DEFAULT_IMAGE_METADATA
+            );
+            outBase64 = Buffer.from(withMeta).toString("base64");
+          } catch {
+          }
+        }
+        await fs.writeFile(absFile, Buffer.from(outBase64, "base64"));
         const url = `/${relDir.replaceAll("\\", "/")}/${filename}`;
 
         const now = new Date();
@@ -772,9 +800,22 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
 
       const ext = extFromMime(generated.mimeType);
       let imageBase64 = generated.data;
+      const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
       try {
         imageBase64 = await resizeImageByAspectRatio(imageBase64, item.ratio);
       } catch {
+      }
+      if (addMetadata) {
+        try {
+          const buf = Buffer.from(imageBase64, "base64");
+          const withMeta = addMetadataToImage(
+            buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+            generated.mimeType,
+            DEFAULT_IMAGE_METADATA
+          );
+          imageBase64 = Buffer.from(withMeta).toString("base64");
+        } catch {
+        }
       }
 
       const ts = Date.now();

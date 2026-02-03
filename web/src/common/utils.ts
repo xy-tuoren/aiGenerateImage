@@ -30,6 +30,18 @@ export interface ImageMetadata {
 }
 
 /**
+ * 默认写入到图片中的元数据（用于标记生成来源）
+ */
+export const DEFAULT_IMAGE_METADATA: ImageMetadata = {
+  custom: {
+    tableName: "original_image",
+    id: "d-404",
+    userId: "d-404",
+    designer: "d-404",
+  },
+};
+
+/**
  * 给图片添加元数据（EXIF/PNG tEXt）
  * @param imageBuffer 图片的 ArrayBuffer
  * @param mimeType 图片 MIME 类型（如 'image/jpeg', 'image/png'）

@@ -5,6 +5,7 @@ import archiver from "archiver";
 import sharp from "sharp";
 import { Readable } from "stream";
 import { getMongoDb } from "@/lib/server/mongodb";
+import { extFromMime } from "@/lib/server/utils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,19 +40,19 @@ async function readAsJpegBuffer(absPath: string): Promise<Buffer> {
   return await sharp(buf).flatten({ background: "#ffffff" }).jpeg({ quality: 95 }).toBuffer();
 }
 
-async function readUrlAsJpegBuffer(u: string): Promise<Buffer | null> {
+async function readUrlAsRawBuffer(u: string): Promise<{ buf: Buffer; mimeType?: string } | null> {
   const url = String(u || "").trim();
   if (!url) return null;
   if (/^https?:\/\//i.test(url)) {
     const res = await fetch(url);
     if (!res.ok) return null;
     const ab = await res.arrayBuffer();
-    const buf = Buffer.from(ab);
-    return await sharp(buf).flatten({ background: "#ffffff" }).jpeg({ quality: 95 }).toBuffer();
+    const mimeType = res.headers.get("content-type") || undefined;
+    return { buf: Buffer.from(ab), mimeType };
   }
   const abs = publicUrlToAbsPath(url);
   if (!(await fs.pathExists(abs))) return null;
-  return await readAsJpegBuffer(abs);
+  return { buf: await fs.readFile(abs) };
 }
 
 export async function POST(req: Request) {
@@ -78,8 +79,8 @@ export async function POST(req: Request) {
           try {
             const u = String(urls[i] || "").trim();
             if (!u) continue;
-            const jpg = await readUrlAsJpegBuffer(u);
-            if (!jpg) continue;
+            const got = await readUrlAsRawBuffer(u);
+            if (!got?.buf?.length) continue;
             const rawName = (() => {
               try {
                 if (/^https?:\/\//i.test(u)) return basename(new URL(u).pathname || "");
@@ -87,8 +88,10 @@ export async function POST(req: Request) {
               }
               return basename(u);
             })();
+            const mExt = rawName.match(/\.([a-z0-9]+)$/i);
+            const ext = (mExt?.[1] ? String(mExt[1]).toLowerCase() : (got.mimeType ? extFromMime(got.mimeType) : "")) || "jpg";
             const base = sanitize(rawName.replace(/\.[^/.]+$/, "")) || `img-${pad4(i + 1)}`;
-            archive.append(jpg, { name: `${folder}${pad4(i + 1)}-${base}.jpg` });
+            archive.append(got.buf, { name: `${folder}${pad4(i + 1)}-${base}.${ext}` });
             added += 1;
           } catch {
           }

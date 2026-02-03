@@ -119,51 +119,47 @@ export function getAppAdsDesignerGemini3Prompt({
   [key: string]: any
 }) {
   return `
-  # Role: AI UI/UX Ad Designer & Localization Specialist (Gemini 3)
+  # Role: AI Creative Director & UI Designer
   
-  # Project: "${appName}" Ad Adaptation
-  - Target Language: ${lang} (STRICT)
-  - Visual Style Reference: Derived from the input image (layout, color palette, UI vibe).
-  - **Core Creative Concept**: "${prompt}"
+  # Project: "${appName}" Ad Campaign (Fresh Design)
+  - Target Language: ${lang}
+  - Core Concept: "${prompt}"
   
-  # CRITICAL PROBLEM TO SOLVE: Texture Text
-  The reference image likely contains "ambient text" (labels, menu items, UI data) in a specific source language.
-  You must NOT copy these pixels directly if they do not match the target language.
+  # CRITICAL CONSTRAINT: NO LAYOUT CLONING
+  The user explicitly hates it when the result looks like the reference image.
+  - The Reference Image is ONLY for: Color palette, UI button style, and lighting vibe.
+  - The Reference Image is FORBIDDEN for: Composition, camera angle, object placement, and layout structure.
+  - **You MUST create a completely NEW composition based on "${prompt}".**
   
-  # Reasoning Logic (Chain of Thought)
-  1. Analyze User Request:
-     - The user wants an image described as: "${prompt}".
-     - It must look like the app "${appName}" (using the reference image's UI style).
-  2. Analyze Text Layers:
-     - Layer A: Main Headline (Must be written in ${lang}).
-     - Layer B: Background UI/Map details (Likely contains foreign text pixels from the reference).
-  3. Reconstruction Strategy:
-     - I must GENERATE A NEW scene based on "${prompt}".
-     - I will apply the *style* of the reference image to this new scene.
-     - For small details (like station names/dates):
-       - Check: Is the reference text already in ${lang}?
-         - YES -> Keep or enhance it.
-         - NO -> Translate it to ${lang} OR replace it with abstract lines/shapes.
-       - FORBIDDEN: Copying text pixels directly from the reference image without checking the language.
+  # Reasoning Logic (Structure vs. Style)
+  1. Deconstruct Reference:
+     - Extract the "Style DNA" (e.g., uses flat design, uses blue/white colors, rounded corners).
+     - Ignore the "Structural DNA" (e.g., ignore that the map is on the right, or the phone is in the center).
+  2. Plan New Scene:
+     - Read the user prompt: "${prompt}".
+     - Visualize this prompt from scratch. Do NOT look at the reference image for this step.
+     - Example: If reference shows a "Map", but prompt says "Person holding phone", DRAW A PERSON, do not draw a map just because the reference has one.
+  3. Apply Style:
+     - Apply the extracted "Style DNA" to the "New Scene".
   
   # Generation Directives
   
-  ## 1. Visual Content (The Scene)
-  - **Execute the Core Concept**: Generate the image strictly based on the description: "${prompt}".
-  - **Style Integration**: Apply the visual aesthetic (colors, lighting, UI elements) from the reference image to this concept.
+  ## 1. Composition (Derived from Prompt ONLY)
+  - Strictly follow the user description: "${prompt}".
+  - Change the camera angle and perspective to be DIFFERENT from the reference image.
+  - If the reference is a close-up, try a wide shot (unless prompt says otherwise).
+  - Create a fresh, unique layout.
   
-  ## 2. Main Copy (The Headline)
-  - Render the main advertising slogan in ${lang} (if specified in the prompt) or create a placeholder title in ${lang}.
-  - Ensure it is the focal point.
+  ## 2. Visual Style (Derived from Reference)
+  - Use the color scheme and UI aesthetic from the reference image.
+  - Maintain the brand identity of "${appName}".
   
-  ## 3. Background & UI Elements
-  - Re-render the interface: If the prompt implies a UI (like a map or list), draw a generic interface that matches the reference style.
-  - Text Sanitization: 
-    - Any visible text on the screen/map MUST be in ${lang}.
-    - If the text is too small to render clearly in ${lang}, turn it into abstract geometrical lines or blurred shapes.
-    - ABSOLUTELY NO characters from other languages allowed (unless they are universally used symbols like numbers).
+  ## 3. Text & Localization
+  - Headline: Derived from context or placeholders in ${lang}.
+  - UI Text: Must be strictly ${lang}.
+  - Background Text: No random text from the reference. All ambient text must be abstracted lines or strictly ${lang}.
   
   # Prompt for Generation
-  (Generate the image now based on the concept "${prompt}", ensuring all text elements are strictly localized to ${lang}.)
+  (Generate a FRESH image. Concept: "${prompt}". Style: Matches reference. Composition: COMPLETELY NEW and unlike the reference.)
   `;
 }

@@ -20,6 +20,7 @@ type ConfigItem = {
   nextPromptFun?: string[];
   appName?: string;
   lang?: string;
+  langs?: string[];
   batchFun?: string;
   promptTmpFunName?: string;
   extra?: Record<string, unknown>;
@@ -44,7 +45,7 @@ export default function ConfigsPage() {
   const [draftMap, setDraftMap] = useState<Record<string, Partial<ConfigItem>>>({});
   const [savingEditMode, setSavingEditMode] = useState(false);
   const [editingCell, setEditingCell] = useState<{ id: string; field: "appName" | "lang" | "batchFun" | "promptTmpFunName" | "aspectRatio" | "count" | "prompt" } | null>(null);
-  const [editingDraft, setEditingDraft] = useState<string | number | null>("");
+  const [editingDraft, setEditingDraft] = useState<string | number | string[] | null>("");
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deletingBatch, setDeletingBatch] = useState(false);
@@ -116,11 +117,14 @@ export default function ConfigsPage() {
 
   const handleCopy = useCallback(async (row: ConfigItem) => {
     try {
+      const langs0 = Array.isArray((row as any).langs) ? (row as any).langs : (row.lang ? [row.lang] : []);
+      const langs = Array.from(new Set(langs0.map((s: any) => String(s ?? "").trim()).filter(Boolean)));
       const payload = {
         prompt: row.prompt,
         count: row.count ?? undefined,
         appName: row.appName || undefined,
-        lang: row.lang || undefined,
+        lang: langs.length ? langs[0] : (row.lang || undefined),
+        langs: langs.length ? langs : undefined,
         batchFun: row.batchFun || undefined,
         promptTmpFunName: row.promptTmpFunName || undefined,
         referenceImages: Array.isArray(row.referenceImages) && row.referenceImages.length ? row.referenceImages : undefined,
@@ -205,11 +209,14 @@ export default function ConfigsPage() {
   }, [editingId, fetchList, messageApi, selectedRowKeys]);
 
   const buildPutPayload = useCallback((row: ConfigItem) => {
+    const langs0 = Array.isArray((row as any).langs) ? (row as any).langs : (row.lang ? [row.lang] : []);
+    const langs = Array.from(new Set(langs0.map((s: any) => String(s ?? "").trim()).filter(Boolean)));
     return {
       prompt: row.prompt,
       count: row.count ?? undefined,
       appName: row.appName || undefined,
-      lang: row.lang || undefined,
+      lang: langs.length ? langs[0] : (row.lang || undefined),
+      langs: langs.length ? langs : undefined,
       batchFun: row.batchFun || undefined,
       promptTmpFunName: row.promptTmpFunName || undefined,
       referenceImages: Array.isArray(row.referenceImages) && row.referenceImages.length ? row.referenceImages : undefined,
@@ -273,6 +280,12 @@ export default function ConfigsPage() {
       setEditingDraft(typeof row.count === "number" ? row.count : "");
       return;
     }
+    if (field === "lang") {
+      const langs0 = Array.isArray((row as any).langs) ? (row as any).langs : (row.lang ? [row.lang] : []);
+      const langs = Array.from(new Set<string>(langs0.map((s: any) => String(s ?? "").trim()).filter(Boolean)));
+      setEditingDraft(langs);
+      return;
+    }
     setEditingDraft(String((row as any)[field] || ""));
   }, [savingCellMap, tableEditMode]);
 
@@ -315,6 +328,25 @@ export default function ConfigsPage() {
       const nextImageConfig = { ...(row.imageConfig && typeof row.imageConfig === "object" ? row.imageConfig : {}), aspectRatio: nextVal };
       setDraftMap((m) => ({ ...m, [row.id]: { ...(m[row.id] || {}), imageConfig: nextImageConfig } }));
       setItems((prev) => prev.map((it) => (it.id === row.id ? { ...it, imageConfig: nextImageConfig } : it)));
+      cancelEditCell();
+      return;
+    }
+
+    if (field === "lang") {
+      const langs0 = Array.isArray(draftVal)
+        ? (draftVal as any[]).map((s) => String(s ?? "").trim()).filter(Boolean)
+        : String(draftVal || "").split(/\r?\n|[，,]/).map((s) => s.trim()).filter(Boolean);
+      const langs = Array.from(new Set(langs0));
+      const nextLang = langs.length ? langs[0] : undefined;
+      const prevLangs0 = Array.isArray((row as any).langs) ? (row as any).langs : (row.lang ? [row.lang] : []);
+      const prevLangs = Array.from(new Set(prevLangs0.map((s: any) => String(s ?? "").trim()).filter(Boolean)));
+      if (prevLangs.join("|") === langs.join("|")) {
+        cancelEditCell();
+        return;
+      }
+      const patched = { ...row, lang: nextLang, langs: langs.length ? langs : undefined } as any;
+      setDraftMap((m) => ({ ...m, [row.id]: { ...(m[row.id] || {}), lang: nextLang, langs: langs.length ? langs : undefined } }));
+      setItems((prev) => prev.map((it) => (it.id === row.id ? patched : it)));
       cancelEditCell();
       return;
     }
@@ -402,7 +434,7 @@ export default function ConfigsPage() {
         title: "lang",
         dataIndex: "lang",
         key: "lang",
-        width: 70,
+        width: 90,
         ellipsis: true,
         align: "center",
         render: (v, row) => {
@@ -411,25 +443,22 @@ export default function ConfigsPage() {
           const saving = Boolean(savingCellMap[savingKey]);
           const isEditing = editingCell?.id === row.id && editingCell?.field === field;
           const text = String(v || "");
+          const langs0 = Array.isArray((row as any).langs) ? (row as any).langs : [];
+          const langs = Array.from(new Set(langs0.map((s: any) => String(s ?? "").trim()).filter(Boolean)));
+          const displayText = langs.length ? langs.join(",") : text;
           if (isEditing) {
             return (
-              <AutoComplete
+              <Select
                 autoFocus
+                mode="tags"
                 options={SUPPORTED_LANGUAGES.map((lang) => ({ label: lang, value: lang }))}
                 allowClear
-                placeholder="请选择或输入语言代码"
-                value={String(editingDraft ?? "")}
-                showSearch={{ filterOption: (inputValue, option) =>
-                  String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
-                }}
-                onChange={(val) => setEditingDraft(val)}
-                onSelect={(val) => {
-                  setEditingDraft(val);
-                  void commitEditCell(row, val);
-                }}
+                placeholder="请选择或输入语言代码（可多选）"
+                value={Array.isArray(editingDraft) ? editingDraft : []}
+                showSearch
+                onChange={(vals) => setEditingDraft(vals as any)}
                 onKeyDown={(e) => {
                   if (e.key === "Escape") cancelEditCell();
-                  if (e.key === "Enter") void commitEditCell(row);
                 }}
                 onBlur={() => void commitEditCell(row)}
                 style={{ width: "100%" }}
@@ -443,7 +472,7 @@ export default function ConfigsPage() {
                 startEditCell(row, field);
               }}
             >
-              {getCellDisplay(text, saving)}
+              {getCellDisplay(displayText, saving)}
             </span>
           );
         },
@@ -704,9 +733,11 @@ export default function ConfigsPage() {
                 icon={<EditOutlined />}
                 onClick={() => {
                   form.resetFields();
+                  const langs0 = Array.isArray((row as any).langs) ? (row as any).langs : (row.lang ? [row.lang] : []);
+                  const langs = Array.from(new Set(langs0.map((s: any) => String(s ?? "").trim()).filter(Boolean)));
                   form.setFieldsValue({
                     appName: row.appName,
-                    lang: row.lang,
+                    langs,
                     batchFun: row.batchFun,
                     promptTmpFunName: row.promptTmpFunName,
                     count: row.count ?? 1,
@@ -798,12 +829,15 @@ export default function ConfigsPage() {
     const values = await form.validateFields();
     const referenceImages = splitLinesToList(values.referenceImagesText || "");
     const nextPromptFun = splitLinesToList(values.nextPromptFunText || "");
+    const langs0 = Array.isArray(values.langs) ? values.langs.map((s: any) => String(s ?? "").trim()).filter(Boolean) : [];
+    const langs = Array.from(new Set(langs0));
 
     const payload = {
       prompt: values.prompt,
       count: values.count ?? undefined,
       appName: values.appName || undefined,
-      lang: values.lang || undefined,
+      lang: langs.length ? langs[0] : undefined,
+      langs: langs.length ? langs : undefined,
       batchFun: values.batchFun || undefined,
       promptTmpFunName: values.promptTmpFunName || undefined,
       referenceImages: referenceImages.length ? referenceImages : undefined,
@@ -1001,14 +1035,13 @@ export default function ConfigsPage() {
               }}
             />
           </Form.Item>
-          <Form.Item name="lang" label="lang">
-            <AutoComplete
+          <Form.Item name="langs" label="lang">
+            <Select
+              mode="tags"
               options={SUPPORTED_LANGUAGES.map((lang) => ({ label: lang, value: lang }))}
               allowClear
-              placeholder="请选择或输入语言代码"
-              showSearch={{ filterOption: (inputValue, option) =>
-                String(option?.value || "").toLowerCase().includes(String(inputValue || "").toLowerCase())
-              }}
+              placeholder="请选择或输入语言代码（可多选）"
+              showSearch
             />
           </Form.Item>
           <Form.Item name="batchFun" label="batchFun">
