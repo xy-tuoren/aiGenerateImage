@@ -30,7 +30,22 @@ async function readImageBytes(url: string): Promise<Buffer> {
   }
 
   if (!u.startsWith("/")) throw new Error("url 必须是 http(s) 或以 / 开头的站内路径");
-  const rel = normalize(u).replaceAll("\\", "/");
+  const rawPath = u.split("?")[0].split("#")[0];
+  const decodedPath = rawPath
+    .split("/")
+    .map((seg, idx) => {
+      if (idx === 0) return seg;
+      if (!seg) return seg;
+      try {
+        const d = decodeURIComponent(seg);
+        if (d.includes("/") || d.includes("\\")) throw new Error("非法路径");
+        return d;
+      } catch {
+        return seg;
+      }
+    })
+    .join("/");
+  const rel = normalize(decodedPath).replaceAll("\\", "/");
   if (rel.includes("..")) throw new Error("非法路径");
   const abs = join(process.cwd(), "public", rel.replace(/^\//, ""));
   const st = await fs.stat(abs).catch(() => null);

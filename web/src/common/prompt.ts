@@ -85,11 +85,13 @@ export function getCentralPositionPrompt({ appName, lang, prompt, aspectRatio }:
 }
 
 export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `生成一张${getRatioDesc(aspectRatio)}。提取并突出${appName}应用图标（如有则同时保留与图标紧密相关的主标题文字），图标需处于画面核心位置并明显放大；保留部分背景作为衬托；除图标/必要文字/部分背景外，其它元素全部移除。若参考图中图标缺失或不清晰，则补全为${appName}应用图标并自然融入画面。`;
+  return `生成一张${getRatioDesc(aspectRatio)}，提取${appName}应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。`;
 }
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appName}应用图标以外的一个最大占比元素与文字的组合构图，需要保留部分背景；若最终只能提取到文字或背景（缺少明确主体元素），必须保留文字并在画面核心位置新增/补全并突出${appName}应用图标，同时随机添加 1 个与图片风格一致的辅助元素（例如：下载/立即体验等按钮、徽标贴纸、卡片容器、简洁图形/图标、进度条/评分标签等）作为视觉主体的一部分。`;
+  return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appName}应用图标以外的一个最大占比元素与文字的组合构图，需要保留部分背景；
+  若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appName}应用图标，同时随机添加 1 个与图片风格一致的辅助元素（例如：下载/立即体验等按钮、徽标贴纸、卡片容器、简洁图形/图标、进度条/评分标签等）作为视觉主体的一部分但是文字一定要为${lang}语言。
+`;
 }
 
 export function getCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {

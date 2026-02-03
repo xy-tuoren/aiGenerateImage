@@ -2,7 +2,15 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { Button, Image, Select, Space, Typography, message } from "antd";
+import {
+  Button,
+  Dropdown,
+  Image,
+  Select,
+  Space,
+  Typography,
+  message
+} from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
 import { ASPECT_RATIO_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
@@ -76,7 +84,7 @@ const GridTile = memo(
           overflow: "hidden",
           borderRadius: 10,
           border: selected ? "3px solid #1677ff" : "1px solid rgba(0,0,0,0.06)",
-          boxShadow: selected ? "0 0 0 3px rgba(22,119,255,0.22)" : undefined,
+          boxShadow: selected ? "0 0 0 3px rgba(22,119,255,0.22)" : undefined
         }}
         onContextMenu={onContextMenu}
         onClick={onClick}
@@ -91,7 +99,16 @@ const GridTile = memo(
           loading="lazy"
           decoding="async"
         />
-        {selected ? <div style={{ position: "absolute", inset: 0, background: "rgba(22,119,255,0.16)", pointerEvents: "none" }} /> : null}
+        {selected ? (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(22,119,255,0.16)",
+              pointerEvents: "none"
+            }}
+          />
+        ) : null}
         {selected ? (
           <div
             style={{
@@ -109,7 +126,7 @@ const GridTile = memo(
               color: "#fff",
               fontSize: 16,
               fontWeight: 700,
-              userSelect: "none",
+              userSelect: "none"
             }}
           >
             ✓
@@ -133,7 +150,13 @@ function useUploadToFireplay(args: {
   onUploadedSourceUrls?: (urls: string[]) => void;
   onBeforeUpload?: () => void;
 }) {
-  const { messageApi, selectedKeys, keyToImg, onUploadedSourceUrls, onBeforeUpload } = args;
+  const {
+    messageApi,
+    selectedKeys,
+    keyToImg,
+    onUploadedSourceUrls,
+    onBeforeUpload
+  } = args;
   const [uploadingFireplay, setUploadingFireplay] = useState(false);
 
   const onUploadToFireplay = useCallback(async () => {
@@ -141,7 +164,9 @@ function useUploadToFireplay(args: {
       messageApi.error("请先选择要上传的图片");
       return;
     }
-    const picked = selectedKeys.map((k) => keyToImg.get(k)).filter(Boolean) as GridImage[];
+    const picked = selectedKeys
+      .map((k) => keyToImg.get(k))
+      .filter(Boolean) as GridImage[];
     if (!picked.length) {
       messageApi.error("选中的图片无效");
       return;
@@ -149,11 +174,13 @@ function useUploadToFireplay(args: {
     onBeforeUpload?.();
     setUploadingFireplay(true);
     try {
-      const imageUrls = picked.map((x) => String(x.url || "").trim()).filter(Boolean);
+      const imageUrls = picked
+        .map((x) => String(x.url || "").trim())
+        .filter(Boolean);
       const res = await axios.post("/api/fireplay/batch-upload", {
         imageUrls,
         type: "app",
-        ownerId: 0,
+        ownerId: 0
       });
       const data = res.data;
       if (!data?.ok || !data?.data?.results) {
@@ -162,9 +189,13 @@ function useUploadToFireplay(args: {
       const results = data.data.results as Array<{ success: boolean }>;
       const successCount = results.filter((x) => x.success).length;
       const failCount = results.length - successCount;
-      messageApi.success(`已上传 Fireplay：成功 ${successCount} 张${failCount ? `，失败 ${failCount} 张` : ""}`);
+      messageApi.success(
+        `已上传 Fireplay：成功 ${successCount} 张${failCount ? `，失败 ${failCount} 张` : ""}`
+      );
       const uploadedSourceUrls = Array.isArray(data?.uploadedSourceUrls)
-        ? data.uploadedSourceUrls.map((x: any) => String(x || "").trim()).filter(Boolean)
+        ? data.uploadedSourceUrls
+            .map((x: any) => String(x || "").trim())
+            .filter(Boolean)
         : [];
       if (uploadedSourceUrls.length) onUploadedSourceUrls?.(uploadedSourceUrls);
     } catch (e: any) {
@@ -176,7 +207,13 @@ function useUploadToFireplay(args: {
     } finally {
       setUploadingFireplay(false);
     }
-  }, [keyToImg, messageApi, onBeforeUpload, onUploadedSourceUrls, selectedKeys]);
+  }, [
+    keyToImg,
+    messageApi,
+    onBeforeUpload,
+    onUploadedSourceUrls,
+    selectedKeys
+  ]);
 
   return { uploadingFireplay, onUploadToFireplay };
 }
@@ -184,10 +221,16 @@ function useUploadToFireplay(args: {
 export default function GalleryPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
+  const [uploadingLongFolder, setUploadingLongFolder] = useState(false);
+  const [dropUploadActive, setDropUploadActive] = useState(false);
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [cutUrls, setCutUrls] = useState<string[]>([]);
-  const [fireplayUploadedUrls, setFireplayUploadedUrls] = useState<string[]>([]);
-  const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
+  const [fireplayUploadedUrls, setFireplayUploadedUrls] = useState<string[]>(
+    []
+  );
+  const [appNameOptions, setAppNameOptions] = useState<
+    Array<{ label: string; value: string }>
+  >([]);
   const [appName, setAppName] = useState<string>("");
   const [lang, setLang] = useState<string>("");
   const [aspectRatio, setAspectRatio] = useState<string>("16:9");
@@ -205,15 +248,38 @@ export default function GalleryPage() {
   const galleryPageSize = 100;
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
-  const dragStateRef = useRef<{ active: boolean; moved: boolean; startX: number; startY: number; curX: number; curY: number }>({ active: false, moved: false, startX: 0, startY: 0, curX: 0, curY: 0 });
+  const dropEnterCountRef = useRef(0);
+  const longFolderPickRef = useRef<HTMLInputElement | null>(null);
+  const longImagePickRef = useRef<HTMLInputElement | null>(null);
+  const uploadingFireplayRef = useRef(false);
+  const dragStateRef = useRef<{
+    active: boolean;
+    moved: boolean;
+    startX: number;
+    startY: number;
+    curX: number;
+    curY: number;
+  }>({ active: false, moved: false, startX: 0, startY: 0, curX: 0, curY: 0 });
   const suppressClickRef = useRef(false);
   const dragRafRef = useRef<number | null>(null);
-  const dragBoxRef = useRef<{ active: boolean; x: number; y: number; w: number; h: number }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
-  const [dragBox, setDragBox] = useState<{ active: boolean; x: number; y: number; w: number; h: number }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
+  const dragBoxRef = useRef<{
+    active: boolean;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
+  const [dragBox, setDragBox] = useState<{
+    active: boolean;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
 
-  const fetchImages = async () => {
+  const fetchImages = useCallback(async () => {
     setLoading(true);
     try {
       const qs = new URLSearchParams();
@@ -221,7 +287,9 @@ export default function GalleryPage() {
       qs.set("limit", "5000");
       if (appName) qs.set("appName", appName);
       if (lang) qs.set("lang", lang);
-      const res = await fetch(`/api/generation-records?${qs.toString()}`, { method: "GET" });
+      const res = await fetch(`/api/generation-records?${qs.toString()}`, {
+        method: "GET"
+      });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
         messageApi.error(data?.error || "获取图片记录失败");
@@ -235,31 +303,328 @@ export default function GalleryPage() {
       setSelectedPreviewIndex(0);
       setGalleryPage(1);
       try {
-        const urls = arr.map((x: any) => String(x?.url || "").trim()).filter(Boolean);
+        const urls = arr
+          .map((x: any) => String(x?.url || "").trim())
+          .filter(Boolean);
         if (urls.length) {
           const res2 = await fetch("/api/cut-records/flags", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ urls }),
+            body: JSON.stringify({ urls })
           });
           const data2 = await res2.json().catch(() => null);
           if (res2.ok && data2?.ok) {
-            const got = Array.isArray(data2.cutUrls) ? data2.cutUrls.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
-            if (got.length) setCutUrls((prev) => Array.from(new Set([...(prev || []), ...got])));
-            const got2 = Array.isArray(data2.fireplayUploadedUrls)
-              ? data2.fireplayUploadedUrls.map((x: any) => String(x || "").trim()).filter(Boolean)
+            const got = Array.isArray(data2.cutUrls)
+              ? data2.cutUrls
+                  .map((x: any) => String(x || "").trim())
+                  .filter(Boolean)
               : [];
-            if (got2.length) setFireplayUploadedUrls((prev) => Array.from(new Set([...(prev || []), ...got2])));
+            if (got.length)
+              setCutUrls((prev) =>
+                Array.from(new Set([...(prev || []), ...got]))
+              );
+            const got2 = Array.isArray(data2.fireplayUploadedUrls)
+              ? data2.fireplayUploadedUrls
+                  .map((x: any) => String(x || "").trim())
+                  .filter(Boolean)
+              : [];
+            if (got2.length)
+              setFireplayUploadedUrls((prev) =>
+                Array.from(new Set([...(prev || []), ...got2]))
+              );
           }
         }
-      } catch {
-      }
+      } catch {}
     } catch (e) {
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  };
+  }, [appName, lang, messageApi]);
+
+  const uploadLongFolderFiles = useCallback(
+    async (files: File[]) => {
+      if (!files.length) return;
+      const imageExt = /\.(png|jpe?g|gif|webp|bmp|tiff?|svg)$/i;
+      const list = files.filter(
+        (f) => imageExt.test(f.name) || (f.type && f.type.startsWith("image/"))
+      );
+      if (!list.length) {
+        messageApi.warning("未包含有效图片文件");
+        return;
+      }
+
+      const targetW = 1200;
+      const targetH = 628;
+      const isNearRatio = (w: number, h: number) => {
+        const ww = Math.max(1, Math.floor(Number(w) || 0));
+        const hh = Math.max(1, Math.floor(Number(h) || 0));
+        if (!ww || !hh) return false;
+        const diff = Math.abs(ww * targetH - hh * targetW);
+        const denom = Math.max(1, hh * targetW);
+        return diff / denom <= 0.012;
+      };
+
+      const getDims = async (
+        file: File
+      ): Promise<{ w: number; h: number } | null> => {
+        try {
+          const anyWin = window as any;
+          if (typeof anyWin.createImageBitmap === "function") {
+            const bmp = await anyWin.createImageBitmap(file);
+            const w = Number(bmp?.width || 0) || 0;
+            const h = Number(bmp?.height || 0) || 0;
+            try {
+              bmp.close?.();
+            } catch {}
+            if (w > 0 && h > 0) return { w, h };
+          }
+        } catch {}
+        return await new Promise((resolve) => {
+          const url = URL.createObjectURL(file);
+          const img = new window.Image();
+          img.onload = () => {
+            const w =
+              Number((img as any).naturalWidth || (img as any).width || 0) || 0;
+            const h =
+              Number((img as any).naturalHeight || (img as any).height || 0) ||
+              0;
+            URL.revokeObjectURL(url);
+            resolve(w > 0 && h > 0 ? { w, h } : null);
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve(null);
+          };
+          img.src = url;
+        });
+      };
+
+      setUploadingLongFolder(true);
+      messageApi.open({
+        type: "loading",
+        content: `正在筛选比例（${list.length}）...`,
+        duration: 0,
+        key: "uploadLongFolder"
+      });
+      try {
+        const picked: File[] = [];
+        const concurrency = 10;
+        let idx = 0;
+        await Promise.all(
+          Array.from(
+            { length: Math.min(concurrency, list.length) },
+            async () => {
+              while (true) {
+                const i = idx++;
+                if (i >= list.length) break;
+                const f = list[i];
+                const dims = await getDims(f);
+                if (!dims) continue;
+                if (isNearRatio(dims.w, dims.h)) picked.push(f);
+              }
+            }
+          )
+        );
+
+        if (!picked.length) {
+          messageApi.warning("未找到符合 1200/628 比例的图片");
+          return;
+        }
+
+        const chunks: File[][] = [];
+        const max = 200;
+        for (let i = 0; i < picked.length; i += max)
+          chunks.push(picked.slice(i, i + max));
+
+        let insertedTotal = 0;
+        for (let ci = 0; ci < chunks.length; ci++) {
+          messageApi.open({
+            type: "loading",
+            content: `正在上传到图片广场（${ci + 1}/${chunks.length}，${chunks[ci].length}）...`,
+            duration: 0,
+            key: "uploadLongFolder"
+          });
+          const formData = new FormData();
+          formData.append("toGallery", "1");
+          formData.append("aspectRatio", "16:9");
+          if (appName) formData.append("appName", appName);
+          if (lang) formData.append("lang", lang);
+          chunks[ci].forEach((f) => formData.append("files", f));
+          const res = await fetch("/api/reference-images/upload", {
+            method: "POST",
+            body: formData
+          });
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data?.ok) {
+            throw new Error(data?.error || "上传失败");
+          }
+          insertedTotal += Number(data?.inserted || 0) || 0;
+        }
+
+        messageApi.success(
+          `已上传到图片广场：${picked.length} 张（入库 ${insertedTotal}）`
+        );
+        await fetchImages();
+      } catch (e: any) {
+        const msg =
+          e?.response?.data?.error ||
+          e?.response?.data?.message ||
+          (e instanceof Error ? e.message : String(e));
+        messageApi.error(msg);
+      } finally {
+        messageApi.destroy("uploadLongFolder");
+        setUploadingLongFolder(false);
+      }
+    },
+    [appName, fetchImages, lang, messageApi]
+  );
+
+  const onLongFolderPicked = useCallback(
+    (e: any) => {
+      const files = e?.target?.files
+        ? Array.from(e.target.files as FileList)
+        : [];
+      try {
+        e.target.value = "";
+      } catch {}
+      uploadLongFolderFiles(files as any);
+    },
+    [uploadLongFolderFiles]
+  );
+
+  const onLongImagePicked = useCallback(
+    (e: any) => {
+      const files = e?.target?.files
+        ? Array.from(e.target.files as FileList)
+        : [];
+      try {
+        e.target.value = "";
+      } catch {}
+      uploadLongFolderFiles(files as any);
+    },
+    [uploadLongFolderFiles]
+  );
+
+  useEffect(() => {
+    const canAcceptDrop = () =>
+      !(
+        loading ||
+        creatingCut ||
+        uploadingFireplayRef.current ||
+        downloadingZip ||
+        uploadingLongFolder
+      );
+
+    const isFileDragging = (e: DragEvent) => {
+      const dt: any = (e as any).dataTransfer;
+      if (!dt) return false;
+      const types = Array.isArray(dt.types) ? dt.types : [];
+      return types.includes("Files");
+    };
+
+    const readAllDirEntries = async (reader: any): Promise<any[]> => {
+      const out: any[] = [];
+      while (true) {
+        const batch: any[] = await new Promise((resolve) =>
+          reader.readEntries(resolve)
+        );
+        if (!batch?.length) break;
+        out.push(...batch);
+      }
+      return out;
+    };
+
+    const collectFilesFromEntry = async (entry: any, out: File[]) => {
+      if (!entry) return;
+      if (entry.isFile) {
+        const f: File | null = await new Promise((resolve) =>
+          entry.file(
+            (x: File) => resolve(x),
+            () => resolve(null)
+          )
+        );
+        if (f) out.push(f);
+        return;
+      }
+      if (entry.isDirectory) {
+        const reader = entry.createReader();
+        const entries = await readAllDirEntries(reader);
+        for (const child of entries) await collectFilesFromEntry(child, out);
+      }
+    };
+
+    const collectDropFiles = async (
+      dt: DataTransfer | null
+    ): Promise<File[]> => {
+      if (!dt) return [];
+      const items: any[] = dt.items ? Array.from(dt.items as any) : [];
+      const entries = items
+        .map((it) => it?.webkitGetAsEntry?.())
+        .filter(Boolean);
+      if (entries.length) {
+        const out: File[] = [];
+        for (const e of entries) await collectFilesFromEntry(e, out);
+        return out;
+      }
+      return dt.files ? Array.from(dt.files) : [];
+    };
+
+    const onDragEnter = (e: DragEvent) => {
+      if (!isFileDragging(e)) return;
+      if (!canAcceptDrop()) return;
+      e.preventDefault();
+      dropEnterCountRef.current += 1;
+      setDropUploadActive(true);
+    };
+
+    const onDragOver = (e: DragEvent) => {
+      if (!isFileDragging(e)) return;
+      if (!canAcceptDrop()) return;
+      e.preventDefault();
+      try {
+        if ((e as any).dataTransfer)
+          (e as any).dataTransfer.dropEffect = "copy";
+      } catch {}
+      setDropUploadActive(true);
+    };
+
+    const onDragLeave = (e: DragEvent) => {
+      if (!isFileDragging(e)) return;
+      if (!canAcceptDrop()) return;
+      e.preventDefault();
+      dropEnterCountRef.current = Math.max(0, dropEnterCountRef.current - 1);
+      if (dropEnterCountRef.current === 0) setDropUploadActive(false);
+    };
+
+    const onDrop = async (e: DragEvent) => {
+      if (!isFileDragging(e)) return;
+      if (!canAcceptDrop()) return;
+      e.preventDefault();
+      dropEnterCountRef.current = 0;
+      setDropUploadActive(false);
+      const dt = (e as any).dataTransfer as DataTransfer | null;
+      const files = await collectDropFiles(dt);
+      if (files.length) uploadLongFolderFiles(files);
+    };
+
+    window.addEventListener("dragenter", onDragEnter);
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("dragleave", onDragLeave);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragenter", onDragEnter);
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("dragleave", onDragLeave);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, [
+    creatingCut,
+    downloadingZip,
+    loading,
+    uploadLongFolderFiles,
+    uploadingLongFolder
+  ]);
 
   useEffect(() => {
     (async () => {
@@ -268,9 +633,10 @@ export default function GalleryPage() {
         const data = await res.json();
         if (!res.ok || !data?.ok) return;
         const arr = Array.isArray(data.items) ? data.items : [];
-        setAppNameOptions(arr.map((x: any) => ({ label: String(x), value: String(x) })));
-      } catch {
-      }
+        setAppNameOptions(
+          arr.map((x: any) => ({ label: String(x), value: String(x) }))
+        );
+      } catch {}
     })();
   }, []);
 
@@ -280,9 +646,16 @@ export default function GalleryPage() {
   }, [appName, lang]);
 
   const gridImages: GridImage[] = useMemo(() => {
-    const tokenToRatio: Record<string, string> = { "1x1": "1:1", "4x5": "4:5", "16x9": "16:9", "9x16": "9:16" };
+    const tokenToRatio: Record<string, string> = {
+      "1x1": "1:1",
+      "4x5": "4:5",
+      "16x9": "16:9",
+      "9x16": "9:16"
+    };
     const getAspect = (it: HistoryItem) => {
-      const ar = (it?.configMeta?.aspectRatio ? String(it.configMeta.aspectRatio) : "").trim();
+      const ar = (
+        it?.configMeta?.aspectRatio ? String(it.configMeta.aspectRatio) : ""
+      ).trim();
       if (ar) return ar;
       const url = String(it?.url || "");
       const m = url.match(/-(\d+(?:_\d+)?)x(\d+(?:_\d+)?)(?:-\d+)?\./);
@@ -320,11 +693,14 @@ export default function GalleryPage() {
         index,
         createdAt,
         appName: it.appName ?? it.configMeta?.appName,
-        lang: it.lang ?? it.configMeta?.lang,
+        lang: it.lang ?? it.configMeta?.lang
       });
       groupMap.set(gk, g);
     }
-    const groups = Array.from(groupMap.entries()).map(([gk, g]) => ({ gk, ...g }));
+    const groups = Array.from(groupMap.entries()).map(([gk, g]) => ({
+      gk,
+      ...g
+    }));
     groups.sort((a, b) => b.latestAt - a.latestAt || (a.gk < b.gk ? -1 : 1));
     const out: GridImage[] = [];
     for (const g of groups) {
@@ -342,7 +718,10 @@ export default function GalleryPage() {
   const hiddenKeySet = useMemo(() => new Set(hiddenKeys), [hiddenKeys]);
   const selectedKeySet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
   const cutUrlSet = useMemo(() => new Set(cutUrls), [cutUrls]);
-  const fireplayUploadedUrlSet = useMemo(() => new Set(fireplayUploadedUrls), [fireplayUploadedUrls]);
+  const fireplayUploadedUrlSet = useMemo(
+    () => new Set(fireplayUploadedUrls),
+    [fireplayUploadedUrls]
+  );
 
   const visibleGridImages: GridImage[] = useMemo(() => {
     if (!hiddenKeys.length) return gridImages;
@@ -352,7 +731,9 @@ export default function GalleryPage() {
   const filteredGridImages: GridImage[] = useMemo(() => {
     let arr = visibleGridImages;
     arr = arr.filter((img) => !fireplayUploadedUrlSet.has(img.url));
-    arr = arr.filter((img) => (cutFilter === "cut" ? cutUrlSet.has(img.url) : !cutUrlSet.has(img.url)));
+    arr = arr.filter((img) =>
+      cutFilter === "cut" ? cutUrlSet.has(img.url) : !cutUrlSet.has(img.url)
+    );
     return arr;
   }, [visibleGridImages, cutFilter, cutUrlSet, fireplayUploadedUrlSet]);
 
@@ -360,9 +741,12 @@ export default function GalleryPage() {
     return filteredGridImages.slice(0, galleryPage * galleryPageSize);
   }, [filteredGridImages, galleryPage]);
 
-  const previewItems = useMemo(() => paginatedGridImages.map((x) => x.url), [paginatedGridImages]);
+  const previewItems = useMemo(
+    () => paginatedGridImages.map((x) => x.url),
+    [paginatedGridImages]
+  );
 
-  const hasMore = (galleryPage * galleryPageSize) < filteredGridImages.length;
+  const hasMore = galleryPage * galleryPageSize < filteredGridImages.length;
 
   useEffect(() => {
     setGalleryPage(1);
@@ -396,14 +780,25 @@ export default function GalleryPage() {
       setSelectMode(false);
     },
     onUploadedSourceUrls: (urls) => {
-      setFireplayUploadedUrls((prev) => Array.from(new Set([...(prev || []), ...(urls || [])])));
-    },
+      setFireplayUploadedUrls((prev) =>
+        Array.from(new Set([...(prev || []), ...(urls || [])]))
+      );
+    }
   });
 
+  useEffect(() => {
+    uploadingFireplayRef.current = uploadingFireplay;
+  }, [uploadingFireplay]);
+
   const selectedImages = useMemo(() => {
-    return selectedKeys.map((k) => keyToImg.get(k)).filter(Boolean) as GridImage[];
+    return selectedKeys
+      .map((k) => keyToImg.get(k))
+      .filter(Boolean) as GridImage[];
   }, [keyToImg, selectedKeys]);
-  const selectedPreviewImages = useMemo(() => selectedImages.slice(0, 80), [selectedImages]);
+  const selectedPreviewImages = useMemo(
+    () => selectedImages.slice(0, 80),
+    [selectedImages]
+  );
 
   const togglePick = useCallback((k: string) => {
     setSelectedKeys((prev) => {
@@ -426,14 +821,17 @@ export default function GalleryPage() {
     if (!open) setPreviewIndex(0);
   }, []);
 
-  const onPreviewChange = useCallback((cur: number) => setPreviewIndex(Number(cur) || 0), []);
+  const onPreviewChange = useCallback(
+    (cur: number) => setPreviewIndex(Number(cur) || 0),
+    []
+  );
 
   const previewConfig = useMemo(
     () => ({
       open: previewOpen,
       current: previewIndex,
       onOpenChange: onPreviewOpenChange,
-      onChange: onPreviewChange,
+      onChange: onPreviewChange
     }),
     [onPreviewChange, onPreviewOpenChange, previewIndex, previewOpen]
   );
@@ -443,20 +841,30 @@ export default function GalleryPage() {
     if (!open) setSelectedPreviewIndex(0);
   }, []);
 
-  const onSelectedPreviewChange = useCallback((cur: number) => setSelectedPreviewIndex(Number(cur) || 0), []);
+  const onSelectedPreviewChange = useCallback(
+    (cur: number) => setSelectedPreviewIndex(Number(cur) || 0),
+    []
+  );
 
   const selectedPreviewConfig = useMemo(
     () => ({
       open: selectedPreviewOpen,
       current: selectedPreviewIndex,
       onOpenChange: onSelectedPreviewOpenChange,
-      onChange: onSelectedPreviewChange,
+      onChange: onSelectedPreviewChange
     }),
-    [onSelectedPreviewChange, onSelectedPreviewOpenChange, selectedPreviewIndex, selectedPreviewOpen]
+    [
+      onSelectedPreviewChange,
+      onSelectedPreviewOpenChange,
+      selectedPreviewIndex,
+      selectedPreviewOpen
+    ]
   );
 
   const addPicks = useCallback((keys: string[]) => {
-    const arr = Array.isArray(keys) ? keys.map((x) => String(x || "").trim()).filter(Boolean) : [];
+    const arr = Array.isArray(keys)
+      ? keys.map((x) => String(x || "").trim()).filter(Boolean)
+      : [];
     if (!arr.length) return;
     setSelectedKeys((prev) => {
       const set = new Set(prev);
@@ -524,7 +932,13 @@ export default function GalleryPage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [previewOpen, previewIndex, selectedKeySet, togglePick, paginatedGridImages]);
+  }, [
+    previewOpen,
+    previewIndex,
+    selectedKeySet,
+    togglePick,
+    paginatedGridImages
+  ]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -547,7 +961,12 @@ export default function GalleryPage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedPreviewOpen, selectedPreviewIndex, selectedPreviewImages, togglePick]);
+  }, [
+    selectedPreviewOpen,
+    selectedPreviewIndex,
+    selectedPreviewImages,
+    togglePick
+  ]);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -566,7 +985,13 @@ export default function GalleryPage() {
         st.moved = true;
         suppressClickRef.current = true;
       }
-      dragBoxRef.current = { active: true, x: st.startX, y: st.startY, w: dx, h: dy };
+      dragBoxRef.current = {
+        active: true,
+        x: st.startX,
+        y: st.startY,
+        w: dx,
+        h: dy
+      };
       if (dragRafRef.current) return;
       dragRafRef.current = window.requestAnimationFrame(() => {
         dragRafRef.current = null;
@@ -579,7 +1004,10 @@ export default function GalleryPage() {
       st.active = false;
       const wrap = gridWrapRef.current;
       const moved = st.moved;
-      const sx = st.startX, sy = st.startY, ex = st.curX, ey = st.curY;
+      const sx = st.startX,
+        sy = st.startY,
+        ex = st.curX,
+        ey = st.curY;
       dragBoxRef.current = { ...dragBoxRef.current, active: false };
       if (dragRafRef.current) {
         window.cancelAnimationFrame(dragRafRef.current);
@@ -593,13 +1021,20 @@ export default function GalleryPage() {
       const right = rect.left + Math.max(sx, ex);
       const top = rect.top + Math.min(sy, ey);
       const bottom = rect.top + Math.max(sy, ey);
-      const nodes = Array.from(wrap.querySelectorAll("[data-grid-key]")) as HTMLElement[];
+      const nodes = Array.from(
+        wrap.querySelectorAll("[data-grid-key]")
+      ) as HTMLElement[];
       const picked: string[] = [];
       for (const el of nodes) {
         const k = el.getAttribute("data-grid-key") || "";
         if (!k) continue;
         const r = el.getBoundingClientRect();
-        const hit = !(r.right < left || r.left > right || r.bottom < top || r.top > bottom);
+        const hit = !(
+          r.right < left ||
+          r.left > right ||
+          r.bottom < top ||
+          r.top > bottom
+        );
         if (hit) picked.push(k);
       }
       if (picked.length) addPicks(picked);
@@ -621,7 +1056,9 @@ export default function GalleryPage() {
       messageApi.error("请先选择要裁剪的图片");
       return;
     }
-    const picked = selectedKeys.map((k) => keyToImg.get(k)).filter(Boolean) as GridImage[];
+    const picked = selectedKeys
+      .map((k) => keyToImg.get(k))
+      .filter(Boolean) as GridImage[];
     if (!picked.length) {
       messageApi.error("选中的图片无效");
       return;
@@ -632,28 +1069,43 @@ export default function GalleryPage() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          images: picked.map((p) => ({ url: p.url, appName: p.appName, lang: p.lang })),
-          concurrency: 64,
-        }),
+          images: picked.map((p) => ({
+            url: p.url,
+            appName: p.appName,
+            lang: p.lang
+          })),
+          concurrency: 64
+        })
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
         messageApi.error(data?.error || "创建裁图任务失败");
         return;
       }
-      setCutUrls((prev) => Array.from(new Set([...(prev || []), ...picked.map((p) => String(p.url || "").trim()).filter(Boolean)])));
+      setCutUrls((prev) =>
+        Array.from(
+          new Set([
+            ...(prev || []),
+            ...picked.map((p) => String(p.url || "").trim()).filter(Boolean)
+          ])
+        )
+      );
       const jobId = String(data.jobId || "");
       try {
         if (jobId) {
           localStorage.setItem(batchLastJobIdKey, jobId);
           const raw = localStorage.getItem(batchRecentJobIdsKey);
           const arr = raw ? JSON.parse(raw) : [];
-          const prev = Array.isArray(arr) ? arr.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
-          const next = [jobId, ...prev.filter((x: string) => x !== jobId)].slice(0, 50);
+          const prev = Array.isArray(arr)
+            ? arr.map((x: any) => String(x || "").trim()).filter(Boolean)
+            : [];
+          const next = [
+            jobId,
+            ...prev.filter((x: string) => x !== jobId)
+          ].slice(0, 50);
           localStorage.setItem(batchRecentJobIdsKey, JSON.stringify(next));
         }
-      } catch {
-      }
+      } catch {}
       messageApi.success(`已创建裁图任务: ${jobId}`);
       setSelectedKeys([]);
       setSelectMode(false);
@@ -669,13 +1121,20 @@ export default function GalleryPage() {
       messageApi.error("请先选择要下载的图片");
       return;
     }
-    const picked = selectedKeys.map((k) => keyToImg.get(k)).filter(Boolean) as GridImage[];
+    const picked = selectedKeys
+      .map((k) => keyToImg.get(k))
+      .filter(Boolean) as GridImage[];
     if (!picked.length) {
       messageApi.error("选中的图片无效");
       return;
     }
     setDownloadingZip(true);
-    messageApi.open({ type: "loading", content: `正在打包下载（${picked.length}）...`, duration: 0, key: "downloadZip" });
+    messageApi.open({
+      type: "loading",
+      content: `正在打包下载（${picked.length}）...`,
+      duration: 0,
+      key: "downloadZip"
+    });
     try {
       const parseFilename = (cd: string | null) => {
         const raw = String(cd || "");
@@ -683,10 +1142,11 @@ export default function GalleryPage() {
         if (mStar?.[1]) {
           try {
             return decodeURIComponent(mStar[1].trim().replace(/^"|"$/g, ""));
-          } catch {
-          }
+          } catch {}
         }
-        const m = raw.match(/filename\s*=\s*"([^"]+)"/i) || raw.match(/filename\s*=\s*([^;]+)/i);
+        const m =
+          raw.match(/filename\s*=\s*"([^"]+)"/i) ||
+          raw.match(/filename\s*=\s*([^;]+)/i);
         return m?.[1] ? String(m[1]).trim() : "";
       };
 
@@ -694,7 +1154,11 @@ export default function GalleryPage() {
       const res = await fetch("/api/cut-records/download", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ urls: picked.map((p) => p.url), folderName: "images", filenamePrefix }),
+        body: JSON.stringify({
+          urls: picked.map((p) => p.url),
+          folderName: "images",
+          filenamePrefix
+        })
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -724,6 +1188,27 @@ export default function GalleryPage() {
   return (
     <AdminShell defaultSelectedKey="/gallery" headerTitle="图片展示">
       {contextHolder}
+      {dropUploadActive ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(22,119,255,0.12)",
+            border: "2px dashed rgba(22,119,255,0.55)",
+            zIndex: 999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+            fontSize: 16,
+            fontWeight: 700,
+            color: "rgba(22,119,255,0.95)",
+            textShadow: "0 1px 0 rgba(255,255,255,0.7)"
+          }}
+        >
+          松开鼠标上传长图（支持文件/文件夹）
+        </div>
+      ) : null}
       <Space orientation="vertical" size={12} style={{ width: "100%" }}>
         <Space wrap>
           <Typography.Text strong>筛选：</Typography.Text>
@@ -758,52 +1243,150 @@ export default function GalleryPage() {
             value={cutFilter}
             options={[
               { label: "已裁剪", value: "cut" },
-              { label: "未裁剪", value: "uncut" },
+              { label: "未裁剪", value: "uncut" }
             ]}
             onChange={(v) => setCutFilter((String(v || "") as any) || "uncut")}
             menuItemSelectedIcon={null as any}
           />
-          <Button icon={<ReloadOutlined />} onClick={fetchImages} loading={loading}>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchImages}
+            loading={loading}
+          >
             刷新
           </Button>
-          <Button type="primary" onClick={onCreateCut} loading={creatingCut} disabled={!selectMode || !selectedKeys.length}>
+          <Dropdown
+            trigger={["hover", "click"]}
+            disabled={
+              loading ||
+              creatingCut ||
+              uploadingFireplay ||
+              downloadingZip ||
+              uploadingLongFolder
+            }
+            menu={{
+              items: [
+                { key: "folder", label: "文件夹" },
+                { key: "image", label: "图片" }
+              ],
+              onClick: ({ key }) => {
+                if (key === "folder") longFolderPickRef.current?.click();
+                if (key === "image") longImagePickRef.current?.click();
+              }
+            }}
+          >
+            <Button
+              loading={uploadingLongFolder}
+              disabled={
+                loading ||
+                creatingCut ||
+                uploadingFireplay ||
+                downloadingZip ||
+                uploadingLongFolder
+              }
+            >
+              上传长图
+              <input
+                ref={longFolderPickRef}
+                type="file"
+                multiple
+                accept="image/*"
+                style={{ display: "none" }}
+                {...({ webkitdirectory: "true" } as any)}
+                onChange={onLongFolderPicked}
+              />
+              <input
+                ref={longImagePickRef}
+                type="file"
+                multiple
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={onLongImagePicked}
+              />
+            </Button>
+          </Dropdown>
+          <Button
+            type="primary"
+            onClick={onCreateCut}
+            loading={creatingCut}
+            disabled={!selectMode || !selectedKeys.length}
+          >
             裁剪
           </Button>
           <Button
             onClick={onUploadToFireplay}
             loading={uploadingFireplay}
-            disabled={!selectMode || !selectedKeys.length || loading || creatingCut}
+            disabled={
+              !selectMode || !selectedKeys.length || loading || creatingCut
+            }
           >
-            上传 Fireplay
+            上传到Fireplay
           </Button>
           <Button
             onClick={onDownloadSelected}
             loading={downloadingZip}
-            disabled={!selectMode || !selectedKeys.length || loading || creatingCut || uploadingFireplay}
+            disabled={
+              !selectMode ||
+              !selectedKeys.length ||
+              loading ||
+              creatingCut ||
+              uploadingFireplay
+            }
           >
             下载
           </Button>
-          <Typography.Text type="secondary">{loading ? "加载中..." : `共 ${filteredGridImages.length} 张`}</Typography.Text>
-          {selectMode ? <Typography.Text type="secondary">已选 {selectedKeys.length} 张</Typography.Text> : null}
+          <Typography.Text type="secondary">
+            {loading ? "加载中..." : `共 ${filteredGridImages.length} 张`}
+          </Typography.Text>
+          {selectMode ? (
+            <Typography.Text type="secondary">
+              已选 {selectedKeys.length} 张
+            </Typography.Text>
+          ) : null}
         </Space>
 
         {selectedImages.length ? (
-          <div style={{ padding: 10, background: "#f5f5f5", borderRadius: 10, border: "1px solid rgba(0,0,0,0.06)" }}>
+          <div
+            style={{
+              padding: 10,
+              background: "#f5f5f5",
+              borderRadius: 10,
+              border: "1px solid rgba(0,0,0,0.06)"
+            }}
+          >
             <Space wrap size={10} align="center" style={{ width: "100%" }}>
-              <Typography.Text strong>当前已选（{selectedImages.length}）</Typography.Text>
-              <Typography.Text type="secondary">右键可选/取消，预览里按 C 也可选</Typography.Text>
-              <Button size="small" onClick={() => { setSelectedKeys([]); setSelectMode(false); }} disabled={loading || creatingCut}>
+              <Typography.Text strong>
+                当前已选（{selectedImages.length}）
+              </Typography.Text>
+              <Typography.Text type="secondary">
+                右键可选/取消，预览里按 C 也可选
+              </Typography.Text>
+              <Button
+                size="small"
+                onClick={() => {
+                  setSelectedKeys([]);
+                  setSelectMode(false);
+                }}
+                disabled={loading || creatingCut}
+              >
                 清空已选
               </Button>
               <div style={{ flex: "1 1 100%" }} />
-              <Image.PreviewGroup
-                preview={selectedPreviewConfig}
-              >
+              <Image.PreviewGroup preview={selectedPreviewConfig}>
                 <Space wrap size={8}>
                   {selectedPreviewImages.map((img, i) => (
                     <div
                       key={`sel|${img.key}`}
-                      style={{ position: "relative", width: 92, height: 52, borderRadius: 8, overflow: "hidden", border: "1px solid rgba(0,0,0,0.12)", background: "#fff", cursor: "pointer" }}
+                      style={{
+                        position: "relative",
+                        width: 92,
+                        height: 52,
+                        borderRadius: 8,
+                        overflow: "hidden",
+                        border: "1px solid rgba(0,0,0,0.12)",
+                        background: "#fff",
+                        cursor: "pointer"
+                      }}
                       onClick={() => {
                         setSelectedPreviewIndex(i);
                         setSelectedPreviewOpen(true);
@@ -820,8 +1403,26 @@ export default function GalleryPage() {
                       />
                       <div
                         title="移除"
-                        onClick={(e) => { e.stopPropagation(); togglePick(img.key); }}
-                        style={{ position: "absolute", top: 4, right: 4, width: 18, height: 18, borderRadius: 6, background: "rgba(0,0,0,0.55)", color: "#fff", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", userSelect: "none" }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePick(img.key);
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: 4,
+                          right: 4,
+                          width: 18,
+                          height: 18,
+                          borderRadius: 6,
+                          background: "rgba(0,0,0,0.55)",
+                          color: "#fff",
+                          fontSize: 12,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                          userSelect: "none"
+                        }}
                       >
                         ×
                       </div>
@@ -833,13 +1434,18 @@ export default function GalleryPage() {
           </div>
         ) : null}
 
-        <Image.PreviewGroup
-          items={previewItems}
-          preview={previewConfig}
-        >
+        <Image.PreviewGroup items={previewItems} preview={previewConfig}>
           <div
             ref={gridWrapRef}
-            style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 12, width: "100%", userSelect: dragBox.active ? "none" : undefined, cursor: dragBox.active ? "crosshair" : undefined }}
+            style={{
+              position: "relative",
+              display: "grid",
+              gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+              gap: 12,
+              width: "100%",
+              userSelect: dragBox.active ? "none" : undefined,
+              cursor: dragBox.active ? "crosshair" : undefined
+            }}
             onMouseDown={(e) => {
               if (e.button !== 0) return;
               if (previewOpen) return;
@@ -848,7 +1454,14 @@ export default function GalleryPage() {
               const rect = wrap.getBoundingClientRect();
               const x = e.clientX - rect.left;
               const y = e.clientY - rect.top;
-              dragStateRef.current = { active: true, moved: false, startX: x, startY: y, curX: x, curY: y };
+              dragStateRef.current = {
+                active: true,
+                moved: false,
+                startX: x,
+                startY: y,
+                curX: x,
+                curY: y
+              };
               suppressClickRef.current = false;
               dragBoxRef.current = { active: true, x, y, w: 0, h: 0 };
               setDragBox({ active: true, x, y, w: 0, h: 0 });
@@ -866,11 +1479,12 @@ export default function GalleryPage() {
                   height: Math.abs(dragBox.h),
                   background: "rgba(0,160,255,0.22)",
                   border: "2px solid rgba(0,160,255,0.95)",
-                  boxShadow: "0 0 0 2px rgba(255,255,255,0.65) inset, 0 8px 20px rgba(0,160,255,0.25)",
+                  boxShadow:
+                    "0 0 0 2px rgba(255,255,255,0.65) inset, 0 8px 20px rgba(0,160,255,0.25)",
                   outline: "1px dashed rgba(0,0,0,0.25)",
                   borderRadius: 6,
                   pointerEvents: "none",
-                  zIndex: 10,
+                  zIndex: 10
                 }}
               />
             ) : null}
@@ -888,13 +1502,29 @@ export default function GalleryPage() {
         </Image.PreviewGroup>
         {filteredGridImages.length > 0 ? (
           <>
-            <div ref={loadMoreSentinelRef} style={{ height: 1, width: "100%", visibility: "hidden" }} />
+            <div
+              ref={loadMoreSentinelRef}
+              style={{ height: 1, width: "100%", visibility: "hidden" }}
+            />
             {hasMore ? (
-              <div style={{ textAlign: "center", padding: "16px 0", color: "rgba(0,0,0,0.45)" }}>
-                已展示 {paginatedGridImages.length} / {filteredGridImages.length} 张，下拉加载更多
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "16px 0",
+                  color: "rgba(0,0,0,0.45)"
+                }}
+              >
+                已展示 {paginatedGridImages.length} /{" "}
+                {filteredGridImages.length} 张，下拉加载更多
               </div>
             ) : (
-              <div style={{ textAlign: "center", padding: "16px 0", color: "rgba(0,0,0,0.45)" }}>
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "16px 0",
+                  color: "rgba(0,0,0,0.45)"
+                }}
+              >
                 共 {filteredGridImages.length} 张，已全部加载
               </div>
             )}
@@ -904,4 +1534,3 @@ export default function GalleryPage() {
     </AdminShell>
   );
 }
-

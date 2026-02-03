@@ -39,7 +39,22 @@ type GenerationRecordDoc = {
 function publicUrlToAbsPath(u: string) {
   const url = String(u || "").trim();
   if (!url.startsWith("/")) throw new Error("url 必须是站内路径（以 / 开头）");
-  const rel = normalize(url).replaceAll("\\", "/");
+  const rawPath = url.split("?")[0].split("#")[0];
+  const decodedPath = rawPath
+    .split("/")
+    .map((seg, idx) => {
+      if (idx === 0) return seg;
+      if (!seg) return seg;
+      try {
+        const d = decodeURIComponent(seg);
+        if (d.includes("/") || d.includes("\\")) throw new Error("非法路径");
+        return d;
+      } catch {
+        return seg;
+      }
+    })
+    .join("/");
+  const rel = normalize(decodedPath).replaceAll("\\", "/");
   if (rel.includes("..")) throw new Error("非法路径");
   return join(process.cwd(), "public", rel.replace(/^\//, ""));
 }

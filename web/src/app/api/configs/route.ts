@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
   const inputImageConfig = body.imageConfig && typeof body.imageConfig === "object" ? body.imageConfig : undefined;
   const aspectRatioRaw = inputImageConfig ? (inputImageConfig as any).aspectRatio : undefined;
-  const aspectRatio = (aspectRatioRaw ?? "").toString().trim() || "2:1";
+  const aspectRatio = (aspectRatioRaw ?? "").toString().trim() || "16:9";
 
   const now = new Date();
   const doc: ImageConfigDoc = {
