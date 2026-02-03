@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { getUserFromRequest } from "@/lib/server/auth";
+import { requireApiAccess } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,8 +13,9 @@ export async function GET(
   if (!jobId || !ObjectId.isValid(jobId)) {
     return Response.json({ ok: false, error: "jobId 非法" }, { status: 400 });
   }
-  const user = getUserFromRequest(_req);
-  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
+  const guard = requireApiAccess(_req);
+  if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
+  const user = guard.user;
 
   const db = await getMongoDb();
   const jobsCol = db.collection("batch_jobs");

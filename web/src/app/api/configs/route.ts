@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { getUserFromRequest } from "@/lib/server/auth";
+import { requireApiAccess } from "@/lib/server/auth";
 
 type ImageConfigDoc = {
   _id?: ObjectId;
@@ -39,8 +39,9 @@ function toClient(doc: ImageConfigDoc) {
 }
 
 export async function GET(req: Request) {
-  const user = getUserFromRequest(req);
-  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
+  const guard = requireApiAccess(req);
+  if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
+  const user = guard.user;
   const db = await getMongoDb();
   const col = db.collection<ImageConfigDoc>("image_configs");
   const docs = await col.find({ userId: user.userId }, { sort: { updatedAt: -1, createdAt: -1 } }).limit(500).toArray();
@@ -48,8 +49,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: NextRequest) {
-  const user = getUserFromRequest(req);
-  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
+  const guard = requireApiAccess(req);
+  if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
+  const user = guard.user;
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });

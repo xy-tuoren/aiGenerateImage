@@ -1,7 +1,7 @@
 import * as fs from "fs-extra";
 import { join, normalize } from "path";
 import { resizeImage } from "@/lib/server/utils";
-import { getUserFromRequest } from "@/lib/server/auth";
+import { requireApiAccess } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,8 +55,8 @@ async function readImageBytes(url: string): Promise<Buffer> {
 }
 
 export async function POST(req: Request) {
-  const user = getUserFromRequest(req);
-  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
+  const guard = requireApiAccess(req);
+  if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });

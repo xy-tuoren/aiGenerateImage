@@ -5,6 +5,61 @@ export type SessionUser = {
   username: string;
 };
 
+export type EnvAuthUser = {
+  username: string;
+  password: string;
+  role?: string;
+};
+
+export type ResolvedAuthz = {
+  role: string;
+  isSuperAdmin: boolean;
+  permissions: Record<string, boolean>;
+};
+
+export type ApiAccessGuard =
+  | { ok: true; user: SessionUser; authz: ResolvedAuthz; permissionKey: string }
+  | { ok: false; status: 401 | 403; error: string };
+
+export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
+  // 超级管理员（无任何限制）：代码里会直接放行；这里也给一个通配符方便前端判断
+  super: { "*": true },
+  // 普通用户（示例权限，可按需增删 key）
+  user: {
+    "ui:/reference": true,
+    "ui:/configs": true,
+    "ui:/batch": true,
+    "ui:/gallery": true,
+    "ui:/crop": true,
+    "api:*": true,
+  },
+  // 操作员（示例权限，可按需增删 key）
+  operator: {
+    "ui:/reference": true,
+    "ui:/configs": true,
+    "ui:/batch": true,
+    "ui:/gallery": true,
+    "ui:/crop": true,
+    "api:configs:read": true,
+    "api:configs:write": true,
+    "api:crop-previews": true,
+    "api:run": true,
+    "api:cut-jobs:start": true,
+    "api:cut-records:read": true,
+    "api:cut-records:download": true,
+    "api:cut-records:flags": true,
+    "api:reference-images:read": true,
+    "api:reference-images:upload": true,
+    "api:reference-images:sync": true,
+    "api:batch-jobs:read": true,
+    "api:batch-jobs:start": true,
+    "api:batch-jobs:retry": true,
+    "api:generation-records:read": true,
+    "api:app-names:read": true,
+    "api:fireplay:batch-upload": true,
+  },
+};
+
 const COOKIE_NAME = "bg_session";
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
@@ -120,14 +175,18 @@ export function getUserFromRequest(req: Request): SessionUser | null {
   return parseSessionToken(token);
 }
 
-export function readUsersFromEnv(): Array<{ username: string; password: string }> {
+export function readUsersFromEnv(): EnvAuthUser[] {
   const rawJson = String(process.env.AUTH_USERS_JSON || "").trim();
   if (rawJson) {
     try {
       const parsed = JSON.parse(rawJson);
       const arr = Array.isArray(parsed) ? parsed : [];
       return arr
-        .map((x: any) => ({ username: String(x?.username || "").trim(), password: String(x?.password || "").trim() }))
+        .map((x: any) => ({
+          username: String(x?.username || "").trim(),
+          password: String(x?.password || "").trim(),
+          role: String(x?.role || "").trim() || undefined,
+        }))
         .filter((x) => x.username && x.password);
     } catch {
       return [];
@@ -135,7 +194,180 @@ export function readUsersFromEnv(): Array<{ username: string; password: string }
   }
   const u = String(process.env.AUTH_USERNAME || "").trim();
   const p = String(process.env.AUTH_PASSWORD || "").trim();
-  if (u && p) return [{ username: u, password: p }];
+  const r = String(process.env.AUTH_ROLE || "").trim();
+  if (u && p) return [{ username: u, password: p, role: r || undefined }];
   return [];
+}
+
+export function isSuperAdminUser(username: string, role?: string) {
+  const u = String(username || "").trim();
+  const r = String(role || "").trim();
+  if (u === "admin") return true;
+  return r === "super" || r === "superAdmin" || r === "root";
+}
+
+export function normalizeRole(username: string, role?: string) {
+  const r = String(role || "").trim();
+  if (r) return r;
+  if (String(username || "").trim() === "admin") return "super";
+  return "user";
+}
+
+export function resolveAuthzForUser(username: string, role?: string): ResolvedAuthz {
+  const finalRole = normalizeRole(username, role);
+  const isSuperAdmin = isSuperAdminUser(username, finalRole);
+  if (isSuperAdmin) {
+    return { role: "super", isSuperAdmin: true, permissions: ROLE_PERMISSIONS.super || { "*": true } };
+  }
+  return { role: finalRole, isSuperAdmin: false, permissions: ROLE_PERMISSIONS[finalRole] || {} };
+}
+
+export function resolveAuthzForUsername(username: string): ResolvedAuthz {
+  const users = readUsersFromEnv();
+  const hit = users.find((u) => u.username === username);
+  return resolveAuthzForUser(username, hit?.role);
+}
+
+export function hasPermission(authz: ResolvedAuthz | null | undefined, permissionKey: string) {
+  const key = String(permissionKey || "").trim();
+  if (!key) return false;
+  const a = authz || undefined;
+  if (!a) return false;
+  if (a.isSuperAdmin) return true;
+  const perms = a.permissions && typeof a.permissions === "object" ? a.permissions : {};
+  if (perms["*"] === true) return true;
+  if (key.startsWith("api:") && perms["api:*"] === true) return true;
+  return perms[key] === true;
+}
+
+export function requirePermission(req: Request, permissionKey: string) {
+  const user = getUserFromRequest(req);
+  if (!user) return { ok: false as const, status: 401 as const, error: "未登录" };
+  const authz = resolveAuthzForUsername(user.username);
+  if (!hasPermission(authz, permissionKey)) return { ok: false as const, status: 403 as const, error: "无权限" };
+  return { ok: true as const, user, authz };
+}
+
+function resolveApiPermissionKey(pathname: string, method: string): string | null {
+  const p = String(pathname || "").trim();
+  const m = String(method || "").trim().toUpperCase() || "GET";
+  const parts = p.split("/").filter(Boolean);
+  if (parts[0] !== "api") return null;
+
+  // auth 路由不做权限映射（由对应 route 自己处理）
+  if (parts[1] === "auth") return "";
+
+  if (parts[1] === "configs") {
+    if (parts.length === 2) {
+      if (m === "GET") return "api:configs:read";
+      if (m === "POST") return "api:configs:write";
+      return null;
+    }
+    if (parts.length === 3) {
+      if (m === "GET") return "api:configs:read";
+      if (m === "PUT" || m === "DELETE") return "api:configs:write";
+      return null;
+    }
+  }
+
+  if (parts[1] === "reference-images") {
+    if (parts.length === 2) {
+      if (m === "GET") return "api:reference-images:read";
+      if (m === "POST") return "api:reference-images:sync";
+      return null;
+    }
+    if (parts.length === 3 && parts[2] === "upload") {
+      if (m === "POST") return "api:reference-images:upload";
+      return null;
+    }
+  }
+
+  if (parts[1] === "app-names") {
+    if (parts.length === 2 && m === "GET") return "api:app-names:read";
+    return null;
+  }
+
+  if (parts[1] === "batch-jobs") {
+    if (parts.length === 2) {
+      if (m === "GET") return "api:batch-jobs:read";
+      return null;
+    }
+    if (parts.length === 3 && parts[2] === "start") {
+      if (m === "POST") return "api:batch-jobs:start";
+      return null;
+    }
+    if (parts.length === 3) {
+      if (m === "GET") return "api:batch-jobs:read";
+      return null;
+    }
+    if (parts.length === 4 && parts[3] === "retry") {
+      if (m === "POST") return "api:batch-jobs:retry";
+      return null;
+    }
+  }
+
+  if (parts[1] === "generation-records") {
+    if (parts.length === 2 && m === "GET") return "api:generation-records:read";
+    return null;
+  }
+
+  if (parts[1] === "cut-jobs") {
+    if (parts.length === 3 && parts[2] === "start") {
+      if (m === "POST") return "api:cut-jobs:start";
+      return null;
+    }
+  }
+
+  if (parts[1] === "cut-records") {
+    if (parts.length === 2 && m === "GET") return "api:cut-records:read";
+    if (parts.length === 3 && parts[2] === "download" && m === "POST") return "api:cut-records:download";
+    if (parts.length === 3 && parts[2] === "flags" && m === "POST") return "api:cut-records:flags";
+    return null;
+  }
+
+  if (parts[1] === "crop-previews") {
+    if (parts.length === 2 && m === "POST") return "api:crop-previews";
+    return null;
+  }
+
+  if (parts[1] === "fireplay") {
+    if (parts.length === 3 && parts[2] === "batch-upload" && m === "POST") return "api:fireplay:batch-upload";
+    return null;
+  }
+
+  if (parts[1] === "run") {
+    if (parts.length === 2 && (m === "GET" || m === "POST")) return "api:run";
+    return null;
+  }
+
+  return null;
+}
+
+export function requireApiAccess(req: Request): ApiAccessGuard {
+  const user = getUserFromRequest(req);
+  if (!user) return { ok: false, status: 401, error: "未登录" };
+  const authz = resolveAuthzForUsername(user.username);
+
+  let pathname = "";
+  try {
+    pathname = new URL(req.url).pathname || "";
+  } catch {
+    pathname = "";
+  }
+  const permissionKey = resolveApiPermissionKey(pathname, (req as any).method);
+
+  // 未映射的接口：仅超级管理员允许（避免漏配导致越权）
+  if (permissionKey === null) {
+    if (authz.isSuperAdmin) return { ok: true, user, authz, permissionKey: "*" };
+    return { ok: false, status: 403, error: "未配置权限规则" };
+  }
+
+  // auth 路由（或显式“只需登录”）
+  if (permissionKey === "") {
+    return { ok: true, user, authz, permissionKey: "" };
+  }
+
+  if (!hasPermission(authz, permissionKey)) return { ok: false, status: 403, error: "无权限" };
+  return { ok: true, user, authz, permissionKey };
 }
 

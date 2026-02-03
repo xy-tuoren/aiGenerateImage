@@ -3,7 +3,7 @@ import { fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMaterial } from 
 import fs from "fs-extra";
 import path from "path";
 import { isImageFileName } from "@/lib/server/utils";
-import { getUserFromRequest } from "@/lib/server/auth";
+import { requireApiAccess } from "@/lib/server/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +13,8 @@ const cachedFilesByApp = new Map<string, { at: number; files: string[] }>();
 
 export async function GET(req: Request) {
   try {
-    const user = getUserFromRequest(req);
-    if (!user) return NextResponse.json({ ok: false, error: "未登录" }, { status: 401 });
+    const guard = requireApiAccess(req);
+    if (!guard.ok) return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
     const { searchParams } = new URL(req.url);
     const namesOnly = searchParams.get("names") === "1";
     const folderPathOnly = searchParams.get("folderPath") === "1";
@@ -138,8 +138,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const user = getUserFromRequest(req);
-    if (!user) return NextResponse.json({ ok: false, error: "未登录" }, { status: 401 });
+    const guard = requireApiAccess(req);
+    if (!guard.ok) return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
     const body = await req.json().catch(() => ({}));
     const result = await fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMaterial({
       forceRefresh: body?.forceRefresh === true,

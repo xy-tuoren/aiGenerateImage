@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { getUserFromRequest } from "@/lib/server/auth";
+import { requireApiAccess } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,8 +52,9 @@ function deriveStatus(outputs: CutRecordDoc["outputs"]): "queued" | "running" | 
 }
 
 export async function GET(req: Request) {
-  const user = getUserFromRequest(req);
-  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
+  const guard = requireApiAccess(req);
+  if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
+  const user = guard.user;
   const { searchParams } = new URL(req.url);
   const limitRaw = searchParams.get("limit");
   const limit = Math.min(5000, Math.max(1, Number(limitRaw ?? 200) || 200));

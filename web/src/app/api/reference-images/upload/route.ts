@@ -4,7 +4,7 @@ import path from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { guessMimeFromPath, isImageFileName } from "@/lib/server/utils";
-import { getUserFromRequest } from "@/lib/server/auth";
+import { requireApiAccess } from "@/lib/server/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -29,8 +29,9 @@ function safeFileName(name: string): string {
 
 export async function POST(req: Request) {
   try {
-    const user = getUserFromRequest(req);
-    if (!user) return NextResponse.json({ ok: false, error: "未登录" }, { status: 401 });
+    const guard = requireApiAccess(req);
+    if (!guard.ok) return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
+    const user = guard.user;
     const formData = await req.formData();
     const toGalleryRaw = formData.get("toGallery");
     const toGallery = String(toGalleryRaw ?? "").trim() === "1" || String(toGalleryRaw ?? "").trim().toLowerCase() === "true";

@@ -1,6 +1,5 @@
-import { getUserFromRequest } from "@/lib/server/auth";
+import { getUserFromRequest, requireApiAccess, toUserId } from "@/lib/server/auth";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { toUserId } from "@/lib/server/auth";
 
 async function migrateAllToAdmin() {
   const adminUsername = "admin";
@@ -44,6 +43,8 @@ function requireAdmin(req: Request) {
 }
 
 export async function GET(req: Request) {
+  const guard0 = requireApiAccess(req);
+  if (!guard0.ok) return Response.json({ ok: false, error: guard0.error }, { status: guard0.status });
   const { searchParams } = new URL(req.url);
   const action = String(searchParams.get("action") || "").trim();
   if (action !== "migrateToAdmin") {
@@ -56,8 +57,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const user = getUserFromRequest(req);
-  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
+  const guard0 = requireApiAccess(req);
+  if (!guard0.ok) return Response.json({ ok: false, error: guard0.error }, { status: guard0.status });
+  const user = guard0.user;
   const body = await req.json().catch(() => ({}));
   const action = String((body as any)?.action || "").trim();
   if (action === "migrateToAdmin") {

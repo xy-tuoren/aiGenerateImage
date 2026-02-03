@@ -17,7 +17,7 @@ export default function AdminShell({ children, defaultSelectedKey, headerTitle }
   const pathname = usePathname();
   const router = useRouter();
   const { Header, Content, Sider } = Layout;
-  const [me, setMe] = useState<{ userId: string; username: string } | null>(null);
+  const [me, setMe] = useState<{ userId: string; username: string; role?: string; isSuperAdmin?: boolean; permissions?: Record<string, boolean> } | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
   const nextPath = useMemo(() => {
@@ -62,6 +62,27 @@ export default function AdminShell({ children, defaultSelectedKey, headerTitle }
     }
   }, [router]);
 
+  const can = useCallback((permKey: string) => {
+    if (!permKey) return true;
+    if (me?.isSuperAdmin) return true;
+    const perms = me?.permissions && typeof me.permissions === "object" ? me.permissions : {};
+    if ((perms as any)["*"] === true) return true;
+    return (perms as any)[permKey] === true;
+  }, [me]);
+
+  const menuItems = useMemo(() => {
+    const all = [
+      { key: "/reference", icon: <PictureOutlined />, label: <Link href="/reference">参考图库</Link>, uiPerm: "ui:/reference", apiPerm: "api:reference-images:read" },
+      { key: "/configs", icon: <SettingOutlined />, label: <Link href="/configs">配置管理</Link>, uiPerm: "ui:/configs", apiPerm: "api:configs:read" },
+      { key: "/batch", icon: <PictureOutlined />, label: <Link href="/batch">批量生图</Link>, uiPerm: "ui:/batch", apiPerm: "api:batch-jobs:read" },
+      { key: "/gallery", icon: <PictureOutlined />, label: <Link href="/gallery">图片广场</Link>, uiPerm: "ui:/gallery", apiPerm: "api:generation-records:read" },
+      { key: "/crop", icon: <PictureOutlined />, label: <Link href="/crop">素材库</Link>, uiPerm: "ui:/crop", apiPerm: "api:cut-records:read" },
+    ];
+    return all
+      .filter((x) => can(x.uiPerm) || can(x.apiPerm))
+      .map((x) => ({ key: x.key, icon: x.icon, label: x.label }));
+  }, [can]);
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider width={200} style={{ background: "#fff" }}>
@@ -69,14 +90,7 @@ export default function AdminShell({ children, defaultSelectedKey, headerTitle }
           mode="inline"
           selectedKeys={[pathname || defaultSelectedKey]}
           style={{ height: "100%", borderRight: 0 }}
-          items={[
-            // { key: "/", icon: <HomeOutlined />, label: <Link href="/">首页</Link> },
-            { key: "/reference", icon: <PictureOutlined />, label: <Link href="/reference">参考图库</Link> },
-            { key: "/configs", icon: <SettingOutlined />, label: <Link href="/configs">配置管理</Link> },
-            { key: "/batch", icon: <PictureOutlined />, label: <Link href="/batch">批量生图</Link> },
-            { key: "/gallery", icon: <PictureOutlined />, label: <Link href="/gallery">图片广场</Link> },
-            { key: "/crop", icon: <PictureOutlined />, label: <Link href="/crop">素材库</Link> },
-          ]}
+          items={menuItems}
         />
       </Sider>
       <Layout>

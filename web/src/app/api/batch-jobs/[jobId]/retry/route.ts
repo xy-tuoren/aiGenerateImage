@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { startBatchJob, startCutJob } from "@/lib/server/batchJobRunner";
-import { getUserFromRequest } from "@/lib/server/auth";
+import { requireApiAccess } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,8 +11,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ jobId: string 
   if (!jobId || !ObjectId.isValid(jobId)) {
     return Response.json({ ok: false, error: "jobId 非法" }, { status: 400 });
   }
-  const user = getUserFromRequest(req);
-  if (!user) return Response.json({ ok: false, error: "未登录" }, { status: 401 });
+  const guard = requireApiAccess(req);
+  if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
+  const user = guard.user;
 
   const body = await req.json().catch(() => null);
   const configIdsRaw = body && typeof body === "object" ? (body as any).configIds : undefined;

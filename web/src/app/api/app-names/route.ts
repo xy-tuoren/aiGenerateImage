@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import * as fs from "fs-extra";
 import { join } from "path";
-import { getUserFromRequest } from "@/lib/server/auth";
+import { requireApiAccess } from "@/lib/server/auth";
 
 export async function GET(req: Request) {
   try {
-    const user = getUserFromRequest(req);
-    if (!user) return NextResponse.json({ ok: false, error: "未登录" }, { status: 401 });
+    const guard = requireApiAccess(req);
+    if (!guard.ok) return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
     // refImageDatas 文件夹相对于 web 目录的路径
     const refImageDatasPath = join(process.cwd(), "public", "material");
     const folders = await fs.readdir(refImageDatasPath, { withFileTypes: true });

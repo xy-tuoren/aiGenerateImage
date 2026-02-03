@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildSessionToken, getSessionCookieName, getSessionMaxAgeSeconds, readUsersFromEnv, toUserId } from "@/lib/server/auth";
+import { buildSessionToken, getSessionCookieName, getSessionMaxAgeSeconds, readUsersFromEnv, resolveAuthzForUser, toUserId } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,8 +24,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "账号或密码错误" }, { status: 401 });
   }
 
-  const user = { userId: toUserId(username), username };
-  const token = buildSessionToken(user);
+  const authz = resolveAuthzForUser(username, hit.role);
+  const sessionUser = { userId: toUserId(username), username };
+  const user = { ...sessionUser, role: authz.role, isSuperAdmin: authz.isSuperAdmin, permissions: authz.permissions };
+  const token = buildSessionToken(sessionUser);
   if (!token) {
     return NextResponse.json({ ok: false, error: "AUTH_SECRET 未配置（生产环境必须配置）" }, { status: 500 });
   }

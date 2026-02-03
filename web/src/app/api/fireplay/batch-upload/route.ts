@@ -5,7 +5,7 @@ import FormData from "form-data";
 import path from "path";
 import { chunkArray, mimeFromExt } from "@/lib/server/utils";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { getUserFromRequest } from "@/lib/server/auth";
+import { requireApiAccess } from "@/lib/server/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -47,8 +47,9 @@ async function readImageAsBuffer(src: string): Promise<{ buffer: Buffer; fileNam
 
 export async function POST(req: Request) {
   try {
-    const user = getUserFromRequest(req);
-    if (!user) return NextResponse.json({ ok: false, error: "未登录" }, { status: 401 });
+    const guard = requireApiAccess(req);
+    if (!guard.ok) return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
+    const user = guard.user;
     const authHeader = getFireplayAuthHeader(req);
     const body: any = await req.json().catch(() => ({}));
     const imageUrls: string[] = Array.isArray(body?.imageUrls)
