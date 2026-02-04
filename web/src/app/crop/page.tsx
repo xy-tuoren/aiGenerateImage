@@ -77,8 +77,95 @@ export default function CropPage() {
       messageApi.warning("请先选择要下载的记录");
       return;
     }
+
+    const pad2 = (n: number) => String(n).padStart(2, "0");
+    const sanitize = (s: string) => String(s || "").replace(/[\\/:*?"<>|\s]+/g, "-").replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+    const now = new Date();
+    const datePrefix = `${pad2(now.getMonth() + 1)}${pad2(now.getDate())}`;
+    const selectedRows = selectedRowKeys.map((id) => recordIdToRow.get(id)).filter(Boolean) as CutRecordItem[];
+    const pickedAppNames = selectedRows.map((d) => String(d.appName || "").trim()).filter(Boolean);
+    const pickedLangs = selectedRows.map((d) => String(d.lang || "").trim()).filter(Boolean);
+    const appNamePicked =
+      pickedAppNames.length && pickedAppNames.every((x) => x === pickedAppNames[0])
+        ? pickedAppNames[0]
+        : (pickedAppNames.length ? "mixed" : "unknown");
+    const langPicked =
+      pickedLangs.length && pickedLangs.every((x) => x === pickedLangs[0])
+        ? pickedLangs[0]
+        : (pickedLangs.length ? "mixed" : "unknown");
+    const preSuggestedName = `${datePrefix}-${sanitize(appNamePicked)}-${sanitize(langPicked)}.zip`;
+
+    // 为了保证大文件/慢请求时仍能弹出保存窗口：必须先触发文件选择（保持用户手势）再开始下载
+    const w = window as any;
+    if (typeof w.showSaveFilePicker === "function") {
+      let fileHandle: any;
+      try {
+        fileHandle = await w.showSaveFilePicker({
+          suggestedName: preSuggestedName,
+          types: [{ description: "Zip", accept: { "application/zip": [".zip"] } }],
+        });
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        console.warn("showSaveFilePicker failed, fallback to traditional download:", e);
+        // 继续走降级方案
+      }
+
+      if (fileHandle) {
+        setDownloading(true);
+        try {
+          const res = await fetch("/api/cut-records/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ids: selectedRowKeys,
+              startFolderIndex: downloadStartFolderIndex,
+              fixedCode: downloadFixedCode,
+              excludedKeys: Object.keys(excludedKeys),
+            }),
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => null);
+            throw new Error((data as any)?.error || `下载失败(${res.status})`);
+          }
+
+          // 后端文件名仅用于 display；实际保存名以用户在对话框里选定为准
+          let writable: any = null;
+          try {
+            writable = await fileHandle.createWritable();
+            const reader = res.body ? res.body.getReader() : null;
+            if (reader) {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (value) await writable.write(value);
+              }
+            } else {
+              const blob = await res.blob();
+              await writable.write(blob);
+            }
+            await writable.close();
+          } catch (e) {
+            try {
+              if (writable?.abort) await writable.abort();
+              else if (writable?.close) await writable.close();
+            } catch {
+            }
+            throw e;
+          }
+          messageApi.success("已保存");
+          return;
+        } catch (e) {
+          messageApi.error(e instanceof Error ? e.message : String(e));
+          return;
+        } finally {
+          setDownloading(false);
+        }
+      }
+    }
+
     setDownloading(true);
     try {
+      // 发送下载请求
       const res = await fetch("/api/cut-records/download", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,26 +180,15 @@ export default function CropPage() {
         const data = await res.json().catch(() => null);
         throw new Error((data as any)?.error || `下载失败(${res.status})`);
       }
-      const blob = await res.blob();
+      
+      // 获取后端返回的文件名（格式：日期-appName-语言.zip）
       const cd = res.headers.get("Content-Disposition") || "";
-      const m = /filename="([^"]+)"/.exec(cd);
-      const suggestedName = (downloadZipName || "").trim() || m?.[1] || `cut-download-${Date.now()}.zip`;
-
-      const w = window as any;
-      if (typeof w.showSaveFilePicker === "function") {
-        const handle = await w.showSaveFilePicker({
-          suggestedName,
-          types: [
-            { description: "Zip", accept: { "application/zip": [".zip"] } },
-          ],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        messageApi.success("已保存");
-        return;
-      }
-
+      const m = /filename\*=UTF-8''([^;]+)/.exec(cd) || /filename="([^"]+)"/.exec(cd);
+      const suggestedName = m?.[1] ? decodeURIComponent(m[1]) : `cut-download-${Date.now()}.zip`;
+      
+      const blob = await res.blob();
+      
+      // 降级方案：使用传统的下载方式
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -121,6 +197,7 @@ export default function CropPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      messageApi.success("下载已开始");
     } catch (e) {
       const anyErr = e as any;
       const name = anyErr?.name ? String(anyErr.name) : "";
@@ -530,14 +607,6 @@ export default function CropPage() {
             <InputNumber size="small" min={1} value={downloadStartFolderIndex} onChange={(v) => setDownloadStartFolderIndex(Number(v || 1))} />
             <Typography.Text type="secondary">固定码</Typography.Text>
             <Input size="small" style={{ width: 90 }} value={downloadFixedCode} onChange={(e) => setDownloadFixedCode(e.target.value)} />
-            {/* <Typography.Text type="secondary">文件名</Typography.Text>
-            <Input
-              size="small"
-              style={{ width: 220 }}
-              placeholder="留空则自动，例如 cut-download-xxx.zip"
-              value={downloadZipName}
-              onChange={(e) => setDownloadZipName(e.target.value)}
-            /> */}
             <Button size="small" type="primary" disabled={!selectedRowKeys.length} loading={downloading} onClick={downloadSelected}>
               下载选中({selectedRowKeys.length})
             </Button>

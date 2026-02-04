@@ -85,23 +85,31 @@ export function getCentralPositionPrompt({ appName, lang, prompt, aspectRatio }:
 }
 
 export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `生成一张${getRatioDesc(aspectRatio)}，提取${appName}应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，其他元素不需要了。`;
+  const appDesc = appName ? `${appName}应用的` : '参考图中应用的（请根据参考图自行推断应用名称）';
+  return `生成一张${getRatioDesc(aspectRatio)}，严格保持参考图中${appDesc}图标样式、颜色和设计不变，提取应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，不要修改图标的外观，其他元素不需要了。`;
 }
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appName}应用图标以外的一个最大占比元素与文字的组合构图，需要保留部分背景；
-  若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appName}应用图标，同时添加 1 个辅助元素作为视觉主体的一部分。
+  const appDesc = appName ? `${appName}应用` : '参考图中的应用（请根据参考图自行推断应用名称）';
+  return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appDesc}图标以外的一个最大占比元素与文字的组合构图，需要保留部分背景；
+  若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appDesc}图标，同时添加 1 个辅助元素作为视觉主体的一部分。
+  【重要】关于应用图标的要求：
+  - 如果需要使用应用图标，必须严格保持参考图中原图标的样式、颜色、设计和外观完全一致
+  - 不要修改、重新设计或变形图标，必须与参考图中的图标完全相同
   【重要】辅助元素必须严格遵循以下原则：
-  - 首先深入分析参考图的整体风格（设计语言、色调、光影、质感、艺术风格）
+  - 首先深入分析参考图的整体风格（设计语言、色调、光影、质感、艺术风格）和应用的功能特性
+  - 辅助元素必须与该应用的功能、用途、使用场景直接相关，能够帮助传达应用的核心价值和卖点
   - 辅助元素的视觉风格、材质质感、色彩搭配必须与参考图高度一致
   - 元素类型应从参考图中提取灵感（如参考图是扁平风就用扁平图标，是3D风就用3D元素，是摄影风就用实物拍摄效果）
-  - 避免添加与参考图风格冲突的元素（例如在极简风格图中添加复杂装饰，或在写实风格图中添加卡通元素）
+  - 避免添加与参考图风格冲突或与应用功能无关的元素
+  - 辅助元素应具有广告推广的吸引力，能够激发用户下载使用的兴趣
   - 文字的语言要跟参考图一致
 `;
 }
 
 export function getCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `生成一张${getRatioDesc(aspectRatio)}，需要重新调整构图适应新尺寸并且${appName}应用图标更加显眼需要保留背景。`;
+  const appDesc = appName ? `${appName}应用` : '参考图中的应用（请根据参考图自行推断应用名称）';
+  return `生成一张${getRatioDesc(aspectRatio)}，需要重新调整构图适应新尺寸并且${appDesc}图标更加显眼需要保留背景。`;
 }
 
 export function getCutVerticalCollagePrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
