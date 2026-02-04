@@ -46,3 +46,4 @@ next-env.d.ts
 /public/reference-images
 /public/material
 /.cache
+certificates

@@ -52,7 +52,7 @@ export default function LoginPage() {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "#f5f5f5" }}>
       {contextHolder}
       <Card style={{ width: 420 }}>
-        <Space direction="vertical" size={12} style={{ width: "100%" }}>
+        <Space orientation="vertical" size={12} style={{ width: "100%" }}>
           <div>
             <Typography.Title level={4} style={{ marginBottom: 4 }}>登录</Typography.Title>
             <Typography.Text type="secondary">批量生成图片 - 内部后台</Typography.Text>
