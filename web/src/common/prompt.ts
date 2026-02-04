@@ -90,7 +90,13 @@ export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { 
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appName}应用图标以外的一个最大占比元素与文字的组合构图，需要保留部分背景；
-  若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appName}应用图标，同时随机添加 1 个与图片风格一致的辅助元素（例如：下载按钮、徽标贴纸、卡片容器、简洁图形/图标、进度条/评分标签等）作为视觉主体的一部分但是文字的语言要跟参考图一致。
+  若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appName}应用图标，同时添加 1 个辅助元素作为视觉主体的一部分。
+  【重要】辅助元素必须严格遵循以下原则：
+  - 首先深入分析参考图的整体风格（设计语言、色调、光影、质感、艺术风格）
+  - 辅助元素的视觉风格、材质质感、色彩搭配必须与参考图高度一致
+  - 元素类型应从参考图中提取灵感（如参考图是扁平风就用扁平图标，是3D风就用3D元素，是摄影风就用实物拍摄效果）
+  - 避免添加与参考图风格冲突的元素（例如在极简风格图中添加复杂装饰，或在写实风格图中添加卡通元素）
+  - 文字的语言要跟参考图一致
 `;
 }
 
@@ -100,7 +106,8 @@ export function getCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: {
 
 export function getCutVerticalCollagePrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   return `1、生成一张${getRatioDesc(aspectRatio)}，上下结构且上下都为原图的组合图。
-  2、${prompt}
+  2、上下两部分应该是参考图的完整视觉呈现，确保图片内容自然协调，没有被挤压或拉伸的痕迹。
+  3、${prompt}
   `;
 }
 

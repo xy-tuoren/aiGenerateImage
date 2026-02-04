@@ -1254,13 +1254,17 @@ export default function GalleryPage() {
       <Space orientation="vertical" size={12} style={{ width: "100%" }}>
         <Space wrap>
           <Typography.Text strong>筛选：</Typography.Text>
-          <AutoComplete
+          <Select
             style={{ width: 260 }}
             placeholder="appName（可输入或选择）"
             allowClear
+            showSearch
             value={appName || undefined}
             options={appNameOptions}
             onChange={(v) => setAppName(String(v || ""))}
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
           />
           <Select
             style={{ width: 140 }}
