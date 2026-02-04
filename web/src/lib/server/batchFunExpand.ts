@@ -1,6 +1,6 @@
 import * as fs from "fs-extra";
 import sharp from "sharp";
-import { join } from "path";
+import { join, dirname, basename } from "path";
 import { isImageFileName } from "@/lib/server/utils";
 
 export type WebImageConfig = {
@@ -46,19 +46,44 @@ async function collectImagesFromDirRecursive(dir: string): Promise<string[]> {
   return results;
 }
 
+/** 解析参考图路径：若不存在则尝试按父目录下名前缀匹配（如 NAVER Map -> NAVER Map, Navigation） */
+async function resolveRefPath(r: string): Promise<string> {
+  const s = String(r || "").trim();
+  if (!s) throw new Error(`参考图路径为空`);
+  if (/^https?:\/\//i.test(s)) return s;
+  let st = await fs.stat(s).catch(() => null);
+  let resolved = s;
+  if (!st) {
+    const parent = dirname(s);
+    const namePrefix = basename(s);
+    const parentSt = await fs.stat(parent).catch(() => null);
+    if (parentSt?.isDirectory() && namePrefix) {
+      const names = await fs.readdir(parent).catch(() => []);
+      const matched = names.filter((n) => n.startsWith(namePrefix)).sort();
+      if (matched.length >= 1) {
+        resolved = join(parent, matched[0]);
+        st = await fs.stat(resolved).catch(() => null);
+      }
+    }
+  }
+  if (!st) throw new Error(`参考图不存在: ${r}`);
+  return resolved;
+}
+
 async function expandReferenceToPaths(ref: string): Promise<string[]> {
   const r = String(ref || "").trim();
   if (!r) return [];
   if (/^https?:\/\//i.test(r)) return [r];
-  const st = await fs.stat(r).catch(() => null);
+  const resolved = await resolveRefPath(r);
+  const st = await fs.stat(resolved).catch(() => null);
   if (!st) throw new Error(`参考图不存在: ${r}`);
   if (st.isDirectory()) {
-    const files = await collectImagesFromDirRecursive(r);
-    if (!files.length) throw new Error(`参考图目录下没有图片文件: ${r}`);
+    const files = await collectImagesFromDirRecursive(resolved);
+    if (!files.length) throw new Error(`参考图目录下没有图片文件: ${resolved}`);
     return files;
   }
-  if (!st.isFile()) throw new Error(`参考图不是文件: ${r}`);
-  return [r];
+  if (!st.isFile()) throw new Error(`参考图不是文件: ${resolved}`);
+  return [resolved];
 }
 
 const parseNameList = (input: string) => input.split(/[，,]/).map((s) => s.trim()).filter(Boolean);
@@ -84,9 +109,10 @@ export async function expandConfigByBatchFun(
   if (batchFun === "batch" && Array.isArray(config.referenceImages) && config.referenceImages.length > 0) {
     const ref0 = String(config.referenceImages[0] || "").trim();
     if (!ref0) return [{ ...config }];
-    const st = await fs.stat(ref0).catch(() => null);
+    const ref0Resolved = await resolveRefPath(ref0);
+    const st = await fs.stat(ref0Resolved).catch(() => null);
     if (!st) throw new Error(`batchFun 模式下读取 referenceImages 路径失败: ${ref0}`);
-    const paths = st.isDirectory() ? await collectImagesFromDirRecursive(ref0) : [ref0];
+    const paths = st.isDirectory() ? await collectImagesFromDirRecursive(ref0Resolved) : [ref0Resolved];
     if (!paths.length) throw new Error(`batchFun 模式下，referenceImages 文件夹中没有找到图片文件: ${ref0}`);
     return paths.map((p) => {
       const next: WebImageConfig = { ...config, referenceImages: [p] };
@@ -98,9 +124,10 @@ export async function expandConfigByBatchFun(
   if (batchFun === "translate" && Array.isArray(config.referenceImages) && config.referenceImages.length > 0) {
     const ref0 = String(config.referenceImages[0] || "").trim();
     if (!ref0) return [{ ...config }];
-    const st = await fs.stat(ref0).catch(() => null);
+    const ref0Resolved = await resolveRefPath(ref0);
+    const st = await fs.stat(ref0Resolved).catch(() => null);
     if (!st) throw new Error(`translate 模式下读取 referenceImages 路径失败: ${ref0}`);
-    const paths = st.isDirectory() ? await collectImagesFromDirRecursive(ref0) : [ref0];
+    const paths = st.isDirectory() ? await collectImagesFromDirRecursive(ref0Resolved) : [ref0Resolved];
     if (!paths.length) throw new Error(`translate 模式下，referenceImages 文件夹中没有找到图片文件: ${ref0}`);
     const out: WebImageConfig[] = [];
     for (const p of paths) {
