@@ -1175,6 +1175,7 @@ export default function GalleryPage() {
       document.body.appendChild(a);
       a.click();
       a.remove();
+    
       window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
       messageApi.success("已开始下载");
     } catch (e: any) {
