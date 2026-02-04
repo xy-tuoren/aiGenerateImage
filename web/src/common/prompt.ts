@@ -3,7 +3,7 @@ import { getRatioDesc } from "@/common/utils";
 export function getAppDefaultPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   return `1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，为了进一步推广产品，你需要制作更多的广告图片，你应该使用相同风格制作新的广告，但请注意新的广告与现有广告不应过度相似，需要调整背景以及构图。
   2、图片将用于${appName}应用推广，所以参考图无论是什么应用图标一定要是${appName}的图标。
-  3、图片内出现的所有可见文字必须 100% 为${lang}语言，禁止出现任何其他语言/字母。若出现任意非${lang}文字则视为失败，必须重新生成。
+  3、图片内出现的所有可见文字必须 100% 为${lang}语言，禁止出现任何其他语言。
   4、图片中只能出现一张图不能是多张图拼接而成的。
   5、${prompt}
   `;
@@ -28,7 +28,7 @@ export function getAppDefaultPrompt3({ appName, lang, prompt, aspectRatio }: { a
 //背景与主体有对比色凸显主体。
 //图片中只能出现一张图不能是多张图拼接而成的。
 export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `1、你是一个精通app推广的图片广告设计师，这是你过去制作的广告图片，参考图仅作为风格以及创意的参考，你需要调整构图修改元素、背景等,好的图片设计有几个原则:
+  return `1、你是一个精通app推广广告设计师，这是你过去制作的广告图片，参考图仅作为风格参考，你需要调整构图修改元素、背景等避免跟参考图过于相似,好的图片设计有几个原则:
     - 推广应用的图标以及文案一定要在核心位置并且图标在图中要大且显眼。
     - 图片的元素层次要分明。
     - 推广文案要简洁明了加起来不能超过3条并且单条文案长度不超过10个字符。
@@ -90,7 +90,7 @@ export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { 
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appName}应用图标以外的一个最大占比元素与文字的组合构图，需要保留部分背景；
-  若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appName}应用图标，同时随机添加 1 个与图片风格一致的辅助元素（例如：下载/立即体验等按钮、徽标贴纸、卡片容器、简洁图形/图标、进度条/评分标签等）作为视觉主体的一部分,文字的语言要跟参考图一致。
+  若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appName}应用图标，同时随机添加 1 个与图片风格一致的辅助元素（例如：下载按钮、徽标贴纸、卡片容器、简洁图形/图标、进度条/评分标签等）作为视觉主体的一部分但是文字的语言要跟参考图一致。
 `;
 }
 
@@ -156,12 +156,23 @@ export function getAppAdsDesignerGemini3Prompt({
   - Use the color scheme and UI aesthetic from the reference image.
   - Maintain the brand identity of "${appName}".
   
-  ## 3. Text & Localization
-  - Headline: Derived from context or placeholders in ${lang}.
-  - UI Text: Must be strictly ${lang}.
-  - Background Text: No random text from the reference. All ambient text must be abstracted lines or strictly ${lang}.
+  ## 3. Text & Localization (ABSOLUTE REQUIREMENT)
+  - **CRITICAL**: ALL visible text in the image MUST be 100% in ${lang} language. NO exceptions.
+  - This includes:
+    * Headline and slogans
+    * UI buttons and labels
+    * Background text or ambient typography
+    * Text on phones, screens, or billboards in the scene
+    * Any watermarks or decorative text elements
+  - If the reference image contains text in another language, you MUST translate it to ${lang}.
+  - If you cannot write proper ${lang} text, use abstract lines or shapes instead - NEVER use random or mixed languages.
+  - Text should be concise (max 3 text elements, each under 10 characters).
   
-  # Prompt for Generation
-  (Generate a FRESH image. Concept: "${prompt}". Style: Matches reference. Composition: COMPLETELY NEW and unlike the reference.)
+  # Final Generation Instruction
+  Generate a FRESH image following these rules:
+  1. Concept: "${prompt}" (composition must be NEW and DIFFERENT from reference)
+  2. Style: Match the reference's color scheme and design aesthetic
+  3. Text Language: 100% ${lang} ONLY - no other language permitted
+  4. Brand: Feature "${appName}" app icon prominently
   `;
 }

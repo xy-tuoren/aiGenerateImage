@@ -6,6 +6,7 @@ import {
   Button,
   Dropdown,
   Image,
+  Modal,
   Select,
   Space,
   Typography,
@@ -49,6 +50,8 @@ type GridImage = {
   createdAt?: string;
   appName?: string;
   lang?: string;
+  prompt?: string;
+  referenceImages?: string[];
 };
 
 const GridTile = memo(
@@ -58,8 +61,10 @@ const GridTile = memo(
     selected: boolean;
     onTogglePick: (k: string) => void;
     onOpenPreview: (idx: number) => void;
+    onOpenMeta: (img: GridImage) => void;
   }) {
-    const { img, idx, selected, onTogglePick, onOpenPreview } = props;
+    const { img, idx, selected, onTogglePick, onOpenPreview, onOpenMeta } =
+      props;
 
     const onContextMenu = useCallback(
       (e: any) => {
@@ -72,6 +77,16 @@ const GridTile = memo(
     const onClick = useCallback(() => {
       onOpenPreview(idx);
     }, [idx, onOpenPreview]);
+
+    const onMouseDown = useCallback(
+      (e: any) => {
+        if (e.button !== 1) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onOpenMeta(img);
+      },
+      [img, onOpenMeta]
+    );
 
     return (
       <div
@@ -88,6 +103,7 @@ const GridTile = memo(
         }}
         onContextMenu={onContextMenu}
         onClick={onClick}
+        onMouseDown={onMouseDown}
       >
         <Image
           width="100%"
@@ -242,6 +258,8 @@ export default function GalleryPage() {
   const [previewIndex, setPreviewIndex] = useState(0);
   const [selectedPreviewOpen, setSelectedPreviewOpen] = useState(false);
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0);
+  const [metaOpen, setMetaOpen] = useState(false);
+  const [metaImg, setMetaImg] = useState<GridImage | null>(null);
   const [creatingCut, setCreatingCut] = useState(false);
   const [downloadingZip, setDownloadingZip] = useState(false);
   const [galleryPage, setGalleryPage] = useState(1);
@@ -684,6 +702,21 @@ export default function GalleryPage() {
       const gk = `${jobId}|${groupConfigId}`;
       const g = groupMap.get(gk) || { latestAt: 0, imgs: [] };
       g.latestAt = Math.max(g.latestAt, Number.isFinite(t) ? t : 0);
+      const promptRaw =
+        it.prompt != null
+          ? String(it.prompt)
+          : it?.configMeta?.prompt != null
+            ? String(it.configMeta.prompt)
+            : "";
+      const prompt = promptRaw.trim();
+      const referenceImagesRaw = Array.isArray(it.referenceImages)
+        ? it.referenceImages
+        : Array.isArray(it?.configMeta?.referenceImages)
+          ? it.configMeta!.referenceImages!
+          : [];
+      const referenceImages = referenceImagesRaw
+        .map((x) => String(x || "").trim())
+        .filter(Boolean);
       g.imgs.push({
         key: `${recId || `${gk}|${configId}|${index}|${createdAt || ""}`}|${it.url}`,
         url: String(it.url),
@@ -693,7 +726,9 @@ export default function GalleryPage() {
         index,
         createdAt,
         appName: it.appName ?? it.configMeta?.appName,
-        lang: it.lang ?? it.configMeta?.lang
+        lang: it.lang ?? it.configMeta?.lang,
+        prompt: prompt || undefined,
+        referenceImages: referenceImages.length ? referenceImages : undefined
       });
       groupMap.set(gk, g);
     }
@@ -860,6 +895,11 @@ export default function GalleryPage() {
       selectedPreviewOpen
     ]
   );
+
+  const onOpenMeta = useCallback((img: GridImage) => {
+    setMetaImg(img);
+    setMetaOpen(true);
+  }, []);
 
   const addPicks = useCallback((keys: string[]) => {
     const arr = Array.isArray(keys)
@@ -1435,6 +1475,94 @@ export default function GalleryPage() {
           </div>
         ) : null}
 
+        <Modal
+          title="生成信息"
+          open={metaOpen}
+          destroyOnHidden
+          footer={null}
+          width={980}
+          onCancel={() => {
+            setMetaOpen(false);
+            setMetaImg(null);
+          }}
+        >
+          <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: 12
+              }}
+            >
+              <div>
+                <Typography.Text strong>图片</Typography.Text>
+                <div style={{ marginTop: 8 }}>
+                  {metaImg?.url ? (
+                    <Image
+                      src={metaImg.url}
+                      alt={metaImg.url}
+                      width="100%"
+                      style={{ width: "100%", borderRadius: 10 }}
+                      preview={false}
+                    />
+                  ) : (
+                    <Typography.Text type="secondary">无</Typography.Text>
+                  )}
+                </div>
+              </div>
+              <div>
+                <Typography.Text strong>参考图</Typography.Text>
+                <div style={{ marginTop: 8 }}>
+                  {metaImg?.referenceImages?.length ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                        gap: 12,
+                        alignItems: "start"
+                      }}
+                    >
+                      {metaImg.referenceImages.map((u, i) => (
+                        <Image
+                          key={`${u}|${i}`}
+                          src={u}
+                          alt={u}
+                          width="100%"
+                          style={{
+                            width: "100%",
+                            height: "auto",
+                            maxHeight: 520,
+                            objectFit: "contain",
+                            borderRadius: 10,
+                            border: "1px solid rgba(0,0,0,0.06)",
+                            background: "#fff"
+                          }}
+                          preview={false}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <Typography.Text type="secondary">无</Typography.Text>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div>
+              <Typography.Text strong>提示词</Typography.Text>
+              <Typography.Paragraph
+                style={{ marginTop: 8, whiteSpace: "pre-wrap" }}
+                copyable={metaImg?.prompt ? { text: metaImg.prompt } : false}
+              >
+                {metaImg?.prompt ? (
+                  metaImg.prompt
+                ) : (
+                  <Typography.Text type="secondary">无</Typography.Text>
+                )}
+              </Typography.Paragraph>
+            </div>
+          </Space>
+        </Modal>
+
         <Image.PreviewGroup items={previewItems} preview={previewConfig}>
           <div
             ref={gridWrapRef}
@@ -1497,6 +1625,7 @@ export default function GalleryPage() {
                 selected={selectedKeySet.has(img.key)}
                 onTogglePick={togglePick}
                 onOpenPreview={onOpenPreviewAt}
+                onOpenMeta={onOpenMeta}
               />
             ))}
           </div>
