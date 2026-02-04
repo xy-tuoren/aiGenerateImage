@@ -34,7 +34,7 @@ export interface ImageMetadata {
  */
 export const DEFAULT_IMAGE_METADATA: ImageMetadata = {
   custom: {
-    tableName: "original_image",
+    tableName: "d-404",
     id: "d-404",
     userId: "d-404",
     designer: "d-404",

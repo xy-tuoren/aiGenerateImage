@@ -7,6 +7,8 @@ import { Readable } from "stream";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { extFromMime } from "@/lib/server/utils";
 import { requireApiAccess } from "@/lib/server/auth";
+import { addMetadataToImage } from "@/common/utils";
+import type { ImageMetadata } from "@/common/utils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,6 +64,28 @@ function publicUrlToAbsPath(u: string) {
 async function readAsJpegBuffer(absPath: string): Promise<Buffer> {
   const buf = await fs.readFile(absPath);
   return await sharp(buf).flatten({ background: "#ffffff" }).jpeg({ quality: 95 }).toBuffer();
+}
+
+const addMetaEnv = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
+
+function jpegWithMeta(jpegBuffer: Buffer, rec: CutRecordDoc): Buffer {
+  if (!addMetaEnv) return jpegBuffer;
+  try {
+    const ab = new Uint8Array(jpegBuffer).buffer as ArrayBuffer;
+    const meta: ImageMetadata = {
+      custom: {
+        tableName: "cut_record",
+        id: String(rec._id ?? ""),
+        userId: String(rec.userId ?? ""),
+        appName: String(rec.appName ?? ""),
+        lang: String(rec.lang ?? ""),
+      },
+    };
+    const out = addMetadataToImage(ab, "image/jpeg", meta);
+    return Buffer.from(out);
+  } catch {
+    return jpegBuffer;
+  }
 }
 
 async function readUrlAsRawBuffer(u: string): Promise<{ buf: Buffer; mimeType?: string } | null> {
@@ -209,7 +233,7 @@ export async function POST(req: Request) {
           const srcAbs = String(rec.sourceAbsPath || "").trim();
           if (srcAbs && await fs.pathExists(srcAbs)) {
             const jpg = await readAsJpegBuffer(srcAbs);
-            archive.append(jpg, { name: `${folder}${folderIndex}@${fixedCode}-landscape-1.jpg` });
+            archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}@${fixedCode}-landscape-1.jpg` });
             added += 1;
           }
         } catch {
@@ -231,7 +255,7 @@ export async function POST(req: Request) {
               if (!(await fs.pathExists(abs))) continue;
               const jpg = await readAsJpegBuffer(abs);
               n += 1;
-              archive.append(jpg, { name: `${folder}${folderIndex}@${fixedCode}-square-${n}.jpg` });
+              archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}@${fixedCode}-square-${n}.jpg` });
               added += 1;
             }
           }
@@ -254,7 +278,7 @@ export async function POST(req: Request) {
               if (!(await fs.pathExists(abs))) continue;
               const jpg = await readAsJpegBuffer(abs);
               n += 1;
-              archive.append(jpg, { name: `${folder}${folderIndex}@${fixedCode}-vertical-${n}.jpg` });
+              archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}@${fixedCode}-vertical-${n}.jpg` });
               added += 1;
             }
           }

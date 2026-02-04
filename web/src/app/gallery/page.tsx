@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import {
+  AutoComplete,
   Button,
   Dropdown,
   Image,
@@ -1253,11 +1254,10 @@ export default function GalleryPage() {
       <Space orientation="vertical" size={12} style={{ width: "100%" }}>
         <Space wrap>
           <Typography.Text strong>筛选：</Typography.Text>
-          <Select
+          <AutoComplete
             style={{ width: 260 }}
-            placeholder="appName"
+            placeholder="appName（可输入或选择）"
             allowClear
-            showSearch
             value={appName || undefined}
             options={appNameOptions}
             onChange={(v) => setAppName(String(v || ""))}
