@@ -27,6 +27,10 @@ type CutRecordDoc = {
   updatedAt: Date;
 };
 
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function deriveStatus(outputs: CutRecordDoc["outputs"]): "queued" | "running" | "completed" | "failed" {
   const o = outputs && typeof outputs === "object" ? outputs : undefined;
   if (!o) return "queued";
@@ -62,6 +66,8 @@ export async function GET(req: Request) {
   const appName = (searchParams.get("appName") || "").trim();
   const lang = (searchParams.get("lang") || "").trim();
   const jobId = (searchParams.get("jobId") || "").trim();
+  const appNameNorm = appName.toLowerCase();
+  const langNorm = lang.toLowerCase();
 
   const filter: any = {};
   filter.userId = user.userId;
@@ -70,8 +76,8 @@ export async function GET(req: Request) {
       return Response.json({ ok: false, error: "status 非法" }, { status: 400 });
     }
   }
-  if (appName) filter.appName = appName;
-  if (lang) filter.lang = lang;
+  if (appName) filter.appName = { $regex: new RegExp(`^${escapeRegex(appName)}$`, "i") };
+  if (lang) filter.lang = { $regex: new RegExp(`^${escapeRegex(lang)}$`, "i") };
   if (jobId) {
     if (!ObjectId.isValid(jobId)) return Response.json({ ok: false, error: "jobId 非法" }, { status: 400 });
     filter.jobId = new ObjectId(jobId);
@@ -95,7 +101,13 @@ export async function GET(req: Request) {
       createdAt: d.createdAt,
       updatedAt: d.updatedAt,
     };
-  }).filter((it: any) => (status ? String(it.status) === status : true));
+  })
+    .filter((it: any) => (status ? String(it.status) === status : true))
+    .filter((it: any) => {
+      if (appName && String(it?.appName || "").trim().toLowerCase() !== appNameNorm) return false;
+      if (lang && String(it?.lang || "").trim().toLowerCase() !== langNorm) return false;
+      return true;
+    });
 
   return Response.json({ ok: true, items });
 }

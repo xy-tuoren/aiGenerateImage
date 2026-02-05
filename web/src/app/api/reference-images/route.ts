@@ -20,6 +20,7 @@ export async function GET(req: Request) {
     const folderPathOnly = searchParams.get("folderPath") === "1";
     const pathsForUrls = searchParams.get("paths") === "1";
     const qAppName = String(searchParams.get("appName") || "").trim();
+    const qAppNameNorm = qAppName.toLowerCase();
     const urlsParam = searchParams.get("urls") || "";
     const qPageRaw = Number(searchParams.get("page") || "1");
     const qPageSizeRaw = Number(searchParams.get("pageSize") || "100");
@@ -49,6 +50,7 @@ export async function GET(req: Request) {
     }
 
     const cacheHeaders = { "cache-control": "public, max-age=60, stale-while-revalidate=300" };
+    const resolvedAppName = qAppName ? (appDirs.find((x) => x.toLowerCase() === qAppNameNorm) || "") : "";
 
     if (namesOnly) {
       return NextResponse.json({ ok: true, appNames: appDirs }, { headers: cacheHeaders });
@@ -56,23 +58,21 @@ export async function GET(req: Request) {
 
     const cwd = process.cwd();
     if (folderPathOnly && qAppName) {
-      const exists = appDirs.includes(qAppName);
-      if (!exists) {
+      if (!resolvedAppName) {
         return NextResponse.json({ ok: false, error: "appName 不存在" }, { status: 400 });
       }
-      const absFolder = path.join(publicMaterialDir, qAppName);
+      const absFolder = path.join(publicMaterialDir, resolvedAppName);
       const folderPath = path.relative(cwd, absFolder);
       return NextResponse.json({ ok: true, folderPath }, { headers: cacheHeaders });
     }
 
     if (pathsForUrls && qAppName && urlsParam) {
-      const exists = appDirs.includes(qAppName);
-      if (!exists) {
+      if (!resolvedAppName) {
         return NextResponse.json({ ok: false, error: "appName 不存在" }, { status: 400 });
       }
       const urlList = urlsParam.split(",").map((u) => String(u || "").trim()).filter(Boolean);
       const paths: string[] = [];
-      const appDir = path.join(publicMaterialDir, qAppName);
+      const appDir = path.join(publicMaterialDir, resolvedAppName);
       for (const u of urlList) {
         const match = u.match(/^\/material\/[^/]+\/(.+)$/);
         if (!match) continue;
@@ -89,27 +89,26 @@ export async function GET(req: Request) {
     }
 
     if (qAppName) {
-      const exists = appDirs.includes(qAppName);
-      if (!exists) {
+      if (!resolvedAppName) {
         return NextResponse.json({ ok: true, appNames: appDirs, appName: qAppName, page, pageSize, total: 0, images: [] }, { headers: cacheHeaders });
       }
       let all: string[] = [];
-      const cached = cachedFilesByApp.get(qAppName);
+      const cached = cachedFilesByApp.get(resolvedAppName);
       if (cached && now - cached.at < CACHE_TTL_MS) {
         all = cached.files;
       } else {
-        const absDir = path.join(publicMaterialDir, qAppName);
+        const absDir = path.join(publicMaterialDir, resolvedAppName);
         const names = await fs.readdir(absDir).catch(() => []);
         all = names
           .map((x) => String(x || "").trim())
           .filter((x) => x && isImageFileName(x))
           .sort((a, b) => a.localeCompare(b));
-        cachedFilesByApp.set(qAppName, { at: now, files: all });
+        cachedFilesByApp.set(resolvedAppName, { at: now, files: all });
       }
       const total = all.length;
       const start = (page - 1) * pageSize;
-      const slice = all.slice(start, start + pageSize).map((file) => `/material/${encodeURIComponent(qAppName)}/${encodeURIComponent(file)}`);
-      return NextResponse.json({ ok: true, appNames: appDirs, appName: qAppName, page, pageSize, total, images: slice }, { headers: cacheHeaders });
+      const slice = all.slice(start, start + pageSize).map((file) => `/material/${encodeURIComponent(resolvedAppName)}/${encodeURIComponent(file)}`);
+      return NextResponse.json({ ok: true, appNames: appDirs, appName: resolvedAppName, page, pageSize, total, images: slice }, { headers: cacheHeaders });
     }
 
     const groups: Array<{ appName: string; images: string[] }> = [];

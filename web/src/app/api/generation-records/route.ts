@@ -55,6 +55,10 @@ type BatchJobConfigDoc = {
   updatedAt: Date;
 };
 
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export async function GET(req: Request) {
   const guard = requireApiAccess(req);
   if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
@@ -68,6 +72,8 @@ export async function GET(req: Request) {
   const status = (searchParams.get("status") || "").trim();
   const appName = (searchParams.get("appName") || "").trim();
   const lang = (searchParams.get("lang") || "").trim();
+  const appNameNorm = appName.toLowerCase();
+  const langNorm = lang.toLowerCase();
 
   const db = await getMongoDb();
   const recordsCol = db.collection<GenerationRecordDoc>("generation_records");
@@ -88,8 +94,8 @@ export async function GET(req: Request) {
     if (status !== "completed" && status !== "failed") return Response.json({ ok: false, error: "status 非法" }, { status: 400 });
     filter.status = status;
   }
-  if (appName) filter.appName = appName;
-  if (lang) filter.lang = lang;
+  if (appName) filter.appName = { $regex: new RegExp(`^${escapeRegex(appName)}$`, "i") };
+  if (lang) filter.lang = { $regex: new RegExp(`^${escapeRegex(lang)}$`, "i") };
 
   const records = await recordsCol.find(filter, { sort: { createdAt: -1 }, limit } as any).toArray();
   const existingKeys = new Set(records.map((r) => `${String(r.jobId)}|${String(r.configId)}|${Number(r.index)}`));
@@ -213,8 +219,8 @@ export async function GET(req: Request) {
   });
 
   const filteredByMeta = items.filter((it: any) => {
-    if (appName && String(it?.appName || it?.configMeta?.appName || "").trim() !== appName) return false;
-    if (lang && String(it?.lang || it?.configMeta?.lang || "").trim() !== lang) return false;
+    if (appName && String(it?.appName || it?.configMeta?.appName || "").trim().toLowerCase() !== appNameNorm) return false;
+    if (lang && String(it?.lang || it?.configMeta?.lang || "").trim().toLowerCase() !== langNorm) return false;
     return true;
   });
   return Response.json({ ok: true, items: filteredByMeta });

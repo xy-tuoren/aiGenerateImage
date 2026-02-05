@@ -241,8 +241,10 @@ export default function CropPage() {
 
   const filteredRecords = useMemo(() => {
     let arr = sortedRecords;
-    if (appName) arr = arr.filter((r) => String(r.appName ?? "").trim() === appName);
-    if (lang) arr = arr.filter((r) => String(r.lang ?? "").trim() === lang);
+    const qApp = String(appName || "").trim().toLowerCase();
+    const qLang = String(lang || "").trim().toLowerCase();
+    if (qApp) arr = arr.filter((r) => String(r.appName ?? "").trim().toLowerCase() === qApp);
+    if (qLang) arr = arr.filter((r) => String(r.lang ?? "").trim().toLowerCase() === qLang);
     return arr;
   }, [sortedRecords, appName, lang]);
 
