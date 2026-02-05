@@ -578,14 +578,13 @@ export default function CropPage() {
           <Select
             size="small"
             allowClear
-            showSearch
             placeholder="全部"
             style={{ width: 180 }}
             value={appName || undefined}
             options={appNameOptions}
-            filterOption={(input, option) =>
+            showSearch={{filterOption: (input, option) =>
               (option?.label ?? "").toString().toLowerCase().includes((input || "").toLowerCase())
-            }
+            }}
             onChange={(v) => setAppName(String(v ?? ""))}
           />
           <Typography.Text strong>lang：</Typography.Text>
@@ -596,6 +595,9 @@ export default function CropPage() {
             style={{ width: 120 }}
             value={lang || undefined}
             options={SUPPORTED_LANGUAGES.map((x) => ({ label: x, value: x }))}
+            showSearch={{filterOption: (input, option) =>
+              (option?.label ?? "").toString().toLowerCase().includes((input || "").toLowerCase())
+            }}
             onChange={(v) => setLang(String(v ?? ""))}
           />
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchRecords} loading={recordsLoading}>

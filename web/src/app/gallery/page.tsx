@@ -56,6 +56,24 @@ type GridImage = {
   referenceImages?: string[];
 };
 
+const normalizeMaterialUrl = (input: string) => {
+  const raw = String(input || "").trim();
+  if (!raw) return raw;
+  if (!raw.startsWith("/material/")) return raw;
+  const qPos = raw.indexOf("?");
+  const base = qPos >= 0 ? raw.slice(0, qPos) : raw;
+  const query = qPos >= 0 ? raw.slice(qPos) : "";
+  const segs = base.split("/").map((seg, idx) => {
+    if (idx <= 1) return seg; // "" + "material"
+    try {
+      return encodeURIComponent(decodeURIComponent(seg));
+    } catch {
+      return encodeURIComponent(seg);
+    }
+  });
+  return `${segs.join("/")}${query}`;
+};
+
 const getCostFromImageUrl = (imageUrl: string) => {
   try {
     const lastSegRaw = imageUrl.split("/").pop() || "";
@@ -753,9 +771,10 @@ export default function GalleryPage() {
       const referenceImages = referenceImagesRaw
         .map((x) => String(x || "").trim())
         .filter(Boolean);
+      const url = normalizeMaterialUrl(String(it.url));
       g.imgs.push({
         key: `${recId || `${gk}|${configId}|${index}|${createdAt || ""}`}|${it.url}`,
-        url: String(it.url),
+        url,
         jobId,
         configId: groupConfigId,
         sourceConfigId: sourceConfigId || undefined,
@@ -764,7 +783,9 @@ export default function GalleryPage() {
         appName: it.appName ?? it.configMeta?.appName,
         lang: it.lang ?? it.configMeta?.lang,
         prompt: prompt || undefined,
-        referenceImages: referenceImages.length ? referenceImages : undefined
+        referenceImages: referenceImages.length
+          ? referenceImages.map((u) => normalizeMaterialUrl(u))
+          : undefined
       });
       groupMap.set(gk, g);
     }

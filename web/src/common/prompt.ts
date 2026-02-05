@@ -25,18 +25,18 @@ export function getAppDefaultPrompt3({ appName, lang, prompt, aspectRatio }: { a
   `;
 }
 
-//背景与主体有对比色凸显主体。
+//使用对比色或光影效果突出主体元素
 //图片中只能出现一张图不能是多张图拼接而成的。
 export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   const appDesc = appName ? `${appName}应用` : '目标应用（请根据参考图或上下文推断）';
   const langDesc = lang || '参考图中使用的语言';
   
-  return `1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为风格参考，你需要调整构图、修改元素、背景等避免跟参考图过于相似。好的广告设计应遵循以下原则：
+  return `1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为图片风格参考，你需要调整构图、修改元素、背景等避免跟参考图过于相似。好的广告设计应遵循以下原则：
     - 应用图标必须在核心位置，尺寸要大且显眼（建议占画面至少15-20%）
     - 图片的视觉层次要分明：主体（图标+核心文案）> 辅助元素 > 背景
-    - 使用对比色或光影效果突出主体元素
+    - 所有元素之间不能有堆叠现象
     - 推广文案要简洁明了，加起来不能超过3条，单条文案长度不超过10个字符
-    - 整体构图要有呼吸感，避免元素过于拥挤
+    - 整体构图避免元素过于拥挤
   2、【关键】图片将用于${appDesc}推广：
     - 如果参考图中已有该应用图标，必须严格保持图标的样式、颜色、设计完全一致，不要修改或重新设计
     - 如果参考图中是其他应用的图标，需要替换为${appDesc}的图标，并保持该图标的原始设计风格
@@ -45,8 +45,7 @@ export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: 
     - 手机屏幕、UI界面中的文字
     - 背景装饰文字、标牌、广告牌等任何可见文字
     - 禁止出现任何其他语言 
-  4、【格式要求】生成一张${getRatioDesc(aspectRatio)}，图片中只能是单张完整的广告图，不能是多张图拼接组合。
-  5、${prompt}
+  4、${prompt}
   `;
 }
 
@@ -98,7 +97,7 @@ export function getCentralPositionPrompt({ appName, lang, prompt, aspectRatio }:
 
 export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   const appDesc = appName ? `${appName}应用的` : '参考图中应用的（请根据参考图自行推断应用名称）';
-  return `生成一张${getRatioDesc(aspectRatio)}，严格保持参考图中${appDesc}图标样式、颜色和设计不变，提取应用图标或者应用图标和文字组合的构图，增加图标的大小使其更加显眼并保留部分背景，不要修改图标的外观，其他元素不需要了。`;
+  return `生成一张${getRatioDesc(aspectRatio)}，提取应用图标和推广文字的组合构图，增加图标的大小使其更加显眼并保留部分背景，应用图标保持跟参考图一致不要修改图标的外观`;
 }
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
@@ -147,92 +146,30 @@ export function getAppAdsDesignerGemini3Prompt({
   aspectRatio?: string;
   [key: string]: any
 }) {
-  return `
-  # Role: Elite Creative Director & Professional Visual Designer
-  
-  # Project: "${appName}" Premium Ad Campaign
-  - Target Language: ${lang}
-  - Core Concept: "${prompt}"
-  - Quality Standard: Professional, High-End, Commercial Grade
-  
-  # CRITICAL CONSTRAINT: NO LAYOUT CLONING
-  The user explicitly hates it when the result looks like the reference image.
-  - The Reference Image is ONLY for: Color palette, design style, lighting mood, and visual treatment.
-  - The Reference Image is FORBIDDEN for: Composition, camera angle, object placement, layout structure, and specific elements.
-  - **You MUST create a completely NEW and ORIGINAL composition based SOLELY on "${prompt}".**
-  
-  # Element Guidelines
-  - Focus on the core concept described in "${prompt}" without defaulting to common app advertising tropes.
-  - Choose visual elements that best express the concept, whether concrete or abstract.
-  - If devices, screens, or interfaces naturally fit the concept, include them appropriately.
-  - Prioritize creative and diverse visual approaches.
-  
-  # Reasoning Logic (Structure vs. Style)
-  1. Deconstruct Reference:
-     - Extract the "Style DNA" ONLY (color palette, lighting, design aesthetic, visual mood).
-     - Completely IGNORE the "Structural DNA" (composition, object placement, specific elements shown).
-  2. Plan New Scene:
-     - Read the user prompt: "${prompt}".
-     - Visualize this concept from absolute scratch, as if you've never seen the reference.
-     - Focus on the ESSENCE of the concept, not literal representations.
-     - Example: If prompt says "Speed and efficiency", show motion blur, dynamic lines, fast-moving elements - NOT a speedometer or racing car unless explicitly mentioned.
-  3. Apply Style:
-     - Apply ONLY the extracted "Style DNA" to your completely new composition.
-  
-  # High-Quality Generation Directives
-  
-  ## 1. Composition (Derived STRICTLY from Prompt)
-  - Follow the user description "${prompt}" with absolute precision.
-  - Create a BOLD, CREATIVE, and VISUALLY STRIKING composition.
-  - Use dynamic angles, interesting perspectives, and professional framing.
-  - Apply rule of thirds, leading lines, and visual hierarchy principles.
-  - Ensure strong focal points and clear visual flow.
-  
-  ## 2. Visual Quality (Professional Standards)
-  - Create sharp, crisp, high-resolution imagery with exceptional clarity.
-  - Use professional lighting with proper highlights, shadows, and depth.
-  - Apply rich, vibrant colors with proper saturation and contrast.
-  - Ensure clean edges, smooth gradients, and polished details.
-  - Add depth through layering, atmospheric perspective, and dimensional elements.
-  - Maintain visual balance and professional polish throughout.
-  - **Human Expressions**: If people are shown, use NATURAL, GENUINE, and VARIED expressions:
-    * Avoid forced, fake, or overly exaggerated smiles
-    * Use subtle, authentic emotions (thoughtful, focused, relaxed, confident, engaged)
-    * Candid moments work better than posed expressions
-    * Expression should match the mood and context of "${prompt}"
-    * Consider neutral or serious expressions when appropriate
-  
-  ## 3. Style Application (From Reference)
-  - Extract and apply the color scheme from the reference image.
-  - Match the design aesthetic and visual treatment style.
-  - Maintain the brand identity and mood of "${appName}".
-  - Apply consistent lighting atmosphere and visual tone.
-  
-  ## 4. Text & Localization (ABSOLUTE REQUIREMENT)
-  - **CRITICAL**: ALL visible text MUST be 100% in ${lang} language. ZERO exceptions.
-  - This includes:
-    * Headlines and slogans
-    * UI elements and labels (if present)
-    * Environmental text or signage
-    * Any decorative typography
-  - If the reference contains text in another language, translate it to ${lang}.
-  - If you cannot write proper ${lang} text, use abstract shapes or pure visual elements instead.
-  - Keep text minimal and impactful (max 2-3 text elements, each under 8 characters).
-  - Ensure text is legible, well-kerned, and professionally integrated.
-  - Note: Timeless designs without specific dates are preferred. If dates/years naturally appear, ensure they are ${new Date().getFullYear()} or later.
-  
-  ## 5. Brand Integration
-  - Integrate "${appName}" branding subtly and elegantly.
-  - The brand should feel natural, not forced or intrusive.
-  - Consider abstract brand representation through style rather than literal app icons.
-  
-  # Final Generation Instruction
-  Generate a PREMIUM, HIGH-QUALITY image following these rules:
-  1. Concept: Interpret "${prompt}" creatively and originally (ZERO similarity to reference composition)
-  2. Quality: Professional, commercial-grade with exceptional clarity and polish
-  3. Style: Apply reference's color palette and aesthetic treatment ONLY
-  4. Text: 100% ${lang} ONLY - professionally integrated and minimal
-  5. Human Presence: If showing people, use natural, authentic expressions - NO fake smiles or stiff poses
-  6. Impact: Create a visually stunning, memorable, and emotionally engaging image
-  `;
+  return `你是一名专业的广告设计师，为"${appName}"应用创作高质量的${lang}推广广告。
+
+# 核心创意要求
+根据以下概念创作："${prompt}"
+
+参考图仅用于获取灵感：
+- 可以借鉴：色彩风格、设计美学、光影氛围
+- 必须原创：构图布局、视角、元素摆放、整体结构
+- 自由发挥你的创意，不要复制参考图的构图
+
+# 必须遵守的限制
+1. **语言要求**：所有可见文字必须100%使用${lang}语言，包括标题、UI文字、背景文字等
+2. **禁止日期**：不要出现具体月份/日期（如"12/1"、"1月31日"），可以用"限定"、"新登場"、"今すぐ"等无时效性词语
+3. **品牌识别必须强**（重要）：
+   - "${appName}"的App图标/Logo必须是画面最醒目的主视觉元素（建议占画面面积的15%-25%），不要做成角落小图标
+   - "${appName}"应用名必须作为主标题或核心文案，字号足够大，缩略图/远看也能一眼读清
+   - 通过对比色、留白、光影或背景虚化确保Logo与应用名清晰突出，避免被复杂背景淹没
+   - 画面中不要出现其他品牌Logo/水印/平台标识（如YouTube等），避免让人误判广告主体
+
+# 创作建议
+- 追求专业的商业广告质量
+- 保持画面简洁有力，文字不超过3条且每条不超过8个字符
+- 让创意自然流动，根据概念自由选择表现手法（可以包含设备、抽象元素、场景等任何合适的方式）
+- 避免过度科幻或赛博朋克风格，除非概念明确需要
+
+现在请根据"${prompt}"创作一张高质量的广告图片。`;
 }
