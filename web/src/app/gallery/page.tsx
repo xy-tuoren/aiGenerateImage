@@ -56,6 +56,20 @@ type GridImage = {
   referenceImages?: string[];
 };
 
+const getCostFromImageUrl = (imageUrl: string) => {
+  try {
+    const lastSegRaw = imageUrl.split("/").pop() || "";
+    const lastSeg = lastSegRaw.split("?")[0]?.split("#")[0] || "";
+    const decoded = decodeURIComponent(lastSeg);
+    const base = decoded.replace(/\.[^.]+$/, "");
+    const m = base.match(/-(\d+)$/);
+    const cost = m?.[1] ?? "";
+    return cost;
+  } catch {
+    return "";
+  }
+};
+
 const GridTile = memo(
   function GridTile(props: {
     img: GridImage;
@@ -1536,24 +1550,49 @@ export default function GalleryPage() {
                         alignItems: "start"
                       }}
                     >
-                      {metaImg.referenceImages.map((u, i) => (
-                        <Image
-                          key={`${u}|${i}`}
-                          src={u}
-                          alt={u}
-                          width="100%"
-                          style={{
-                            width: "100%",
-                            height: "auto",
-                            maxHeight: 520,
-                            objectFit: "contain",
-                            borderRadius: 10,
-                            border: "1px solid rgba(0,0,0,0.06)",
-                            background: "#fff"
-                          }}
-                          preview={false}
-                        />
-                      ))}
+                      {metaImg.referenceImages.map((u, i) => {
+                        const cost = getCostFromImageUrl(u);
+                        return (
+                          <div key={`${u}|${i}`} style={{ position: "relative" }}>
+                            <Image
+                              src={u}
+                              alt={u}
+                              width="100%"
+                              style={{
+                                width: "100%",
+                                height: "auto",
+                                maxHeight: 520,
+                                objectFit: "contain",
+                                borderRadius: 10,
+                                border: "1px solid rgba(0,0,0,0.06)",
+                                background: "#fff"
+                              }}
+                              preview={false}
+                            />
+                            {cost ? (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: 0,
+                                  right: 0,
+                                  zIndex: 20,
+                                  padding: "2px 4px",
+                                  borderBottomLeftRadius: 8,
+                                  background: "rgba(0,0,0,0.75)",
+                                  color: "#fff",
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  textShadow: "0 0 2px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,0.8)",
+                                  userSelect: "none",
+                                  pointerEvents: "none"
+                                }}
+                              >
+                                {cost}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <Typography.Text type="secondary">无</Typography.Text>
