@@ -7,6 +7,7 @@ import {
   Button,
   Dropdown,
   Image,
+  Input,
   Modal,
   Select,
   Space,
@@ -660,7 +661,10 @@ export default function GalleryPage() {
   }, []);
 
   useEffect(() => {
-    fetchImages();
+    const t = window.setTimeout(() => {
+      fetchImages();
+    }, 350);
+    return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appName, lang]);
 
@@ -1254,27 +1258,33 @@ export default function GalleryPage() {
       <Space orientation="vertical" size={12} style={{ width: "100%" }}>
         <Space wrap>
           <Typography.Text strong>筛选：</Typography.Text>
-          <Select
+          <AutoComplete
             style={{ width: 260 }}
-            placeholder="appName（可输入或选择）"
-            allowClear
-            showSearch
-            value={appName || undefined}
+            value={appName}
             options={appNameOptions}
             onChange={(v) => setAppName(String(v || ""))}
-            filterOption={(input, option) =>
-              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-            }
-          />
-          <Select
+            showSearch={{filterOption: (inputValue, option) => {
+              const v = String(option?.value ?? "");
+              const l = String((option as any)?.label ?? "");
+              const q = String(inputValue || "").toLowerCase();
+              return v.toLowerCase().includes(q) || l.toLowerCase().includes(q);
+            }}}
+          >
+            <Input allowClear placeholder="appName" />
+          </AutoComplete>
+          <AutoComplete
             style={{ width: 140 }}
-            placeholder="lang"
-            allowClear
-            showSearch
-            value={lang || undefined}
-            options={SUPPORTED_LANGUAGES.map((x) => ({ label: x, value: x }))}
+            value={lang}
+            options={SUPPORTED_LANGUAGES.map((x) => ({ value: x }))}
             onChange={(v) => setLang(String(v || ""))}
-          />
+            showSearch={{filterOption: (inputValue, option) =>
+              String(option?.value ?? "")
+                .toLowerCase()
+                .includes(String(inputValue || "").toLowerCase())
+            }}
+          >
+            <Input allowClear placeholder="lang" />
+          </AutoComplete>
           <Select
             style={{ width: 140 }}
             placeholder="比例"

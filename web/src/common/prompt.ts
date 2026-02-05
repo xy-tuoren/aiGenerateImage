@@ -44,7 +44,7 @@ export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: 
     - 广告文案、按钮文字、标语
     - 手机屏幕、UI界面中的文字
     - 背景装饰文字、标牌、广告牌等任何可见文字
-    - 禁止出现任何其他语言
+    - 禁止出现任何其他语言 
   4、【格式要求】生成一张${getRatioDesc(aspectRatio)}，图片中只能是单张完整的广告图，不能是多张图拼接组合。
   5、${prompt}
   `;
