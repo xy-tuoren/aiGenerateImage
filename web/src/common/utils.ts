@@ -57,10 +57,17 @@ export function addMetadataToImage(
 
   function addMetadataToJpeg(imageData: Uint8Array, meta: ImageMetadata): ArrayBuffer {
     try {
-      const binary = Array.from(imageData)
-        .map((byte) => String.fromCharCode(byte))
-        .join('');
-      const base64 = btoa(binary);
+      const toBase64 = (u8: Uint8Array) => {
+        try {
+          // Node/现代运行时：避免大图片走字符串拼接导致不稳定
+          if (typeof Buffer !== 'undefined') return Buffer.from(u8 as any).toString('base64');
+        } catch {
+        }
+        let binary = '';
+        for (let i = 0; i < u8.length; i++) binary += String.fromCharCode(u8[i]);
+        return btoa(binary);
+      };
+      const base64 = toBase64(imageData);
       const jpeg = `data:image/jpeg;base64,${base64}`;
 
       let exifObj: Record<string, unknown> = {};
@@ -83,19 +90,32 @@ export function addMetadataToImage(
       if (meta.description) ifd0[piexif.ImageIFD.ImageDescription] = meta.description;
       if (meta.copyright) ifd0[piexif.ImageIFD.Copyright] = meta.copyright;
       if (meta.software) ifd0[piexif.ImageIFD.Software] = meta.software;
-      if (meta.userComment) exif[piexif.ExifIFD.UserComment] = meta.userComment;
-      if (meta.custom) {
-        exif[piexif.ExifIFD.UserComment] = JSON.stringify(meta.custom);
+      const commentText = meta.custom ? JSON.stringify(meta.custom) : (meta.userComment || '');
+      if (commentText) {
+        try {
+          const helper = (piexif as any)?.helper?.UserComment;
+          exif[piexif.ExifIFD.UserComment] = helper?.encode ? helper.encode(commentText) : commentText;
+        } catch {
+          exif[piexif.ExifIFD.UserComment] = commentText;
+        }
       }
+      exifObj['0th'] = ifd0;
+      exifObj.Exif = exif;
 
       const exifStr = piexif.dump(exifObj);
       const newJpeg = piexif.insert(exifStr, jpeg);
       const base64Data = newJpeg.split(',')[1];
+      if (!base64Data) return imageData.buffer.slice(0) as ArrayBuffer;
+      try {
+        if (typeof Buffer !== 'undefined') {
+          const buf = Buffer.from(base64Data, 'base64');
+          return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+        }
+      } catch {
+      }
       const binaryData = atob(base64Data);
       const newBuffer = new Uint8Array(binaryData.length);
-      for (let i = 0; i < binaryData.length; i++) {
-        newBuffer[i] = binaryData.charCodeAt(i);
-      }
+      for (let i = 0; i < binaryData.length; i++) newBuffer[i] = binaryData.charCodeAt(i);
       return newBuffer.buffer as ArrayBuffer;
     } catch (error) {
       console.error('添加 JPEG 元数据失败:', error);

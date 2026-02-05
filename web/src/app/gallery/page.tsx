@@ -190,17 +190,31 @@ function useUploadToFireplay(args: {
     onBeforeUpload
   } = args;
   const [uploadingFireplay, setUploadingFireplay] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<
+    | { type: "success" | "error"; content: string }
+    | null
+  >(null);
+
+  useEffect(() => {
+    if (!pendingMessage) return;
+    if (pendingMessage.type === "success") {
+      messageApi.success(pendingMessage.content);
+    } else {
+      messageApi.error(pendingMessage.content);
+    }
+    setPendingMessage(null);
+  }, [messageApi, pendingMessage]);
 
   const onUploadToFireplay = useCallback(async () => {
     if (!selectedKeys.length) {
-      messageApi.error("请先选择要上传的图片");
+      setPendingMessage({ type: "error", content: "请先选择要上传的图片" });
       return;
     }
     const picked = selectedKeys
       .map((k) => keyToImg.get(k))
       .filter(Boolean) as GridImage[];
     if (!picked.length) {
-      messageApi.error("选中的图片无效");
+      setPendingMessage({ type: "error", content: "选中的图片无效" });
       return;
     }
     onBeforeUpload?.();
@@ -221,9 +235,12 @@ function useUploadToFireplay(args: {
       const results = data.data.results as Array<{ success: boolean }>;
       const successCount = results.filter((x) => x.success).length;
       const failCount = results.length - successCount;
-      messageApi.success(
-        `已上传 Fireplay：成功 ${successCount} 张${failCount ? `，失败 ${failCount} 张` : ""}`
-      );
+      setPendingMessage({
+        type: "success",
+        content: `已上传 Fireplay：成功 ${successCount} 张${
+          failCount ? `，失败 ${failCount} 张` : ""
+        }`
+      });
       const uploadedSourceUrls = Array.isArray(data?.uploadedSourceUrls)
         ? data.uploadedSourceUrls
             .map((x: any) => String(x || "").trim())
@@ -235,16 +252,16 @@ function useUploadToFireplay(args: {
         e?.response?.data?.error ||
         e?.response?.data?.message ||
         (e instanceof Error ? e.message : String(e));
-      messageApi.error(msg);
+      setPendingMessage({ type: "error", content: msg });
     } finally {
       setUploadingFireplay(false);
     }
   }, [
     keyToImg,
-    messageApi,
     onBeforeUpload,
     onUploadedSourceUrls,
-    selectedKeys
+    selectedKeys,
+    setPendingMessage
   ]);
 
   return { uploadingFireplay, onUploadToFireplay };

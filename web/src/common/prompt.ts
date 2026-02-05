@@ -148,58 +148,91 @@ export function getAppAdsDesignerGemini3Prompt({
   [key: string]: any
 }) {
   return `
-  # Role: AI Creative Director & UI Designer
+  # Role: Elite Creative Director & Professional Visual Designer
   
-  # Project: "${appName}" Ad Campaign (Fresh Design)
+  # Project: "${appName}" Premium Ad Campaign
   - Target Language: ${lang}
   - Core Concept: "${prompt}"
+  - Quality Standard: Professional, High-End, Commercial Grade
   
   # CRITICAL CONSTRAINT: NO LAYOUT CLONING
   The user explicitly hates it when the result looks like the reference image.
-  - The Reference Image is ONLY for: Color palette, UI button style, and lighting vibe.
-  - The Reference Image is FORBIDDEN for: Composition, camera angle, object placement, and layout structure.
-  - **You MUST create a completely NEW composition based on "${prompt}".**
+  - The Reference Image is ONLY for: Color palette, design style, lighting mood, and visual treatment.
+  - The Reference Image is FORBIDDEN for: Composition, camera angle, object placement, layout structure, and specific elements.
+  - **You MUST create a completely NEW and ORIGINAL composition based SOLELY on "${prompt}".**
+  
+  # Element Guidelines
+  - Focus on the core concept described in "${prompt}" without defaulting to common app advertising tropes.
+  - Choose visual elements that best express the concept, whether concrete or abstract.
+  - If devices, screens, or interfaces naturally fit the concept, include them appropriately.
+  - Prioritize creative and diverse visual approaches.
   
   # Reasoning Logic (Structure vs. Style)
   1. Deconstruct Reference:
-     - Extract the "Style DNA" (e.g., uses flat design, uses blue/white colors, rounded corners).
-     - Ignore the "Structural DNA" (e.g., ignore that the map is on the right, or the phone is in the center).
+     - Extract the "Style DNA" ONLY (color palette, lighting, design aesthetic, visual mood).
+     - Completely IGNORE the "Structural DNA" (composition, object placement, specific elements shown).
   2. Plan New Scene:
      - Read the user prompt: "${prompt}".
-     - Visualize this prompt from scratch. Do NOT look at the reference image for this step.
-     - Example: If reference shows a "Map", but prompt says "Person holding phone", DRAW A PERSON, do not draw a map just because the reference has one.
+     - Visualize this concept from absolute scratch, as if you've never seen the reference.
+     - Focus on the ESSENCE of the concept, not literal representations.
+     - Example: If prompt says "Speed and efficiency", show motion blur, dynamic lines, fast-moving elements - NOT a speedometer or racing car unless explicitly mentioned.
   3. Apply Style:
-     - Apply the extracted "Style DNA" to the "New Scene".
+     - Apply ONLY the extracted "Style DNA" to your completely new composition.
   
-  # Generation Directives
+  # High-Quality Generation Directives
   
-  ## 1. Composition (Derived from Prompt ONLY)
-  - Strictly follow the user description: "${prompt}".
-  - Change the camera angle and perspective to be DIFFERENT from the reference image.
-  - If the reference is a close-up, try a wide shot (unless prompt says otherwise).
-  - Create a fresh, unique layout.
+  ## 1. Composition (Derived STRICTLY from Prompt)
+  - Follow the user description "${prompt}" with absolute precision.
+  - Create a BOLD, CREATIVE, and VISUALLY STRIKING composition.
+  - Use dynamic angles, interesting perspectives, and professional framing.
+  - Apply rule of thirds, leading lines, and visual hierarchy principles.
+  - Ensure strong focal points and clear visual flow.
   
-  ## 2. Visual Style (Derived from Reference)
-  - Use the color scheme and UI aesthetic from the reference image.
-  - Maintain the brand identity of "${appName}".
+  ## 2. Visual Quality (Professional Standards)
+  - Create sharp, crisp, high-resolution imagery with exceptional clarity.
+  - Use professional lighting with proper highlights, shadows, and depth.
+  - Apply rich, vibrant colors with proper saturation and contrast.
+  - Ensure clean edges, smooth gradients, and polished details.
+  - Add depth through layering, atmospheric perspective, and dimensional elements.
+  - Maintain visual balance and professional polish throughout.
+  - **Human Expressions**: If people are shown, use NATURAL, GENUINE, and VARIED expressions:
+    * Avoid forced, fake, or overly exaggerated smiles
+    * Use subtle, authentic emotions (thoughtful, focused, relaxed, confident, engaged)
+    * Candid moments work better than posed expressions
+    * Expression should match the mood and context of "${prompt}"
+    * Consider neutral or serious expressions when appropriate
   
-  ## 3. Text & Localization (ABSOLUTE REQUIREMENT)
-  - **CRITICAL**: ALL visible text in the image MUST be 100% in ${lang} language. NO exceptions.
+  ## 3. Style Application (From Reference)
+  - Extract and apply the color scheme from the reference image.
+  - Match the design aesthetic and visual treatment style.
+  - Maintain the brand identity and mood of "${appName}".
+  - Apply consistent lighting atmosphere and visual tone.
+  
+  ## 4. Text & Localization (ABSOLUTE REQUIREMENT)
+  - **CRITICAL**: ALL visible text MUST be 100% in ${lang} language. ZERO exceptions.
   - This includes:
-    * Headline and slogans
-    * UI buttons and labels
-    * Background text or ambient typography
-    * Text on phones, screens, or billboards in the scene
-    * Any watermarks or decorative text elements
-  - If the reference image contains text in another language, you MUST translate it to ${lang}.
-  - If you cannot write proper ${lang} text, use abstract lines or shapes instead - NEVER use random or mixed languages.
-  - Text should be concise (max 3 text elements, each under 10 characters).
+    * Headlines and slogans
+    * UI elements and labels (if present)
+    * Environmental text or signage
+    * Any decorative typography
+  - If the reference contains text in another language, translate it to ${lang}.
+  - If you cannot write proper ${lang} text, use abstract shapes or pure visual elements instead.
+  - Keep text minimal and impactful (max 2-3 text elements, each under 8 characters).
+  - Ensure text is legible, well-kerned, and professionally integrated.
+  - Note: Timeless designs without specific dates are preferred. If dates/years naturally appear, ensure they are ${new Date().getFullYear()} or later.
+  
+  ## 5. Brand Integration
+  - Integrate "${appName}" branding subtly and elegantly.
+  - The brand should feel natural, not forced or intrusive.
+  - Consider abstract brand representation through style rather than literal app icons.
   
   # Final Generation Instruction
-  Generate a FRESH image following these rules:
-  1. Concept: "${prompt}" (composition must be NEW and DIFFERENT from reference)
-  2. Style: Match the reference's color scheme and design aesthetic
-  3. Text Language: 100% ${lang} ONLY - no other language permitted
-  4. Brand: Feature "${appName}" app icon prominently
+  Generate a PREMIUM, HIGH-QUALITY image following these rules:
+  1. Concept: Interpret "${prompt}" creatively and originally (ZERO similarity to reference composition)
+  2. Quality: Professional, commercial-grade with exceptional clarity and polish
+  3. Style: Apply reference's color palette and aesthetic treatment ONLY
+  4. Text: 100% ${lang} ONLY - professionally integrated and minimal
+  5. Human Presence: If showing people, use natural, authentic expressions - NO fake smiles or stiff poses
+  6. Impact: Create a visually stunning, memorable, and emotionally engaging image
   `;
 }
