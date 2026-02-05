@@ -53,6 +53,8 @@ export default function ConfigsPage() {
   const [appNameOptions, setAppNameOptions] = useState<{ label: string; value: string }[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [filterAppName, setFilterAppName] = useState("");
+  const [filterLang, setFilterLang] = useState("");
   const [configPage, setConfigPage] = useState(1);
   const [configPageSize, setConfigPageSize] = useState(10);
   const [uploadingReferenceImages, setUploadingReferenceImages] = useState(false);
@@ -812,6 +814,28 @@ export default function ConfigsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    setConfigPage(1);
+  }, [filterAppName, filterLang]);
+
+  const filteredItems = useMemo(() => {
+    const qApp = String(filterAppName || "").trim().toLowerCase();
+    const qLang = String(filterLang || "").trim().toLowerCase();
+    if (!qApp && !qLang) return items;
+    return (items || []).filter((it) => {
+      if (qApp) {
+        const v = String(it?.appName ?? "").toLowerCase();
+        if (!v.includes(qApp)) return false;
+      }
+      if (qLang) {
+        const langs0: any[] = Array.isArray((it as any)?.langs) ? (it as any).langs : (it?.lang ? [it.lang] : []);
+        const langs = Array.from(new Set(langs0.map((s: any) => String(s ?? "").trim()).filter(Boolean)));
+        if (!langs.some((x) => x.toLowerCase().includes(qLang))) return false;
+      }
+      return true;
+    });
+  }, [filterAppName, filterLang, items]);
+
   const openCreate = () => {
     form.resetFields();
     form.setFieldsValue({
@@ -891,6 +915,37 @@ export default function ConfigsPage() {
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
               新增配置
             </Button>
+            <Typography.Text strong>筛选：</Typography.Text>
+            <AutoComplete
+              style={{ width: 180 }}
+              value={filterAppName}
+              options={appNameOptions}
+              onChange={(v) => setFilterAppName(String(v || ""))}
+              showSearch={{
+                filterOption: (inputValue, option) => {
+                  const v = String(option?.value ?? "");
+                  const l = String((option as any)?.label ?? "");
+                  const q = String(inputValue || "").toLowerCase();
+                  return v.toLowerCase().includes(q) || l.toLowerCase().includes(q);
+                },
+              }}
+            >
+              <Input allowClear placeholder="appName" />
+            </AutoComplete>
+            <AutoComplete
+              style={{ width: 100 }}
+              value={filterLang}
+              options={SUPPORTED_LANGUAGES.map((x) => ({ value: x }))}
+              onChange={(v) => setFilterLang(String(v || ""))}
+              showSearch={{
+                filterOption: (inputValue, option) =>
+                  String(option?.value ?? "")
+                    .toLowerCase()
+                    .includes(String(inputValue || "").toLowerCase()),
+              }}
+            >
+              <Input allowClear placeholder="lang" />
+            </AutoComplete>
             {!tableEditMode ? (
               <Button
                 icon={<EditOutlined />}
@@ -982,7 +1037,7 @@ export default function ConfigsPage() {
             rowKey="id"
             loading={loading}
             columns={columns}
-            dataSource={items}
+            dataSource={filteredItems}
             tableLayout="fixed"
             pagination={{
               current: configPage,
