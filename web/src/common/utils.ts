@@ -90,7 +90,20 @@ export function addMetadataToImage(
       if (meta.description) ifd0[piexif.ImageIFD.ImageDescription] = meta.description;
       if (meta.copyright) ifd0[piexif.ImageIFD.Copyright] = meta.copyright;
       if (meta.software) ifd0[piexif.ImageIFD.Software] = meta.software;
-      const commentText = meta.custom ? JSON.stringify(meta.custom) : (meta.userComment || '');
+        // piexif 按 Ascii 写 UserComment，非 ASCII 会导致段长度错误、JPEG 损坏。将 custom 中字符串的非 ASCII 替换为 ?，保证可读且不损坏
+      const toAsciiSafe = (v: unknown): unknown => {
+        if (typeof v === 'string') return v.replace(/[\x80-\uFFFF]/g, '?');
+        if (v != null && typeof v === 'object' && !Array.isArray(v)) {
+          const o: Record<string, unknown> = {};
+          for (const k of Object.keys(v as object)) o[k] = toAsciiSafe((v as Record<string, unknown>)[k]);
+          return o;
+        }
+        if (Array.isArray(v)) return v.map(toAsciiSafe);
+        return v;
+      };
+      const commentText = meta.custom
+        ? JSON.stringify(toAsciiSafe(meta.custom) as Record<string, string | number | boolean>)
+        : (meta.userComment || '').replace(/[\x80-\uFFFF]/g, '?');
       if (commentText) {
         try {
           const helper = (piexif as any)?.helper?.UserComment;

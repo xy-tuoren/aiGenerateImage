@@ -7,8 +7,7 @@ import { Readable } from "stream";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { extFromMime } from "@/lib/server/utils";
 import { requireApiAccess } from "@/lib/server/auth";
-import { addMetadataToImage } from "@/common/utils";
-import type { ImageMetadata } from "@/common/utils";
+import { addMetadataToImage, DEFAULT_IMAGE_METADATA } from "@/common/utils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,15 +70,11 @@ const addMetaEnv = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_ME
 function jpegWithMeta(jpegBuffer: Buffer, rec: CutRecordDoc): Buffer {
   if (!addMetaEnv) return jpegBuffer;
   try {
-    const ab = new Uint8Array(jpegBuffer).buffer as ArrayBuffer;
-    const meta: ImageMetadata = {
-      custom: {
-        tableName: "cut_record",
-        id: String(rec._id ?? ""),
-        userId: String(rec.userId ?? ""),
-        appName: String(rec.appName ?? ""),
-        lang: String(rec.lang ?? ""),
-      },
+    const u8 = new Uint8Array(jpegBuffer.length);
+    u8.set(jpegBuffer);
+    const ab = u8.buffer.byteLength === u8.length ? u8.buffer : u8.buffer.slice(0, u8.length);
+    const meta = {
+      ...DEFAULT_IMAGE_METADATA
     };
     const out = addMetadataToImage(ab, "image/jpeg", meta);
     return Buffer.from(out);
