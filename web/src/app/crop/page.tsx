@@ -153,6 +153,7 @@ export default function CropPage() {
             throw e;
           }
           messageApi.success("已保存");
+          setSelectedRowKeys([]);
           return;
         } catch (e) {
           messageApi.error(e instanceof Error ? e.message : String(e));
@@ -198,6 +199,7 @@ export default function CropPage() {
       a.remove();
       window.URL.revokeObjectURL(url);
       messageApi.success("下载已开始");
+      setSelectedRowKeys([]);
     } catch (e) {
       const anyErr = e as any;
       const name = anyErr?.name ? String(anyErr.name) : "";
