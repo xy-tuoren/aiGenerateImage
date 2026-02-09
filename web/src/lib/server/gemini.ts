@@ -108,11 +108,20 @@ export interface GenerateImageOptions {
     data: string;
     mimeType: string;
   }>;
+  /**
+   * Advanced: provide full multi-turn contents. If set, `prompt` and `referenceImages`
+   * will be ignored and we will send `contents` as-is.
+   *
+   * This is used for multi-turn image editing where the client carries history
+   * (including thought signatures).
+   */
+  contents?: any[];
 }
 
 export interface GeneratedImage {
   mimeType: string;
   data: string;
+  thoughtSignature?: string;
 }
 
 export class GeminiClient {
@@ -129,30 +138,41 @@ export class GeminiClient {
   }
 
   async generateImage(prompt: string, options: GenerateImageOptions = {}, ctx?: GeminiQueueContext): Promise<GeneratedImage> {
-    const parts: any[] = [{ text: prompt }];
-
-    if (options.referenceImages && options.referenceImages.length > 0) {
-      for (const refImage of options.referenceImages) {
-        parts.push({
-          inlineData: {
-            mimeType: refImage.mimeType,
-            data: refImage.data,
-          },
-        });
+    const body: any = (() => {
+      if (Array.isArray(options.contents) && options.contents.length > 0) {
+        return {
+          contents: options.contents,
+          responseModalities: options.responseModalities || ["IMAGE"],
+          ...(options.imageConfig ? { imageConfig: options.imageConfig } : {}),
+          ...(options.generationConfig ? { generationConfig: options.generationConfig } : {}),
+          tools: [{ google_search: {} }],
+        };
       }
-    }
 
-    const body: any = {
-      contents: [
-        {
-          role: "user",
-          parts,
-        },
-      ],
-      responseModalities: options.responseModalities || ["IMAGE"],
-      ...(options.imageConfig ? { imageConfig: options.imageConfig } : {}),
-      ...(options.generationConfig ? { generationConfig: options.generationConfig } : {}),
-    };
+      const parts: any[] = [{ text: prompt }];
+      if (options.referenceImages && options.referenceImages.length > 0) {
+        for (const refImage of options.referenceImages) {
+          parts.push({
+            inlineData: {
+              mimeType: refImage.mimeType,
+              data: refImage.data,
+            },
+          });
+        }
+      }
+      return {
+        contents: [
+          {
+            role: "user",
+            parts,
+          },
+        ],
+        responseModalities: options.responseModalities || ["IMAGE"],
+        ...(options.imageConfig ? { imageConfig: options.imageConfig } : {}),
+        ...(options.generationConfig ? { generationConfig: options.generationConfig } : {}),
+        tools: [{ google_search: {} }],
+      };
+    })();
 
     const debugReq = String(process.env.DEBUG_GEMINI_REQUEST || "").toLowerCase();
     if (debugReq === "1" || debugReq === "true" || debugReq === "yes") {
@@ -233,9 +253,15 @@ export class GeminiClient {
             return Buffer.from(withMetaBuffer).toString("base64");
           })()
         : rawBase64;
+
+      const thoughtSignature =
+        (imagePart as any)?.thoughtSignature ||
+        (imagePart as any)?.thought_signature ||
+        undefined;
       return {
         mimeType,
         data: imageData,
+        thoughtSignature,
       };
     }, ctx);
   }

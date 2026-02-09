@@ -358,6 +358,12 @@ function resolveApiPermissionKey(pathname: string, method: string): string | nul
     return null;
   }
 
+  if (parts[1] === "image-edit") {
+    if (parts.length === 3 && parts[2] === "chat" && m === "POST") return "api:image-edit:chat";
+    if (parts.length === 3 && parts[2] === "save" && m === "POST") return "api:image-edit:save";
+    return null;
+  }
+
   if (parts[1] === "run") {
     if (parts.length === 2 && (m === "GET" || m === "POST")) return "api:run";
     return null;
