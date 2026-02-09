@@ -45,7 +45,7 @@ export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: 
     - 手机屏幕、UI界面中的文字
     - 背景装饰文字、标牌、广告牌等任何可见文字
     - 禁止出现任何其他语言 
-  4、注意当前是${new Date().getFullYear()}年，图中不要出现具体月份/日
+  4、图中不要出现具体月份/日
   5、${prompt}
   `;
 }
