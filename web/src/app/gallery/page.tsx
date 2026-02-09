@@ -5,6 +5,7 @@ import axios from "axios";
 import {
   AutoComplete,
   Button,
+  Checkbox,
   Dropdown,
   Image,
   Input,
@@ -841,6 +842,8 @@ export default function GalleryPage() {
   const [metaImg, setMetaImg] = useState<GridImage | null>(null);
   const [creatingCut, setCreatingCut] = useState(false);
   const [downloadingZip, setDownloadingZip] = useState(false);
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
+  const [downloadMarkAsCut, setDownloadMarkAsCut] = useState(false);
   const [galleryPage, setGalleryPage] = useState(1);
   const galleryPageSize = 100;
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
@@ -1742,7 +1745,7 @@ export default function GalleryPage() {
     }
   };
 
-  const onDownloadSelected = useCallback(async () => {
+  const onDownloadSelected = useCallback(async (markAsCut: boolean) => {
     if (!selectedKeys.length) {
       messageApi.error("请先选择要下载的图片");
       return;
@@ -1804,6 +1807,21 @@ export default function GalleryPage() {
     
       window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
       messageApi.success("已开始下载");
+      if (markAsCut && picked.length) {
+        try {
+          const markRes = await fetch("/api/cut-records/mark-as-cut", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ urls: picked.map((p) => p.url) })
+          });
+          const markData = await markRes.json().catch(() => null);
+          if (markRes.ok && markData?.ok) {
+            const urlsToAdd = picked.map((p) => p.url).filter(Boolean);
+            if (urlsToAdd.length) setCutUrls((prev) => Array.from(new Set([...prev, ...urlsToAdd])));
+          }
+        } catch {
+        }
+      }
     } catch (e: any) {
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {
@@ -1812,9 +1830,44 @@ export default function GalleryPage() {
     }
   }, [appName, aspectRatio, keyToImg, lang, messageApi, selectedKeys]);
 
+  const onOpenDownloadModal = useCallback(() => {
+    if (!selectedKeys.length) {
+      messageApi.error("请先选择要下载的图片");
+      return;
+    }
+    setDownloadMarkAsCut(false);
+    setDownloadModalOpen(true);
+  }, [messageApi, selectedKeys.length]);
+
   return (
     <AdminShell defaultSelectedKey="/gallery" headerTitle="图片广场">
       {contextHolder}
+      <Modal
+        title="下载"
+        open={downloadModalOpen}
+        onCancel={() => setDownloadModalOpen(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setDownloadModalOpen(false)}>取消</Button>,
+          <Button
+            key="download"
+            type="primary"
+            loading={downloadingZip}
+            onClick={() => {
+              setDownloadModalOpen(false);
+              onDownloadSelected(downloadMarkAsCut);
+            }}
+          >
+            下载
+          </Button>
+        ]}
+      >
+        <Checkbox
+          checked={downloadMarkAsCut}
+          onChange={(e) => setDownloadMarkAsCut(e.target.checked)}
+        >
+          下载后标记为已裁剪
+        </Checkbox>
+      </Modal>
       {dropUploadActive ? (
         <div
           style={{
@@ -1972,7 +2025,7 @@ export default function GalleryPage() {
             上传到Fireplay
           </Button>
           <Button
-            onClick={onDownloadSelected}
+            onClick={onOpenDownloadModal}
             loading={downloadingZip}
             disabled={
               !selectMode ||
