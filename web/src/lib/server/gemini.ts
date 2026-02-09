@@ -108,13 +108,6 @@ export interface GenerateImageOptions {
     data: string;
     mimeType: string;
   }>;
-  /**
-   * Advanced: provide full multi-turn contents. If set, `prompt` and `referenceImages`
-   * will be ignored and we will send `contents` as-is.
-   *
-   * This is used for multi-turn image editing where the client carries history
-   * (including thought signatures).
-   */
   contents?: any[];
 }
 

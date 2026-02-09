@@ -98,7 +98,7 @@ export function getCentralPositionPrompt({ appName, lang, prompt, aspectRatio }:
 
 export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   const appDesc = appName ? `${appName}应用的` : '参考图中应用的（请根据参考图自行推断应用名称）';
-  return `生成一张${getRatioDesc(aspectRatio)}，提取应用图标和推广文字的组合构图，增加图标的大小使其更加显眼并保留部分背景，应用图标保持跟参考图一致不要修改图标的外观`;
+  return `生成一张${getRatioDesc(aspectRatio)}，提取${appDesc}图标和推广文字的组合放到构图中心位置，增加图标的大小使其更加显眼并保留部分背景，应用图标保持跟参考图一致不要修改图标的外观，其他元素丢弃`;
 }
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {

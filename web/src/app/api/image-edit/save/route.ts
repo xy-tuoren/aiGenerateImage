@@ -4,6 +4,7 @@ import path from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { requireApiAccess } from "@/lib/server/auth";
+import { resizeImageByAspectRatio } from "@/lib/server/utils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,7 +54,10 @@ export async function POST(req: NextRequest) {
     : [];
 
   const publicDir = await resolvePublicDir();
-  const buf = Buffer.from(imageBase64, "base64");
+  const finalBase64 = aspectRatio
+    ? await resizeImageByAspectRatio(imageBase64, aspectRatio)
+    : imageBase64;
+  const buf = Buffer.from(finalBase64, "base64");
 
   if (mode === "override" && originalUrl) {
     // Override original image file

@@ -180,14 +180,22 @@ function buildContentsFromHistory(args: {
     contents.push({ role: "model", parts: [part] });
   }
 
+  // 多轮时当前 user 只带 prompt + 上一轮结果图（作为被编辑的图），不带初始参考图，避免一直用老图
   const userParts: any[] = [{ text: currentPrompt }];
-  for (const ref of referenceImages) {
+  if (lastAssistantWithImage?.imageBase64) {
+    const mimeType = lastAssistantWithImage.imageMimeType || "image/png";
     userParts.push({
-      inlineData: {
-        mimeType: ref.mimeType,
-        data: ref.data,
-      },
+      inlineData: { mimeType, data: lastAssistantWithImage.imageBase64 },
     });
+  } else {
+    for (const ref of referenceImages) {
+      userParts.push({
+        inlineData: {
+          mimeType: ref.mimeType,
+          data: ref.data,
+        },
+      });
+    }
   }
   contents.push({ role: "user", parts: userParts });
 

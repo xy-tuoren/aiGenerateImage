@@ -28,6 +28,10 @@ export async function POST(req: Request) {
   const fireplayDocs = await fireplayCol.find({ userId: user.userId, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } }).toArray();
   const fireplayUploadedUrls = fireplayDocs.map((d: any) => String(d.sourceUrl || "")).filter(Boolean);
 
-  return Response.json({ ok: true, cutUrls, fireplayUploadedUrls });
+  const downloadCol = db.collection<{ sourceUrl: string }>("download_records");
+  const downloadDocs = await downloadCol.find({ userId: user.userId, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } }).toArray();
+  const downloadedUrls = downloadDocs.map((d: any) => String(d.sourceUrl || "")).filter(Boolean);
+
+  return Response.json({ ok: true, cutUrls, fireplayUploadedUrls, downloadedUrls });
 }
 

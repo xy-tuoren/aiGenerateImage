@@ -5,7 +5,6 @@ import axios from "axios";
 import {
   AutoComplete,
   Button,
-  Checkbox,
   Dropdown,
   Image,
   Input,
@@ -196,7 +195,8 @@ const GridTile = memo(
     a.idx === b.idx &&
     a.selected === b.selected &&
     a.onTogglePick === b.onTogglePick &&
-    a.onOpenPreview === b.onOpenPreview
+    a.onOpenPreview === b.onOpenPreview &&
+    a.onOpenMeta === b.onOpenMeta
 );
 
 function useUploadToFireplay(args: {
@@ -661,6 +661,7 @@ function ImageEditDialog(props: {
         <div
           style={{
             flex: 1,
+            minHeight: 0,
             overflowY: "auto",
             padding: "16px",
             display: "flex",
@@ -821,6 +822,7 @@ export default function GalleryPage() {
   const [dropUploadActive, setDropUploadActive] = useState(false);
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [cutUrls, setCutUrls] = useState<string[]>([]);
+  const [downloadedUrls, setDownloadedUrls] = useState<string[]>([]);
   const [fireplayUploadedUrls, setFireplayUploadedUrls] = useState<string[]>(
     []
   );
@@ -831,6 +833,7 @@ export default function GalleryPage() {
   const [lang, setLang] = useState<string>("");
   const [aspectRatio, setAspectRatio] = useState<string>("16:9");
   const [cutFilter, setCutFilter] = useState<"cut" | "uncut">("uncut");
+  const [downloadedFilter, setDownloadedFilter] = useState<"downloaded" | "undownloaded">("undownloaded");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
@@ -842,8 +845,6 @@ export default function GalleryPage() {
   const [metaImg, setMetaImg] = useState<GridImage | null>(null);
   const [creatingCut, setCreatingCut] = useState(false);
   const [downloadingZip, setDownloadingZip] = useState(false);
-  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
-  const [downloadMarkAsCut, setDownloadMarkAsCut] = useState(false);
   const [galleryPage, setGalleryPage] = useState(1);
   const galleryPageSize = 100;
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
@@ -885,7 +886,7 @@ export default function GalleryPage() {
     try {
       const qs = new URLSearchParams();
       qs.set("status", "completed");
-      qs.set("limit", "5000");
+      qs.set("limit", "800");
       if (appName) qs.set("appName", appName);
       if (lang) qs.set("lang", lang);
       const res = await fetch(`/api/generation-records?${qs.toString()}`, {
@@ -904,14 +905,15 @@ export default function GalleryPage() {
       setSelectedPreviewIndex(0);
       setGalleryPage(1);
       try {
-        const urls = arr
+        const allUrls = arr
           .map((x: any) => String(x?.url || "").trim())
           .filter(Boolean);
-        if (urls.length) {
+        if (allUrls.length) {
+          const firstBatchUrls = allUrls.slice(0, 300);
           const res2 = await fetch("/api/cut-records/flags", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ urls })
+            body: JSON.stringify({ urls: firstBatchUrls })
           });
           const data2 = await res2.json().catch(() => null);
           if (res2.ok && data2?.ok) {
@@ -933,6 +935,38 @@ export default function GalleryPage() {
               setFireplayUploadedUrls((prev) =>
                 Array.from(new Set([...(prev || []), ...got2]))
               );
+            const got3 = Array.isArray(data2.downloadedUrls)
+              ? data2.downloadedUrls.map((x: any) => String(x || "").trim()).filter(Boolean)
+              : [];
+            if (got3.length)
+              setDownloadedUrls((prev) =>
+                Array.from(new Set([...(prev || []), ...got3]))
+              );
+          }
+          const restUrls = allUrls.slice(300);
+          if (restUrls.length) {
+            fetch("/api/cut-records/flags", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ urls: restUrls })
+            })
+              .then((r) => r.json().catch(() => null))
+              .then((data2: any) => {
+                if (!data2?.ok) return;
+                const got = Array.isArray(data2.cutUrls)
+                  ? (data2.cutUrls as any[]).map((x: any) => String(x || "").trim()).filter(Boolean)
+                  : [];
+                const got2 = Array.isArray(data2.fireplayUploadedUrls)
+                  ? (data2.fireplayUploadedUrls as any[]).map((x: any) => String(x || "").trim()).filter(Boolean)
+                  : [];
+                if (got.length) setCutUrls((prev) => Array.from(new Set([...(prev || []), ...got])));
+                if (got2.length) setFireplayUploadedUrls((prev) => Array.from(new Set([...(prev || []), ...got2])));
+                const got3 = Array.isArray(data2.downloadedUrls)
+                  ? (data2.downloadedUrls as any[]).map((x: any) => String(x || "").trim()).filter(Boolean)
+                  : [];
+                if (got3.length) setDownloadedUrls((prev) => Array.from(new Set([...(prev || []), ...got3])));
+              })
+              .catch(() => {});
           }
         }
       } catch {}
@@ -1242,10 +1276,7 @@ export default function GalleryPage() {
   }, []);
 
   useEffect(() => {
-    const t = window.setTimeout(() => {
-      fetchImages();
-    }, 350);
-    return () => window.clearTimeout(t);
+    fetchImages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appName, lang]);
 
@@ -1342,6 +1373,7 @@ export default function GalleryPage() {
   const hiddenKeySet = useMemo(() => new Set(hiddenKeys), [hiddenKeys]);
   const selectedKeySet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
   const cutUrlSet = useMemo(() => new Set(cutUrls), [cutUrls]);
+  const downloadedUrlSet = useMemo(() => new Set(downloadedUrls), [downloadedUrls]);
   const fireplayUploadedUrlSet = useMemo(
     () => new Set(fireplayUploadedUrls),
     [fireplayUploadedUrls]
@@ -1358,8 +1390,11 @@ export default function GalleryPage() {
     arr = arr.filter((img) =>
       cutFilter === "cut" ? cutUrlSet.has(img.url) : !cutUrlSet.has(img.url)
     );
+    arr = arr.filter((img) =>
+      downloadedFilter === "downloaded" ? downloadedUrlSet.has(img.url) : !downloadedUrlSet.has(img.url)
+    );
     return arr;
-  }, [visibleGridImages, cutFilter, cutUrlSet, fireplayUploadedUrlSet]);
+  }, [visibleGridImages, cutFilter, cutUrlSet, downloadedFilter, downloadedUrlSet, fireplayUploadedUrlSet]);
 
   const paginatedGridImages: GridImage[] = useMemo(() => {
     return filteredGridImages.slice(0, galleryPage * galleryPageSize);
@@ -1374,7 +1409,7 @@ export default function GalleryPage() {
 
   useEffect(() => {
     setGalleryPage(1);
-  }, [appName, lang, aspectRatio, cutFilter]);
+  }, [appName, lang, aspectRatio, cutFilter, downloadedFilter]);
 
   useEffect(() => {
     const sentinel = loadMoreSentinelRef.current;
@@ -1745,7 +1780,7 @@ export default function GalleryPage() {
     }
   };
 
-  const onDownloadSelected = useCallback(async (markAsCut: boolean) => {
+  const onDownloadSelected = useCallback(async () => {
     if (!selectedKeys.length) {
       messageApi.error("请先选择要下载的图片");
       return;
@@ -1807,21 +1842,21 @@ export default function GalleryPage() {
     
       window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
       messageApi.success("已开始下载");
-      if (markAsCut && picked.length) {
-        try {
-          const markRes = await fetch("/api/cut-records/mark-as-cut", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ urls: picked.map((p) => p.url) })
-          });
-          const markData = await markRes.json().catch(() => null);
-          if (markRes.ok && markData?.ok) {
-            const urlsToAdd = picked.map((p) => p.url).filter(Boolean);
-            if (urlsToAdd.length) setCutUrls((prev) => Array.from(new Set([...prev, ...urlsToAdd])));
-          }
-        } catch {
+      try {
+        const markRes = await fetch("/api/cut-records/mark-as-downloaded", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ urls: picked.map((p) => p.url) })
+        });
+        const markData = await markRes.json().catch(() => null);
+        if (markRes.ok && markData?.ok) {
+          const urlsToAdd = picked.map((p) => p.url).filter(Boolean);
+          if (urlsToAdd.length) setDownloadedUrls((prev) => Array.from(new Set([...prev, ...urlsToAdd])));
         }
+      } catch {
       }
+      setSelectedKeys([]);
+      setSelectMode(false);
     } catch (e: any) {
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {
@@ -1830,44 +1865,9 @@ export default function GalleryPage() {
     }
   }, [appName, aspectRatio, keyToImg, lang, messageApi, selectedKeys]);
 
-  const onOpenDownloadModal = useCallback(() => {
-    if (!selectedKeys.length) {
-      messageApi.error("请先选择要下载的图片");
-      return;
-    }
-    setDownloadMarkAsCut(false);
-    setDownloadModalOpen(true);
-  }, [messageApi, selectedKeys.length]);
-
   return (
     <AdminShell defaultSelectedKey="/gallery" headerTitle="图片广场">
       {contextHolder}
-      <Modal
-        title="下载"
-        open={downloadModalOpen}
-        onCancel={() => setDownloadModalOpen(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setDownloadModalOpen(false)}>取消</Button>,
-          <Button
-            key="download"
-            type="primary"
-            loading={downloadingZip}
-            onClick={() => {
-              setDownloadModalOpen(false);
-              onDownloadSelected(downloadMarkAsCut);
-            }}
-          >
-            下载
-          </Button>
-        ]}
-      >
-        <Checkbox
-          checked={downloadMarkAsCut}
-          onChange={(e) => setDownloadMarkAsCut(e.target.checked)}
-        >
-          下载后标记为已裁剪
-        </Checkbox>
-      </Modal>
       {dropUploadActive ? (
         <div
           style={{
@@ -1935,6 +1935,17 @@ export default function GalleryPage() {
               { label: "未裁剪", value: "uncut" }
             ]}
             onChange={(v) => setCutFilter((String(v || "") as any) || "uncut")}
+            menuItemSelectedIcon={null as any}
+          />
+          <Select
+            style={{ width: 100 }}
+            placeholder="是否下载"
+            value={downloadedFilter}
+            options={[
+              { label: "已下载", value: "downloaded" },
+              { label: "未下载", value: "undownloaded" }
+            ]}
+            onChange={(v) => setDownloadedFilter((String(v || "") as any) || "undownloaded")}
             menuItemSelectedIcon={null as any}
           />
           <Button
@@ -2025,7 +2036,7 @@ export default function GalleryPage() {
             上传到Fireplay
           </Button>
           <Button
-            onClick={onOpenDownloadModal}
+            onClick={onDownloadSelected}
             loading={downloadingZip}
             disabled={
               !selectMode ||

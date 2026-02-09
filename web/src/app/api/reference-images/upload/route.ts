@@ -3,7 +3,7 @@ import fs from "fs-extra";
 import path from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { guessMimeFromPath, isImageFileName } from "@/lib/server/utils";
+import { guessMimeFromPath, isImageFileName, resizeImage } from "@/lib/server/utils";
 import { requireApiAccess } from "@/lib/server/auth";
 
 export const dynamic = "force-dynamic";
@@ -73,7 +73,13 @@ export async function POST(req: Request) {
       seen.add(filename);
 
       const absPath = path.join(uploadDir, filename);
-      const buf = Buffer.from(await item.arrayBuffer());
+      let buf = Buffer.from(await item.arrayBuffer());
+      try {
+        const resizedBase64 = await resizeImage(buf.toString("base64"), 1200, 628, { fit: "cover" });
+        buf = Buffer.from(resizedBase64, "base64");
+      } catch {
+        // 裁剪失败则保留原图
+      }
       await fs.writeFile(absPath, buf);
       savedPaths.push(path.relative(cwd, absPath));
       savedUrls.push(`/material/${UPLOAD_DIR}/${encodeURIComponent(filename)}`);
