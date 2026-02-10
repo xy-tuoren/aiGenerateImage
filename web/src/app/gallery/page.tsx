@@ -830,6 +830,7 @@ export default function GalleryPage() {
     Array<{ label: string; value: string }>
   >([]);
   const [appName, setAppName] = useState<string>("");
+  const [appNameForFetch, setAppNameForFetch] = useState<string>("");
   const [lang, setLang] = useState<string>("");
   const [aspectRatio, setAspectRatio] = useState<string>("16:9");
   const [cutFilter, setCutFilter] = useState<"cut" | "uncut">("uncut");
@@ -847,8 +848,12 @@ export default function GalleryPage() {
   const [downloadingZip, setDownloadingZip] = useState(false);
   const [galleryPage, setGalleryPage] = useState(1);
   const galleryPageSize = 100;
+  const [dataHasMore, setDataHasMore] = useState(false);
+  const [dataTotalCount, setDataTotalCount] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const gridWrapRef = useRef<HTMLDivElement | null>(null);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+  const itemsLengthRef = useRef(0);
   const dropEnterCountRef = useRef(0);
   const longFolderPickRef = useRef<HTMLInputElement | null>(null);
   const longImagePickRef = useRef<HTMLInputElement | null>(null);
@@ -881,35 +886,44 @@ export default function GalleryPage() {
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
 
-  const fetchImages = useCallback(async () => {
-    setLoading(true);
-    try {
-      const qs = new URLSearchParams();
-      qs.set("status", "completed");
-      qs.set("limit", "800");
-      if (appName) qs.set("appName", appName);
-      if (lang) qs.set("lang", lang);
-      const res = await fetch(`/api/generation-records?${qs.toString()}`, {
-        method: "GET"
-      });
-      const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        messageApi.error(data?.error || "获取图片记录失败");
-        return;
-      }
-      const arr = Array.isArray(data.items) ? data.items : [];
-      setItems(arr);
-      setPreviewOpen(false);
-      setPreviewIndex(0);
-      setSelectedPreviewOpen(false);
-      setSelectedPreviewIndex(0);
-      setGalleryPage(1);
+  const fetchImages = useCallback(
+    async (offset = 0) => {
+      const isAppend = offset > 0;
+      if (isAppend) setLoadingMore(true);
+      else setLoading(true);
       try {
-        const allUrls = arr
+        const qs = new URLSearchParams();
+        qs.set("status", "completed");
+        qs.set("limit", "800");
+        qs.set("offset", String(offset));
+        if (appNameForFetch) qs.set("appName", appNameForFetch);
+        if (lang) qs.set("lang", lang);
+        const res = await fetch(`/api/generation-records?${qs.toString()}`, {
+          method: "GET"
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.ok) {
+          messageApi.error(data?.error || "获取图片记录失败");
+          return;
+        }
+        const arr = Array.isArray(data.items) ? data.items : [];
+        setDataHasMore(!!data.hasMore);
+        if (typeof data.totalCount === "number") setDataTotalCount(data.totalCount);
+        if (isAppend) {
+          setItems((prev) => [...prev, ...arr]);
+        } else {
+          setItems(arr);
+          setPreviewOpen(false);
+          setPreviewIndex(0);
+          setSelectedPreviewOpen(false);
+          setSelectedPreviewIndex(0);
+          setGalleryPage(1);
+        }
+        const urlsToFetchFlags = arr
           .map((x: any) => String(x?.url || "").trim())
           .filter(Boolean);
-        if (allUrls.length) {
-          const firstBatchUrls = allUrls.slice(0, 300);
+        if (urlsToFetchFlags.length) {
+          const firstBatchUrls = urlsToFetchFlags.slice(0, 300);
           const res2 = await fetch("/api/cut-records/flags", {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -943,7 +957,7 @@ export default function GalleryPage() {
                 Array.from(new Set([...(prev || []), ...got3]))
               );
           }
-          const restUrls = allUrls.slice(300);
+          const restUrls = urlsToFetchFlags.slice(300);
           if (restUrls.length) {
             fetch("/api/cut-records/flags", {
               method: "POST",
@@ -969,13 +983,20 @@ export default function GalleryPage() {
               .catch(() => {});
           }
         }
-      } catch {}
-    } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [appName, lang, messageApi]);
+      } catch (e) {
+        messageApi.error(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [appNameForFetch, lang, messageApi]
+  );
+
+  useEffect(() => {
+    const t = setTimeout(() => setAppNameForFetch(appName), 250);
+    return () => clearTimeout(t);
+  }, [appName]);
 
   const uploadLongFolderFiles = useCallback(
     async (files: File[]) => {
@@ -1278,7 +1299,7 @@ export default function GalleryPage() {
   useEffect(() => {
     fetchImages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appName, lang]);
+  }, [appNameForFetch, lang]);
 
   const gridImages: GridImage[] = useMemo(() => {
     const tokenToRatio: Record<string, string> = {
@@ -1384,6 +1405,11 @@ export default function GalleryPage() {
     return gridImages.filter((img) => !hiddenKeySet.has(img.key));
   }, [gridImages, hiddenKeySet, hiddenKeys.length]);
 
+  const totalInListAfterFireplay = useMemo(
+    () => visibleGridImages.filter((img) => !fireplayUploadedUrlSet.has(img.url)).length,
+    [visibleGridImages, fireplayUploadedUrlSet]
+  );
+
   const filteredGridImages: GridImage[] = useMemo(() => {
     let arr = visibleGridImages;
     arr = arr.filter((img) => !fireplayUploadedUrlSet.has(img.url));
@@ -1408,21 +1434,30 @@ export default function GalleryPage() {
   const hasMore = galleryPage * galleryPageSize < filteredGridImages.length;
 
   useEffect(() => {
+    itemsLengthRef.current = items.length;
+  }, [items.length]);
+
+  useEffect(() => {
     setGalleryPage(1);
   }, [appName, lang, aspectRatio, cutFilter, downloadedFilter]);
 
   useEffect(() => {
     const sentinel = loadMoreSentinelRef.current;
-    if (!sentinel || !hasMore) return;
+    if (!sentinel) return;
     const ob = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) setGalleryPage((p) => p + 1);
+        if (!entries[0]?.isIntersecting) return;
+        if (hasMore) {
+          setGalleryPage((p) => p + 1);
+        } else if (dataHasMore && !loadingMore) {
+          fetchImages(itemsLengthRef.current);
+        }
       },
       { rootMargin: "200px", threshold: 0 }
     );
     ob.observe(sentinel);
     return () => ob.disconnect();
-  }, [hasMore, paginatedGridImages.length]);
+  }, [hasMore, dataHasMore, loadingMore, fetchImages, paginatedGridImages.length]);
 
   const keyToImg = useMemo(() => {
     const m = new Map<string, GridImage>();
@@ -1950,7 +1985,7 @@ export default function GalleryPage() {
           />
           <Button
             icon={<ReloadOutlined />}
-            onClick={fetchImages}
+            onClick={() => fetchImages()}
             loading={loading}
           >
             刷新
@@ -2049,7 +2084,11 @@ export default function GalleryPage() {
             下载
           </Button>
           <Typography.Text type="secondary">
-            {loading ? "加载中..." : `共 ${filteredGridImages.length} 张`}
+            {loading
+              ? "加载中..."
+              : dataTotalCount != null
+                ? `共 ${dataTotalCount} 张，当前筛选 ${filteredGridImages.length} 张`
+                : `共 ${filteredGridImages.length} 张`}
           </Typography.Text>
           {selectMode ? (
             <Typography.Text type="secondary">
@@ -2355,6 +2394,28 @@ export default function GalleryPage() {
                 已展示 {paginatedGridImages.length} /{" "}
                 {filteredGridImages.length} 张，下拉加载更多
               </div>
+            ) : loadingMore ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "16px 0",
+                  color: "rgba(0,0,0,0.45)"
+                }}
+              >
+                正在加载更多...
+              </div>
+            ) : dataHasMore ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "16px 0",
+                  color: "rgba(0,0,0,0.45)"
+                }}
+              >
+                {dataTotalCount != null
+                  ? `共 ${dataTotalCount} 张，当前筛选 ${filteredGridImages.length} 张，下拉加载更多数据`
+                  : `当前筛选 ${filteredGridImages.length} 张，下拉加载更多数据`}
+              </div>
             ) : (
               <div
                 style={{
@@ -2363,7 +2424,9 @@ export default function GalleryPage() {
                   color: "rgba(0,0,0,0.45)"
                 }}
               >
-                共 {filteredGridImages.length} 张，已全部加载
+                {dataTotalCount != null
+                  ? `共 ${dataTotalCount} 张，当前筛选 ${filteredGridImages.length} 张，已全部加载`
+                  : `共 ${filteredGridImages.length} 张，已全部加载`}
               </div>
             )}
           </>

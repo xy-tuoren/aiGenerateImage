@@ -66,6 +66,9 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const limitRaw = searchParams.get("limit");
   const limit = Math.min(5000, Math.max(1, Number(limitRaw ?? 200) || 200));
+  const offsetRaw = searchParams.get("offset");
+  const offset = Math.max(0, Number(offsetRaw ?? 0) || 0);
+  const fetchLimit = Math.min(5000, offset + limit);
 
   const jobId = (searchParams.get("jobId") || "").trim();
   const configId = (searchParams.get("configId") || "").trim();
@@ -97,10 +100,13 @@ export async function GET(req: Request) {
   if (appName) filter.appName = { $regex: new RegExp(`^${escapeRegex(appName)}$`, "i") };
   if (lang) filter.lang = { $regex: new RegExp(`^${escapeRegex(lang)}$`, "i") };
 
-  const records = await recordsCol.find(filter, { sort: { createdAt: -1 }, limit } as any).toArray();
+  const [records, totalCount] = await Promise.all([
+    recordsCol.find(filter, { sort: { createdAt: -1 }, limit: fetchLimit } as any).toArray(),
+    recordsCol.countDocuments(filter),
+  ]);
   const existingKeys = new Set(records.map((r) => `${String(r.jobId)}|${String(r.configId)}|${Number(r.index)}`));
 
-  const extraFromImages = await imagesCol.find(filter, { sort: { createdAt: -1 }, limit } as any).toArray();
+  const extraFromImages = await imagesCol.find(filter, { sort: { createdAt: -1 }, limit: fetchLimit } as any).toArray();
   const extraRecordsFromImages = extraFromImages
     .map((img) => ({
       jobId: img.jobId,
@@ -131,7 +137,7 @@ export async function GET(req: Request) {
               ...(filter.configId ? { configId: filter.configId } : {}),
               status: "failed",
             } as any,
-            { sort: { updatedAt: -1 }, limit } as any
+            { sort: { updatedAt: -1 }, limit: fetchLimit } as any
           )
           .toArray();
   const extraRecordsFromJobConfigs = extraFailedFromJobConfigs.map((jc) => ({
@@ -157,7 +163,7 @@ export async function GET(req: Request) {
   ]
     .filter((r) => (filter.status ? r.status === filter.status : true))
     .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, limit);
+    .slice(offset, offset + limit);
 
   const configIds = Array.from(new Set(merged.map((r: any) => String(r.configId)))).filter(Boolean);
   const configObjectIds = configIds.map((id) => new ObjectId(id));
@@ -223,6 +229,7 @@ export async function GET(req: Request) {
     if (lang && String(it?.lang || it?.configMeta?.lang || "").trim().toLowerCase() !== langNorm) return false;
     return true;
   });
-  return Response.json({ ok: true, items: filteredByMeta });
+  const hasMore = filteredByMeta.length === limit;
+  return Response.json({ ok: true, items: filteredByMeta, hasMore, totalCount });
 }
 
