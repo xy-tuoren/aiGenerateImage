@@ -212,3 +212,27 @@ export async function resizeImage(
     throw new Error(`调整图片尺寸失败: ${error}`);
   }
 }
+
+/**
+ * 裁图（/crop）链路中，不同 prompt 函数对应的 Gemini temperature。
+ *
+ * 只在服务端使用：你可以直接在这里改每个模板的 temperature。
+ * 约定：范围 0~2；未配置/非法时默认 1。
+ */
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+
+export const CUT_TEMPLATE_TEMPERATURE: Record<string, number> = {
+  getCutLogoFinalPrompt: 0.5,
+  getCutOtherFinalPrompt: 1.5,
+  getCutScaleFinalPrompt: 1,
+  getCutVerticalCollagePrompt: 0.5,
+  // stitchLongImage1024 不走 Gemini 生图，这里无需配置
+};
+
+export function getCutTemplateTemperature(templateName: string): number {
+  const key = String(templateName || "").trim();
+  const raw = CUT_TEMPLATE_TEMPERATURE[key];
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return 1;
+  return clamp(n, 0, 2);
+}

@@ -4,6 +4,7 @@ import path, { join } from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { GeminiClient } from "@/lib/server/gemini";
+import { getCutTemplateTemperature } from "@/lib/server/utils";
 import * as promptFns from "@/common/prompt";
 import { addMetadataToImage, DEFAULT_IMAGE_METADATA } from "@/common/utils";
 import { extFromMime, guessMimeFromPath, isImageFileName, resizeImageByAspectRatio, stitchLongImageToSize } from "@/lib/server/utils";
@@ -803,115 +804,116 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
         } catch {
         }
       } else {
-      const refImgs = await readReferenceImagesToBase64([String(item.sourceAbsPath)]);
-      const referenceImages = refImgs.length ? refImgs : undefined;
-      const maxRetryTimes = envInt("BATCH_IMAGE_RETRY_TIMES", 3);
-      let generated: any;
-      for (let attempt = 0; attempt <= maxRetryTimes; attempt += 1) {
-        try {
-          const client = new GeminiClient({});
-          generated = await client.generateImage(prompt, {
-            responseModalities: ["IMAGE"],
-            imageConfig: { aspectRatio: item.ratio, imageSize: "1K" },
-            referenceImages,
-          }, { role: jobRole || undefined, isAdmin: jobIsAdmin });
-          break;
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          if (attempt >= maxRetryTimes) throw err instanceof Error ? err : new Error(formatRetryFailedError(msg, maxRetryTimes));
+        const refImgs = await readReferenceImagesToBase64([String(item.sourceAbsPath)]);
+        const referenceImages = refImgs.length ? refImgs : undefined;
+        const maxRetryTimes = envInt("BATCH_IMAGE_RETRY_TIMES", 3);
+        let generated: any;
+        for (let attempt = 0; attempt <= maxRetryTimes; attempt += 1) {
           try {
-            const now = new Date();
-            const retryNo = attempt + 1;
-            const retryingMsg = formatRetryingError(msg, retryNo, maxRetryTimes);
-            await cutItemsCol.updateOne(
-              { _id: task.itemId },
-              { $set: { status: "running", error: retryingMsg, updatedAt: now } } as any
-            );
-          } catch {
+            const client = new GeminiClient({});
+            generated = await client.generateImage(prompt, {
+              responseModalities: ["IMAGE"],
+              imageConfig: { aspectRatio: item.ratio, imageSize: "1K" },
+              generationConfig: { temperature: getCutTemplateTemperature(item.templateName) },
+              referenceImages,
+            }, { role: jobRole || undefined, isAdmin: jobIsAdmin });
+            break;
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (attempt >= maxRetryTimes) throw err instanceof Error ? err : new Error(formatRetryFailedError(msg, maxRetryTimes));
+            try {
+              const now = new Date();
+              const retryNo = attempt + 1;
+              const retryingMsg = formatRetryingError(msg, retryNo, maxRetryTimes);
+              await cutItemsCol.updateOne(
+                { _id: task.itemId },
+                { $set: { status: "running", error: retryingMsg, updatedAt: now } } as any
+              );
+            } catch {
+            }
+            const delay = Math.min(5000, 800 * Math.pow(2, attempt));
+            await sleep(delay);
           }
-          const delay = Math.min(5000, 800 * Math.pow(2, attempt));
-          await sleep(delay);
         }
-      }
 
-      const ext = extFromMime(generated.mimeType);
-      let imageBase64 = generated.data;
-      const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
-      try {
-        imageBase64 = await resizeImageByAspectRatio(imageBase64, item.ratio);
-      } catch {
-      }
-      if (addMetadata) {
+        const ext = extFromMime(generated.mimeType);
+        let imageBase64 = generated.data;
+        const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
         try {
-          const buf = Buffer.from(imageBase64, "base64");
-          const withMeta = addMetadataToImage(
-            buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
-            generated.mimeType,
-            DEFAULT_IMAGE_METADATA
-          );
-          imageBase64 = Buffer.from(withMeta).toString("base64");
+          imageBase64 = await resizeImageByAspectRatio(imageBase64, item.ratio);
         } catch {
         }
-      }
-
-      const ts = Date.now();
-      const ratioToken = aspectRatioToken(item.ratio);
-      const baseName = `${ts}-${ratioToken}.${ext}`;
-      const appNameSeg = safePathSegment(item.appName);
-      const langSeg = safePathSegment(item.lang);
-      const relDir = join("cut", appNameSeg, langSeg, String(jobObjectId));
-      const absDir = join(process.cwd(), "public", relDir);
-      await fs.ensureDir(absDir);
-
-      let filename = baseName;
-      let absFile = join(absDir, filename);
-      if (await fs.pathExists(absFile)) {
-        let i = 2;
-        while (true) {
-          filename = `${ts}-${ratioToken}-${i}.${ext}`;
-          absFile = join(absDir, filename);
-          if (!(await fs.pathExists(absFile))) break;
-          i += 1;
+        if (addMetadata) {
+          try {
+            const buf = Buffer.from(imageBase64, "base64");
+            const withMeta = addMetadataToImage(
+              buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+              generated.mimeType,
+              DEFAULT_IMAGE_METADATA
+            );
+            imageBase64 = Buffer.from(withMeta).toString("base64");
+          } catch {
+          }
         }
-      }
-      await fs.writeFile(absFile, Buffer.from(imageBase64, "base64"));
-      const url = `/${relDir.replaceAll("\\", "/")}/${filename}`;
 
-      const now = new Date();
-      await cutItemsCol.updateOne(
-        { _id: task.itemId },
-        {
-          $set: {
-            status: "completed",
-            done: 1,
-            updatedAt: now,
-            outputUrl: url,
-            outputFilePath: absFile,
-            outputMimeType: generated.mimeType,
-          },
+        const ts = Date.now();
+        const ratioToken = aspectRatioToken(item.ratio);
+        const baseName = `${ts}-${ratioToken}.${ext}`;
+        const appNameSeg = safePathSegment(item.appName);
+        const langSeg = safePathSegment(item.lang);
+        const relDir = join("cut", appNameSeg, langSeg, String(jobObjectId));
+        const absDir = join(process.cwd(), "public", relDir);
+        await fs.ensureDir(absDir);
+
+        let filename = baseName;
+        let absFile = join(absDir, filename);
+        if (await fs.pathExists(absFile)) {
+          let i = 2;
+          while (true) {
+            filename = `${ts}-${ratioToken}-${i}.${ext}`;
+            absFile = join(absDir, filename);
+            if (!(await fs.pathExists(absFile))) break;
+            i += 1;
+          }
         }
-      );
-      try {
-        const pathKey = `outputs.${item.ratio}.${item.templateName}`;
-        await cutRecordsCol.updateOne(
-          { ...(userId ? { userId } : {}), sourceAbsPath: String(item.sourceAbsPath) } as any,
+        await fs.writeFile(absFile, Buffer.from(imageBase64, "base64"));
+        const url = `/${relDir.replaceAll("\\", "/")}/${filename}`;
+
+        const now = new Date();
+        await cutItemsCol.updateOne(
+          { _id: task.itemId },
           {
             $set: {
-              ...(userId ? { userId } : {}),
-              jobId: jobObjectId,
-              sourceUrl: item.sourceUrl,
-              sourceAbsPath: item.sourceAbsPath,
-              appName: item.appName,
-              lang: item.lang,
+              status: "completed",
+              done: 1,
               updatedAt: now,
-              [pathKey]: { status: "completed", outputUrl: url, outputMimeType: generated.mimeType, updatedAt: now },
-            } as any,
-            $setOnInsert: { createdAt: now } as any,
-          } as any,
-          { upsert: true } as any
+              outputUrl: url,
+              outputFilePath: absFile,
+              outputMimeType: generated.mimeType,
+            },
+          }
         );
-      } catch {
-      }
+        try {
+          const pathKey = `outputs.${item.ratio}.${item.templateName}`;
+          await cutRecordsCol.updateOne(
+            { ...(userId ? { userId } : {}), sourceAbsPath: String(item.sourceAbsPath) } as any,
+            {
+              $set: {
+                ...(userId ? { userId } : {}),
+                jobId: jobObjectId,
+                sourceUrl: item.sourceUrl,
+                sourceAbsPath: item.sourceAbsPath,
+                appName: item.appName,
+                lang: item.lang,
+                updatedAt: now,
+                [pathKey]: { status: "completed", outputUrl: url, outputMimeType: generated.mimeType, updatedAt: now },
+              } as any,
+              $setOnInsert: { createdAt: now } as any,
+            } as any,
+            { upsert: true } as any
+          );
+        } catch {
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
