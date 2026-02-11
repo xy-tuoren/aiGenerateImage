@@ -30,7 +30,6 @@ export function getAppDefaultPrompt3({ appName, lang, prompt, aspectRatio }: { a
 export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   const appDesc = appName ? `${appName}应用` : '目标应用（请根据参考图或上下文推断）';
   const langDesc = lang || '参考图中使用的语言';
-
   return `1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为图片风格参考，你需要调整构图、修改元素、背景等避免跟参考图过于相似。好的广告设计应遵循以下原则：
     - 应用图标必须在核心位置，尺寸要大且显眼（建议占画面至少15-20%）
     - 图片的视觉层次要分明：主体（图标+核心文案）> 辅助元素 > 背景
@@ -44,7 +43,7 @@ export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: 
     - 手机屏幕、UI界面中的文字
     - 背景装饰文字、标牌、广告牌等任何可见文字
     - 禁止出现任何其他语言 
-  4、图中不要出现具体月份/日
+  4、图中不要出现具体月份/日，所有年份都为${new Date().getFullYear()}年，出现年份的概率为15%
   5、${prompt}
   `;
 }
@@ -99,7 +98,7 @@ export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { 
   const appDesc = appName ? `${appName}应用的` : '参考图中应用的（请根据参考图自行推断应用名称）';
   return `生成一张${getRatioDesc(aspectRatio)}。从参考图中提取${appDesc}图标与推广文字，作为唯一主体放在画面中心。
   【构图】主体（图标+文案）占画面约 65%-85%。
-  【层级】图标最大最醒目；文案仅 1-2 行短语（可以适当精简文案内容），清晰可读。
+  【层级】图标最大最醒目；文案仅 1-2 行短语（可以适当优化文案内容），清晰可读。
   【背景处理】保留裁剪区域的背景质感。
   【严格限制】应用图标外观必须与参考图 100% 一致（形状/颜色/细节不改、不重绘、不变形）；文字语言必须与参考图一致；其他无关元素一律丢弃。`;
 }
