@@ -6,8 +6,18 @@ import { getMongoDb } from "@/lib/server/mongodb";
 import { GeminiClient } from "@/lib/server/gemini";
 import { getCutTemplateTemperature } from "@/lib/server/utils";
 import * as promptFns from "@/common/prompt";
+import { buildGlobalPromptSuffix } from "@/common/constants";
 import { addMetadataToImage, DEFAULT_IMAGE_METADATA } from "@/common/utils";
 import { extFromMime, guessMimeFromPath, isImageFileName, resizeImageByAspectRatio, stitchLongImageToSize } from "@/lib/server/utils";
+
+function appendGlobalPrompt(prompt: string, ctx?: { lang?: string;[k: string]: unknown }): string {
+  const base = String(prompt || "").trim();
+  const suffix = buildGlobalPromptSuffix(ctx as any).trim();
+  if (!suffix) return base;
+  if (!base) return suffix;
+  if (base.includes(suffix)) return base;
+  return `${base}\n\n${suffix}\n`;
+}
 
 type ImageConfigDoc = {
   _id: ObjectId;
@@ -318,8 +328,8 @@ function buildPrompt(config: ImageConfigDoc): string {
     ...(config.extra || {}),
   };
   const fn = fnName ? (promptFns as Record<string, unknown>)[fnName] : undefined;
-  if (typeof fn === "function") return String((fn as (args: typeof baseArgs) => unknown)(baseArgs));
-  return config.prompt;
+  const out = typeof fn === "function" ? String((fn as (args: typeof baseArgs) => unknown)(baseArgs)) : String(config.prompt || "");
+  return appendGlobalPrompt(out, baseArgs);
 }
 
 export async function startBatchJob(input: StartJobInput) {
@@ -723,7 +733,8 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
       cutTemplate: item.templateName,
     };
     const fn = (promptFns as Record<string, unknown>)[item.templateName];
-    const prompt = typeof fn === "function" ? String((fn as (args: typeof baseArgs) => unknown)(baseArgs)) : "";
+    const prompt0 = typeof fn === "function" ? String((fn as (args: typeof baseArgs) => unknown)(baseArgs)) : "";
+    const prompt = appendGlobalPrompt(prompt0, baseArgs);
 
     try {
       if (item.templateName === "stitchLongImage1024") {

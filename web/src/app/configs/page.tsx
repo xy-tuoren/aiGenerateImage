@@ -29,7 +29,9 @@ type ConfigItem = {
 
 function splitLinesToList(input: string): string[] {
   return (input || "")
-    .split(/\r?\n|[，,]/)
+    // Important: reference image paths / function names may legally contain commas.
+    // The UI expects "one item per line", so we only split by newlines.
+    .split(/\r?\n/)
     .map((s) => s.trim())
     .filter(Boolean);
 }

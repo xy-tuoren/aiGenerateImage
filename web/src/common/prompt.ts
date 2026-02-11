@@ -38,13 +38,13 @@ export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: 
   2、【关键】图片将用于${appDesc}推广：
     - 如果参考图中已有该应用图标，必须严格保持图标的样式、颜色、设计完全一致，不要修改或重新设计
     - 如果参考图中是其他应用的图标，需要替换为${appDesc}的图标，并保持该图标的原始设计风格
+    - 图中不要出现具体月份/日，所有年份都为${new Date().getFullYear()}年，出现年份的概率为15%
   3、【语言要求】图片内出现的所有可见文字必须 100% 为${langDesc}，包括：
     - 广告文案、按钮文字、标语
     - 手机屏幕、UI界面中的文字
     - 背景装饰文字、标牌、广告牌等任何可见文字
     - 禁止出现任何其他语言 
-  4、图中不要出现具体月份/日，所有年份都为${new Date().getFullYear()}年，出现年份的概率为15%
-  5、${prompt}
+  4、${prompt}
   `;
 }
 
