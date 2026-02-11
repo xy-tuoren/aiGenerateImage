@@ -30,7 +30,7 @@ export function getAppDefaultPrompt3({ appName, lang, prompt, aspectRatio }: { a
 export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   const appDesc = appName ? `${appName}应用` : '目标应用（请根据参考图或上下文推断）';
   const langDesc = lang || '参考图中使用的语言';
-  
+
   return `1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为图片风格参考，你需要调整构图、修改元素、背景等避免跟参考图过于相似。好的广告设计应遵循以下原则：
     - 应用图标必须在核心位置，尺寸要大且显眼（建议占画面至少15-20%）
     - 图片的视觉层次要分明：主体（图标+核心文案）> 辅助元素 > 背景
@@ -98,13 +98,54 @@ export function getCentralPositionPrompt({ appName, lang, prompt, aspectRatio }:
 export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   const appDesc = appName ? `${appName}应用的` : '参考图中应用的（请根据参考图自行推断应用名称）';
   return `生成一张${getRatioDesc(aspectRatio)}。从参考图中提取${appDesc}图标与推广文字，作为唯一主体放在画面中心。
-【构图】主体（图标+文案）占画面约 65%-85%。
-【层级】图标最大最醒目；文案仅 1-2 行短语（可以适当精简文案内容），清晰可读。
-【背景处理】保留裁剪区域的背景质感。
-【严格限制】应用图标外观必须与参考图 100% 一致（形状/颜色/细节不改、不重绘、不变形）；文字语言必须与参考图一致；其他无关元素一律丢弃。`;
+  【构图】主体（图标+文案）占画面约 65%-85%。
+  【层级】图标最大最醒目；文案仅 1-2 行短语（可以适当精简文案内容），清晰可读。
+  【背景处理】保留裁剪区域的背景质感。
+  【严格限制】应用图标外观必须与参考图 100% 一致（形状/颜色/细节不改、不重绘、不变形）；文字语言必须与参考图一致；其他无关元素一律丢弃。`;
 }
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
+  const appDesc = appName ? `${appName}应用的` : '参考图中应用的（请根据参考图自行推断应用名称）';
+  return `生成一张${getRatioDesc(aspectRatio)}。从参考图中提取${appDesc}图标以及除图标外的一个最大占比元素，将这两者结合重新组成构图。需要保留裁剪部分的背景。
+
+【构图要求】
+整体画面要"铺满感"，主体（图标+最大元素）+文字区域尽量占满画面的高度；禁止出现明显的大面积上/下/左/右只有背景的纯色空洞。必要时可通过重新排版、适度放大主体、调整元素位置，或用同风格背景延展/补全来填满画面边缘，让构图更加紧凑饱满。
+
+【文案要求】
+如果参考图有推广文案，需要根据原文案的核心意思进行改写：
+  - 保持原意和情感诉求不变（如"下载"改为"立即获取"、"免费试用"改为"0元体验"等）
+  - 使用同义词、近义词或不同表达方式替换原文案
+  - 文案数量保持1-2条，每条不超过10个字符
+  - 文案语言必须与参考图一致使用${lang}语言
+
+【可选角标】（45%概率出现）
+在画面角落添加一个角标（badge）：
+- 角标内容："免费"/"最新"/相关小icon,语言必须与参考图一致使用${lang}语言
+- 角标底色随机，但必须与画面整体色调/材质融合，保证角标文字/图形与底色对比清晰可读
+- 角标尺寸不喧宾夺主，但要清晰可见，边缘不要被裁切
+
+【可选按钮】（35%概率出现）
+仅当参考图中没有按钮时，才允许添加一个按钮：
+- 按钮文案："下载"/"更新"/"立即更新"等,语言必须与参考图一致使用${lang}语言
+- 按钮形态：清晰的圆角矩形/胶囊按钮，整体材质与参考图一致
+- 布局：放在主要文案附近作为行动引导，不要遮挡图标与关键文案
+
+【重要】关于应用图标的要求：
+  - 必须严格保持参考图中原图标的样式、颜色、设计和外观完全一致
+  - 不要修改、重新设计或变形图标，必须与参考图中的图标完全相同
+  - 图标在构图中应该显眼清晰，建议占画面至少10-15%面积
+
+【重要】关于提取的最大元素要求：
+  - 首先深入分析参考图的整体风格（设计语言、色调、光影、质感、艺术风格）和应用的功能特性
+  - 提取的元素必须与该应用的功能、用途、使用场景直接相关，能够帮助传达应用的核心价值
+  - 元素的视觉风格、材质质感、色彩搭配必须与参考图高度一致
+  - 元素类型应从参考图中提取灵感（如参考图是扁平风就保持扁平风格，是3D风就保持3D风格，是摄影风就保持摄影风格）
+  - 避免添加与参考图风格冲突或与应用功能无关的元素
+  - 提取的元素应具有广告推广的吸引力，能够激发用户下载使用的兴趣
+`;
+}
+
+export function getCutOtherFinalPrompt2({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   const appDesc = appName ? `${appName}应用` : '参考图中的应用（请根据参考图自行推断应用名称）';
 
   const pickOne = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)];
@@ -127,7 +168,7 @@ export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: {
 - 角标内容：${badgeContent}；若参考图语言非中文，“免费/最新”必须翻译为参考图同语言。
 - 角标底色随机，但必须与画面整体色调/材质融合（可用同色系高饱和点缀或互补色小面积强调），并保证角标文字/图形与底色对比清晰可读。
 - 角标尺寸不喧宾夺主，但要清晰可见，边缘不要被裁切。`
-    : ""; 
+    : "";
 
   // 若参考图无按钮，可选生成按钮（仅在无按钮时生效）
   const buttonProbability = 0.35;

@@ -240,6 +240,92 @@ export default function CropPage() {
     });
   }, [excludedKeys, selectedRowKeys]);
 
+  const selectedRows = useMemo(() => {
+    return selectedRowKeys
+      .map((id) => recordIdToRow.get(id) || recordCacheRef.current.get(id))
+      .filter(Boolean) as CutRecordItem[];
+  }, [recordIdToRow, selectedRowKeys]);
+
+  const regenerateSelectedSquarePortrait = async () => {
+    if (!selectedRows.length) {
+      messageApi.warning("请先选择要重新生成的记录");
+      return;
+    }
+
+    const isSquareOrPortrait = (ratio: string) => {
+      const [wRaw, hRaw] = String(ratio || "").split(":");
+      const w = Number(wRaw);
+      const h = Number(hRaw);
+      if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return false;
+      return w <= h; // 方图(=) + 竖图(<)
+    };
+
+    setRegenerating(true);
+    try {
+      const items: Array<{ sourceUrl: string; ratio: string; templateName: string; appName?: string; lang?: string }> = [];
+      const dedupe = new Set<string>();
+
+      for (const row of selectedRows) {
+        if (!row?.sourceUrl) continue;
+        const outs = row.outputs && typeof row.outputs === "object" ? row.outputs : undefined;
+        if (!outs) continue;
+
+        for (const ratio of Object.keys(outs)) {
+          if (!isSquareOrPortrait(ratio)) continue;
+          const byTpl = (outs as any)[ratio] as Record<string, CutRecordOutputItem> | undefined;
+          if (!byTpl || typeof byTpl !== "object") continue;
+          for (const templateName of Object.keys(byTpl)) {
+            const k = `${row.id}|${ratio}|${templateName}`;
+            if (dedupe.has(k)) continue;
+            dedupe.add(k);
+            items.push({
+              sourceUrl: String(row.sourceUrl),
+              ratio: String(ratio),
+              templateName: String(templateName),
+              appName: row.appName ? String(row.appName) : undefined,
+              lang: row.lang ? String(row.lang) : undefined,
+            });
+          }
+        }
+      }
+
+      if (!items.length) {
+        messageApi.warning("选中的记录里没有可重新生成的方/竖图输出");
+        return;
+      }
+
+      const res = await fetch("/api/cut-jobs/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items, concurrency: 32 }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        throw new Error((data as any)?.error || "重新生成失败");
+      }
+
+      try {
+        const jobId = String((data as any)?.jobId || "").trim();
+        if (jobId) {
+          localStorage.setItem(batchLastJobIdKey, jobId);
+          const raw = localStorage.getItem(batchRecentJobIdsKey);
+          const arr = raw ? JSON.parse(raw) : [];
+          const prev = Array.isArray(arr) ? arr.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
+          const next = [jobId, ...prev.filter((x: string) => x !== jobId)].slice(0, 50);
+          localStorage.setItem(batchRecentJobIdsKey, JSON.stringify(next));
+        }
+      } catch {
+      }
+
+      messageApi.success(`已创建重新生成任务(方/竖): ${String(data.jobId || "") || "-"}`);
+      fetchRecords();
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const regenerateExcluded = async () => {
     if (!excludedKeysScoped.length) {
       messageApi.warning(selectedRowKeys.length ? "选中记录中没有置灰的图片" : "当前没有置灰的图片");
@@ -601,11 +687,19 @@ export default function CropPage() {
             </Button>
             <Button
               size="small"
+              disabled={!selectedRowKeys.length}
+              loading={regenerating}
+              onClick={regenerateSelectedSquarePortrait}
+            >
+              重新生成一组(选中{selectedRowKeys.length})
+            </Button>
+            <Button
+              size="small"
               disabled={!excludedKeysScoped.length}
               loading={regenerating}
               onClick={regenerateExcluded}
             >
-              重新生成({excludedKeysScoped.length})
+              重新生成置灰({excludedKeysScoped.length})
             </Button>
           </Space>
         </Space>
