@@ -18,6 +18,84 @@ async function resolvePublicDir(): Promise<string> {
   return p1;
 }
 
+function stripQueryHash(input: string) {
+  const s = String(input || "").trim();
+  if (!s) return s;
+  const q = s.indexOf("?");
+  const h = s.indexOf("#");
+  const cut = Math.min(q >= 0 ? q : s.length, h >= 0 ? h : s.length);
+  return s.slice(0, cut);
+}
+
+function normalizeOriginalUrlToPathname(input: string): string {
+  let s = String(input || "").trim();
+  if (!s) return s;
+
+  // If it's an absolute URL, use its pathname/search.
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) {
+    try {
+      const u = new URL(s);
+      s = `${u.pathname}${u.search || ""}`;
+    } catch {
+      // keep original
+    }
+  }
+
+  // Handle Next.js image optimizer URL: /_next/image?url=...
+  if (s.startsWith("/_next/image")) {
+    try {
+      const u = new URL(s, "http://localhost");
+      const inner = String(u.searchParams.get("url") || "").trim();
+      if (inner) s = inner;
+    } catch {
+      // keep
+    }
+  }
+
+  // If the extracted inner URL is still absolute, normalize again.
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) {
+    try {
+      const u = new URL(s);
+      s = u.pathname;
+    } catch {
+      // keep
+    }
+  }
+
+  return s;
+}
+
+function canonicalizePublicAssetUrl(input: string): { ok: true; url: string; root: "material" | "generated" } | { ok: false } {
+  let s = String(input || "").trim();
+  if (!s) return { ok: false };
+
+  // Decode once so things like %2Fgenerated%2F... become /generated/...
+  try {
+    s = decodeURIComponent(s);
+  } catch {
+    // keep
+  }
+
+  if (!s.startsWith("/")) s = `/${s}`;
+
+  const parts = s.split("/");
+  const root = parts[1];
+  if (root !== "material" && root !== "generated") return { ok: false };
+
+  // Re-encode each segment except leading "" and the root folder.
+  const out = parts.map((seg, idx) => {
+    if (idx <= 1) return seg; // "" + root
+    if (!seg) return seg;
+    try {
+      return encodeURIComponent(decodeURIComponent(seg));
+    } catch {
+      return encodeURIComponent(seg);
+    }
+  });
+
+  return { ok: true, url: out.join("/"), root };
+}
+
 function mimeToExt(mimeType: string): string {
   const mt = String(mimeType || "").toLowerCase();
   if (mt.includes("png")) return "png";
@@ -62,13 +140,32 @@ export async function POST(req: NextRequest) {
   if (mode === "override" && originalUrl) {
     // Override original image file
     try {
-      const decoded = decodeURIComponent(originalUrl);
-      const absPath = path.join(publicDir, decoded);
-      
-      // Security check: must be under public/material
-      const materialDir = path.resolve(path.join(publicDir, "material"));
-      const resolvedPath = path.resolve(absPath);
-      if (!resolvedPath.startsWith(materialDir)) {
+      // NOTE: originalUrl is usually like "/material/xxx.png"
+      // On Windows, path.join(publicDir, "/material/...") would drop publicDir.
+      // Normalize it into a relative path under publicDir.
+      const originalUrlNoQh = stripQueryHash(normalizeOriginalUrlToPathname(originalUrl));
+      const candidate = originalUrlNoQh.startsWith("/") ? originalUrlNoQh : `/${originalUrlNoQh}`;
+      const canon = canonicalizePublicAssetUrl(candidate);
+      if (!canon.ok) {
+        return Response.json({ ok: false, error: "路径不合法" }, { status: 400 });
+      }
+      const originalUrlForDb = canon.url;
+
+      const decodedPathname = (() => {
+        try {
+          return decodeURIComponent(originalUrlForDb);
+        } catch {
+          return originalUrlForDb;
+        }
+      })();
+
+      const rel = decodedPathname.replace(/^\/+/, "");
+      const absPath = path.resolve(path.join(publicDir, rel));
+
+      // Security check: must be under public/material OR public/generated
+      const allowedRootDir = path.resolve(path.join(publicDir, canon.root));
+      const resolvedPath = absPath;
+      if (!(resolvedPath === allowedRootDir || resolvedPath.startsWith(allowedRootDir + path.sep))) {
         return Response.json({ ok: false, error: "路径不合法" }, { status: 400 });
       }
 
@@ -81,7 +178,7 @@ export async function POST(req: NextRequest) {
         await fs.writeFile(absPath, buf);
       } else {
         // Different extension, write new file and remove old
-        const newPath = absPath.replace(/\.[^.]+$/, `.${ext}`);
+        const newPath = origExt ? absPath.replace(/\.[^.]+$/, `.${ext}`) : `${absPath}.${ext}`;
         await fs.writeFile(newPath, buf);
         if (newPath !== absPath && await fs.pathExists(absPath)) {
           await fs.remove(absPath);
@@ -94,15 +191,30 @@ export async function POST(req: NextRequest) {
       
       // Try to update the record URL if extension changed
       const newUrl = ext !== origExt
-        ? originalUrl.replace(/\.[^.]+$/, `.${ext}`)
-        : originalUrl;
+        ? originalUrlForDb.replace(/\.[^.]+$/, `.${ext}`)
+        : originalUrlForDb;
+
+      const urlCandidates = Array.from(
+        new Set(
+          [
+            originalUrl,
+            originalUrlNoQh,
+            candidate,
+            decodedPathname,
+            originalUrlForDb,
+            stripQueryHash(originalUrlForDb),
+          ]
+            .map((s) => String(s || "").trim())
+            .filter(Boolean)
+        )
+      );
 
       await recordsCol.updateMany(
-        { url: originalUrl, userId: user.userId } as any,
+        { url: { $in: urlCandidates }, userId: user.userId } as any,
         {
           $set: {
             mimeType,
-            ...(newUrl !== originalUrl ? { url: newUrl } : {}),
+            ...(newUrl !== originalUrlForDb ? { url: newUrl } : {}),
             ...(prompt ? { prompt } : {}),
             updatedAt: new Date(),
           },

@@ -1010,83 +1010,16 @@ export default function GalleryPage() {
         return;
       }
 
-      const targetW = 1200;
-      const targetH = 628;
-      const isNearRatio = (w: number, h: number) => {
-        const ww = Math.max(1, Math.floor(Number(w) || 0));
-        const hh = Math.max(1, Math.floor(Number(h) || 0));
-        if (!ww || !hh) return false;
-        const diff = Math.abs(ww * targetH - hh * targetW);
-        const denom = Math.max(1, hh * targetW);
-        return diff / denom <= 0.012;
-      };
-
-      const getDims = async (
-        file: File
-      ): Promise<{ w: number; h: number } | null> => {
-        try {
-          const anyWin = window as any;
-          if (typeof anyWin.createImageBitmap === "function") {
-            const bmp = await anyWin.createImageBitmap(file);
-            const w = Number(bmp?.width || 0) || 0;
-            const h = Number(bmp?.height || 0) || 0;
-            try {
-              bmp.close?.();
-            } catch {}
-            if (w > 0 && h > 0) return { w, h };
-          }
-        } catch {}
-        return await new Promise((resolve) => {
-          const url = URL.createObjectURL(file);
-          const img = new window.Image();
-          img.onload = () => {
-            const w =
-              Number((img as any).naturalWidth || (img as any).width || 0) || 0;
-            const h =
-              Number((img as any).naturalHeight || (img as any).height || 0) ||
-              0;
-            URL.revokeObjectURL(url);
-            resolve(w > 0 && h > 0 ? { w, h } : null);
-          };
-          img.onerror = () => {
-            URL.revokeObjectURL(url);
-            resolve(null);
-          };
-          img.src = url;
-        });
-      };
-
       setUploadingLongFolder(true);
       messageApi.open({
         type: "loading",
-        content: `正在筛选比例（${list.length}）...`,
+        content: `正在准备上传（${list.length}）...`,
         duration: 0,
         key: "uploadLongFolder"
       });
       try {
-        const picked: File[] = [];
-        const concurrency = 10;
-        let idx = 0;
-        await Promise.all(
-          Array.from(
-            { length: Math.min(concurrency, list.length) },
-            async () => {
-              while (true) {
-                const i = idx++;
-                if (i >= list.length) break;
-                const f = list[i];
-                const dims = await getDims(f);
-                if (!dims) continue;
-                if (isNearRatio(dims.w, dims.h)) picked.push(f);
-              }
-            }
-          )
-        );
-
-        if (!picked.length) {
-          messageApi.warning("未找到符合 1200/628 比例的图片");
-          return;
-        }
+        // 不在前端限制比例：服务端会统一处理为 1200x628（resizeImage fit=cover）
+        const picked: File[] = list.slice();
 
         const chunks: File[][] = [];
         const max = 200;
@@ -1404,11 +1337,6 @@ export default function GalleryPage() {
     if (!hiddenKeys.length) return gridImages;
     return gridImages.filter((img) => !hiddenKeySet.has(img.key));
   }, [gridImages, hiddenKeySet, hiddenKeys.length]);
-
-  const totalInListAfterFireplay = useMemo(
-    () => visibleGridImages.filter((img) => !fireplayUploadedUrlSet.has(img.url)).length,
-    [visibleGridImages, fireplayUploadedUrlSet]
-  );
 
   const filteredGridImages: GridImage[] = useMemo(() => {
     let arr = visibleGridImages;

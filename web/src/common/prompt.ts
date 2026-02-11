@@ -34,9 +34,8 @@ export function getAppAdsDesignerPrompt({ appName, lang, prompt, aspectRatio }: 
   return `1、你是一个精通app推广的广告设计师，这是你过去制作的广告图片，参考图仅作为图片风格参考，你需要调整构图、修改元素、背景等避免跟参考图过于相似。好的广告设计应遵循以下原则：
     - 应用图标必须在核心位置，尺寸要大且显眼（建议占画面至少15-20%）
     - 图片的视觉层次要分明：主体（图标+核心文案）> 辅助元素 > 背景
-    - 所有元素之间不能有堆叠现象，合适的时候使用对比色或光影效果突出主体元素
-    - 推广文案要简洁明了，加起来不能超过3条，单条文案长度不超过10个字符
-    - 整体构图避免元素过于拥挤
+    - 所有元素之间不能有堆叠现象
+    - 推广文案尽量贴近参考图的文案内容 可沿用关键词/短语/标点/行数，仅做极小幅变化（如少量同义替换、1-2 个字微调）；同时加起来不能超过3条，单条文案长度不超过10个字符
   2、【关键】图片将用于${appDesc}推广：
     - 如果参考图中已有该应用图标，必须严格保持图标的样式、颜色、设计完全一致，不要修改或重新设计
     - 如果参考图中是其他应用的图标，需要替换为${appDesc}的图标，并保持该图标的原始设计风格
@@ -98,13 +97,62 @@ export function getCentralPositionPrompt({ appName, lang, prompt, aspectRatio }:
 
 export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   const appDesc = appName ? `${appName}应用的` : '参考图中应用的（请根据参考图自行推断应用名称）';
-  return `生成一张${getRatioDesc(aspectRatio)}，提取${appDesc}图标和推广文字的组合放到构图中心位置，增加图标的大小使其更加显眼并保留部分背景，应用图标保持跟参考图一致不要修改图标的外观，其他元素丢弃`;
+  return `生成一张${getRatioDesc(aspectRatio)}。从参考图中提取${appDesc}图标与推广文字，作为唯一主体放在画面中心。
+【构图】主体（图标+文案）占画面约 65%-85%。
+【层级】图标最大最醒目；文案仅 1-2 行短语（可以适当精简文案内容），清晰可读。
+【背景处理】保留裁剪区域的背景质感。
+【严格限制】应用图标外观必须与参考图 100% 一致（形状/颜色/细节不改、不重绘、不变形）；文字语言必须与参考图一致；其他无关元素一律丢弃。`;
 }
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   const appDesc = appName ? `${appName}应用` : '参考图中的应用（请根据参考图自行推断应用名称）';
-  return `生成一张${getRatioDesc(aspectRatio)}，提取除了${appDesc}图标以外的一个最大占比元素与文字的组合构图，需要保留部分背景；
-  若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appDesc}图标，同时添加 1 个辅助元素作为视觉主体的一部分。
+
+  const pickOne = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)];
+
+  // 控制角标出现概率
+  const badgeProbability = 0.45;
+  const showBadge = Math.random() < badgeProbability;
+  // 用重复元素保留原概率：0.4/0.4/0.2
+  const badgeContent = pickOne([
+    "“免费”",
+    "“免费”",
+    "“最新”",
+    "“最新”",
+    "一个与应用/场景相关的小 icon（如礼物、下载、手机、Android等，风格需与参考图一致）",
+  ]);
+
+  const badgePrompt = showBadge
+    ? `
+【可选角标】在画面角落添加一个角标（badge）：
+- 角标内容：${badgeContent}；若参考图语言非中文，“免费/最新”必须翻译为参考图同语言。
+- 角标底色随机，但必须与画面整体色调/材质融合（可用同色系高饱和点缀或互补色小面积强调），并保证角标文字/图形与底色对比清晰可读。
+- 角标尺寸不喧宾夺主，但要清晰可见，边缘不要被裁切。`
+    : ""; 
+
+  // 若参考图无按钮，可选生成按钮（仅在无按钮时生效）
+  const buttonProbability = 0.35;
+  const showButton = Math.random() < buttonProbability;
+  const buttonText = pickOne([
+    "“下载”",
+    "“需要更新”",
+    "“点击更新”",
+    "“更新”",
+    "“立即更新”",
+  ]);
+
+  const buttonPrompt = showButton
+    ? `
+【可选按钮】仅当参考图中没有按钮（CTA button）时，才允许添加一个按钮：
+- 按钮文案：${buttonText}（或同义的“更新/下载”相关短语）；若参考图语言非中文，按钮文案必须翻译为参考图同语言。
+- 按钮形态：清晰的圆角矩形/胶囊按钮，带轻微投影/高光（是否需要取决于参考图风格），整体材质与参考图一致（扁平/3D/玻璃/拟物等保持一致）。
+- 布局：放在主要文案附近作为行动引导，不要遮挡图标与关键文案；尺寸适中、清晰可读，边缘不要被裁切。`
+    : "";
+
+  return `生成一张${getRatioDesc(aspectRatio)}。提取除了${appDesc}图标以外的一个最大占比元素与文字的组合构图，需要保留裁剪部分的背景。
+【构图要求】整体画面要“铺满感”，主体+文字区域尽量占满画面的高度；禁止出现明显的大面积上/下只有背景的纯色空洞。必要时可通过重新排版、适度放大主体、调整元素位置，或用同风格背景延展/补全来填满画面边缘。
+若最终只能提取到文字或背景（缺少明确主体元素），可以在画面核心位置新增/补全并突出${appDesc}图标，同时添加 1 个辅助元素作为视觉主体的一部分（辅助元素需与参考图风格一致且与应用功能/场景强相关）。
+${badgePrompt}
+${buttonPrompt}
   【重要】关于应用图标的要求：
   - 如果需要使用应用图标，必须严格保持参考图中原图标的样式、颜色、设计和外观完全一致
   - 不要修改、重新设计或变形图标，必须与参考图中的图标完全相同

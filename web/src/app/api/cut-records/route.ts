@@ -61,13 +61,20 @@ export async function GET(req: Request) {
   const user = guard.user;
   const { searchParams } = new URL(req.url);
   const limitRaw = searchParams.get("limit");
+  const pageRaw = searchParams.get("page");
+  const pageSizeRaw = searchParams.get("pageSize") ?? searchParams.get("page_size");
+  const hasPaging = pageRaw !== null || pageSizeRaw !== null;
+
+  // legacy mode (no page/pageSize): limit-only, max 5000
   const limit = Math.min(5000, Math.max(1, Number(limitRaw ?? 200) || 200));
+
+  // paging mode: page + pageSize, pageSize max 200
+  const page = Math.max(1, Number(pageRaw ?? 1) || 1);
+  const pageSize = Math.min(200, Math.max(1, Number(pageSizeRaw ?? 15) || 15));
   const status = (searchParams.get("status") || "").trim();
   const appName = (searchParams.get("appName") || "").trim();
   const lang = (searchParams.get("lang") || "").trim();
   const jobId = (searchParams.get("jobId") || "").trim();
-  const appNameNorm = appName.toLowerCase();
-  const langNorm = lang.toLowerCase();
 
   const filter: any = {};
   filter.userId = user.userId;
@@ -75,6 +82,8 @@ export async function GET(req: Request) {
     if (status !== "queued" && status !== "running" && status !== "completed" && status !== "failed") {
       return Response.json({ ok: false, error: "status 非法" }, { status: 400 });
     }
+    // NOTE: status 字段可能不完全等于派生状态（outputs 内部状态）。目前仅作为粗过滤条件。
+    filter.status = status;
   }
   if (appName) filter.appName = { $regex: new RegExp(`^${escapeRegex(appName)}$`, "i") };
   if (lang) filter.lang = { $regex: new RegExp(`^${escapeRegex(lang)}$`, "i") };
@@ -85,7 +94,16 @@ export async function GET(req: Request) {
 
   const db = await getMongoDb();
   const col = db.collection<CutRecordDoc>("cut_records");
-  const docs = await col.find(filter, { sort: { updatedAt: -1 }, limit } as any).toArray();
+  const sort = { updatedAt: -1 } as any;
+  let docs: CutRecordDoc[] = [];
+  let total: number | undefined;
+  if (hasPaging) {
+    total = await col.countDocuments(filter as any);
+    const skip = (page - 1) * pageSize;
+    docs = await col.find(filter as any, { sort, skip, limit: pageSize } as any).toArray();
+  } else {
+    docs = await col.find(filter as any, { sort, limit } as any).toArray();
+  }
 
   const items = docs.map((d: any) => {
     const derived = d.outputs ? deriveStatus(d.outputs) : (d.status || "queued");
@@ -101,14 +119,11 @@ export async function GET(req: Request) {
       createdAt: d.createdAt,
       updatedAt: d.updatedAt,
     };
-  })
-    .filter((it: any) => (status ? String(it.status) === status : true))
-    .filter((it: any) => {
-      if (appName && String(it?.appName || "").trim().toLowerCase() !== appNameNorm) return false;
-      if (lang && String(it?.lang || "").trim().toLowerCase() !== langNorm) return false;
-      return true;
-    });
+  });
 
+  if (hasPaging) {
+    return Response.json({ ok: true, items, total: total ?? 0, page, pageSize });
+  }
   return Response.json({ ok: true, items });
 }
 

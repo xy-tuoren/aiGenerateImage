@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card, Image, Input, InputNumber, Select, Space, Table, Typography, message } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
@@ -31,6 +31,8 @@ export default function CropPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [records, setRecords] = useState<CutRecordItem[]>([]);
+  const [recordsTotal, setRecordsTotal] = useState(0);
+  const recordCacheRef = useRef<Map<string, CutRecordItem>>(new Map());
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
   const outputThumbSize = 88;
@@ -38,7 +40,6 @@ export default function CropPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [downloadStartFolderIndex, setDownloadStartFolderIndex] = useState<number>(1);
   const [downloadFixedCode, setDownloadFixedCode] = useState<string>("404");
-  const [downloadZipName, setDownloadZipName] = useState<string>("");
   const [downloading, setDownloading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [excludedKeys, setExcludedKeys] = useState<Record<string, true>>({});
@@ -47,16 +48,19 @@ export default function CropPage() {
   const [previewIndex, setPreviewIndex] = useState(0);
   const [activePreviewKey, setActivePreviewKey] = useState<string | null>(null);
   const [cropPage, setCropPage] = useState(1);
-  const [cropPageSize, setCropPageSize] = useState(10);
+  const [cropPageSize, setCropPageSize] = useState(15);
   const [appName, setAppName] = useState<string>("");
   const [lang, setLang] = useState<string>("");
   const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
 
-  const fetchRecords = async () => {
+  const fetchRecords = useCallback(async () => {
     setRecordsLoading(true);
     try {
       const qs = new URLSearchParams();
-      qs.set("limit", "5000");
+      qs.set("page", String(cropPage));
+      qs.set("pageSize", String(cropPageSize));
+      if (appName) qs.set("appName", String(appName));
+      if (lang) qs.set("lang", String(lang));
       const res = await fetch(`/api/cut-records?${qs.toString()}`, { method: "GET" });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
@@ -64,13 +68,20 @@ export default function CropPage() {
         return;
       }
       const arr = Array.isArray(data.items) ? data.items : [];
+      for (const r of arr) {
+        if (r && typeof r === "object" && (r as any).id) {
+          recordCacheRef.current.set(String((r as any).id), r as any);
+        }
+      }
       setRecords(arr);
+      const total = Number((data as any)?.total);
+      setRecordsTotal(Number.isFinite(total) ? total : arr.length);
     } catch (e) {
       messageApi.error(e instanceof Error ? e.message : String(e));
     } finally {
       setRecordsLoading(false);
     }
-  };
+  }, [appName, cropPage, cropPageSize, lang, messageApi]);
 
   const downloadSelected = async () => {
     if (!selectedRowKeys.length) {
@@ -82,7 +93,9 @@ export default function CropPage() {
     const sanitize = (s: string) => String(s || "").replace(/[\\/:*?"<>|\s]+/g, "-").replace(/-+/g, "-").replace(/(^-|-$)/g, "");
     const now = new Date();
     const datePrefix = `${pad2(now.getMonth() + 1)}${pad2(now.getDate())}`;
-    const selectedRows = selectedRowKeys.map((id) => recordIdToRow.get(id)).filter(Boolean) as CutRecordItem[];
+    const selectedRows = selectedRowKeys
+      .map((id) => recordIdToRow.get(id) || recordCacheRef.current.get(id))
+      .filter(Boolean) as CutRecordItem[];
     const pickedAppNames = selectedRows.map((d) => String(d.appName || "").trim()).filter(Boolean);
     const pickedLangs = selectedRows.map((d) => String(d.lang || "").trim()).filter(Boolean);
     const appNamePicked =
@@ -216,40 +229,6 @@ export default function CropPage() {
     return m;
   }, [records]);
 
-  const sortedRecords = useMemo(() => {
-    const byJob = new Map<string, CutRecordItem[]>();
-    for (const r of records) {
-      const j = r.jobId ?? "";
-      if (!byJob.has(j)) byJob.set(j, []);
-      byJob.get(j)!.push(r);
-    }
-    const groups = Array.from(byJob.entries()).map(([jobId, list]) => ({
-      jobId,
-      list,
-      latestAt: Math.max(...list.map((x) => new Date(x.updatedAt || x.createdAt || 0).getTime())),
-    }));
-    groups.sort((a, b) => b.latestAt - a.latestAt);
-    const out: CutRecordItem[] = [];
-    for (const g of groups) {
-      g.list.sort(
-        (a, b) =>
-          String(a.lang ?? "").localeCompare(String(b.lang ?? "")) ||
-          new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
-      );
-      out.push(...g.list);
-    }
-    return out;
-  }, [records]);
-
-  const filteredRecords = useMemo(() => {
-    let arr = sortedRecords;
-    const qApp = String(appName || "").trim().toLowerCase();
-    const qLang = String(lang || "").trim().toLowerCase();
-    if (qApp) arr = arr.filter((r) => String(r.appName ?? "").trim().toLowerCase() === qApp);
-    if (qLang) arr = arr.filter((r) => String(r.lang ?? "").trim().toLowerCase() === qLang);
-    return arr;
-  }, [sortedRecords, appName, lang]);
-
   const excludedKeysScoped = useMemo(() => {
     const keys = Object.keys(excludedKeys || {});
     if (!keys.length) return [];
@@ -272,7 +251,7 @@ export default function CropPage() {
       for (const k of excludedKeysScoped) {
         const [id, ratio, templateName] = k.split("|");
         if (!id || !ratio || !templateName) continue;
-        const row = recordIdToRow.get(id);
+        const row = recordIdToRow.get(id) || recordCacheRef.current.get(id);
         if (!row?.sourceUrl) continue;
         items.push({
           sourceUrl: String(row.sourceUrl),
@@ -368,8 +347,7 @@ export default function CropPage() {
 
   useEffect(() => {
     fetchRecords();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchRecords]);
 
   useEffect(() => {
     (async () => {
@@ -384,10 +362,6 @@ export default function CropPage() {
       }
     })();
   }, []);
-
-  useEffect(() => {
-    setCropPage(1);
-  }, [appName, lang]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -589,7 +563,10 @@ export default function CropPage() {
             showSearch={{filterOption: (input, option) =>
               (option?.label ?? "").toString().toLowerCase().includes((input || "").toLowerCase())
             }}
-            onChange={(v) => setAppName(String(v ?? ""))}
+            onChange={(v) => {
+              setAppName(String(v ?? ""));
+              setCropPage(1);
+            }}
           />
           <Typography.Text strong>lang：</Typography.Text>
           <Select
@@ -602,12 +579,15 @@ export default function CropPage() {
             showSearch={{filterOption: (input, option) =>
               (option?.label ?? "").toString().toLowerCase().includes((input || "").toLowerCase())
             }}
-            onChange={(v) => setLang(String(v ?? ""))}
+            onChange={(v) => {
+              setLang(String(v ?? ""));
+              setCropPage(1);
+            }}
           />
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchRecords} loading={recordsLoading}>
             刷新
           </Button>
-          <Typography.Text type="secondary">{recordsLoading ? "加载中..." : `${filteredRecords.length} 条`}</Typography.Text>
+          <Typography.Text type="secondary">{recordsLoading ? "加载中..." : `${recordsTotal} 条`}</Typography.Text>
           <Space size={6}>
             <Typography.Text type="secondary">起始序号</Typography.Text>
             <InputNumber size="small" min={1} value={downloadStartFolderIndex} onChange={(v) => setDownloadStartFolderIndex(Number(v || 1))} />
@@ -633,10 +613,11 @@ export default function CropPage() {
           size="small"
           rowKey="id"
           loading={recordsLoading}
-          dataSource={filteredRecords}
+          dataSource={records}
           pagination={{
             current: cropPage,
             pageSize: cropPageSize,
+            total: recordsTotal,
             showSizeChanger: true,
             pageSizeOptions: ["10", "20", "50", "100"],
             showTotal: (total) => `共 ${total} 条`,
