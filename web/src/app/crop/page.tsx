@@ -53,6 +53,59 @@ export default function CropPage() {
   const [lang, setLang] = useState<string>("");
   const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
 
+  const sortCutRecordsForDisplay = useCallback((items: CutRecordItem[]) => {
+    const langRank = new Map<string, number>(SUPPORTED_LANGUAGES.map((x, i) => [String(x).toLowerCase(), i]));
+
+    const norm = (v: any) => String(v ?? "").trim();
+    const normLower = (v: any) => norm(v).toLowerCase();
+    const timeMs = (row: CutRecordItem) => {
+      const s = norm(row.updatedAt || row.createdAt);
+      if (!s) return 0;
+      const t = Date.parse(s);
+      return Number.isFinite(t) ? t : 0;
+    };
+    const groupKey = (row: CutRecordItem) => norm(row.jobId); // same task => same jobId; empty jobId => one group
+
+    // outer order: task groups by their latest updatedAt/createdAt desc
+    const groupMaxTime = new Map<string, number>();
+    for (const row of items) {
+      const g = groupKey(row);
+      const t = timeMs(row);
+      const prev = groupMaxTime.get(g) ?? 0;
+      if (t > prev) groupMaxTime.set(g, t);
+    }
+
+    const arr = [...items];
+    arr.sort((a, b) => {
+      const ga = groupKey(a);
+      const gb = groupKey(b);
+      const gta = groupMaxTime.get(ga) ?? 0;
+      const gtb = groupMaxTime.get(gb) ?? 0;
+      if (gta !== gtb) return gtb - gta; // newest task group first
+      if (ga !== gb) return ga.localeCompare(gb); // stable grouping when group time ties
+
+      // inside the same task group: lang block -> appName block -> time desc
+      const laRaw = normLower(a.lang);
+      const lbRaw = normLower(b.lang);
+      const laRank = langRank.get(laRaw) ?? 999;
+      const lbRank = langRank.get(lbRaw) ?? 999;
+      if (laRank !== lbRank) return laRank - lbRank;
+      if (laRaw !== lbRaw) return laRaw.localeCompare(lbRaw);
+
+      const aa = normLower(a.appName);
+      const ab = normLower(b.appName);
+      if (aa !== ab) return aa.localeCompare(ab);
+
+      const ta = timeMs(a);
+      const tb = timeMs(b);
+      if (ta !== tb) return tb - ta;
+
+      return norm(a.id).localeCompare(norm(b.id));
+    });
+
+    return arr;
+  }, []);
+
   const fetchRecords = useCallback(async () => {
     setRecordsLoading(true);
     try {
@@ -68,12 +121,13 @@ export default function CropPage() {
         return;
       }
       const arr = Array.isArray(data.items) ? data.items : [];
-      for (const r of arr) {
+      const sorted = sortCutRecordsForDisplay(arr);
+      for (const r of sorted) {
         if (r && typeof r === "object" && (r as any).id) {
           recordCacheRef.current.set(String((r as any).id), r as any);
         }
       }
-      setRecords(arr);
+      setRecords(sorted);
       const total = Number((data as any)?.total);
       setRecordsTotal(Number.isFinite(total) ? total : arr.length);
     } catch (e) {
@@ -81,7 +135,7 @@ export default function CropPage() {
     } finally {
       setRecordsLoading(false);
     }
-  }, [appName, cropPage, cropPageSize, lang, messageApi]);
+  }, [appName, cropPage, cropPageSize, lang, messageApi, sortCutRecordsForDisplay]);
 
   const downloadSelected = async () => {
     if (!selectedRowKeys.length) {
