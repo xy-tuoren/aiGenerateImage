@@ -129,9 +129,7 @@ export default function GalleryPage() {
     paginationResetKey,
     onReplace: () => {
       setPreviewOpen(false);
-      setPreviewIndex(0);
       setSelectedPreviewOpen(false);
-      setSelectedPreviewIndex(0);
     },
     onFlagsLoaded
   });
@@ -549,6 +547,11 @@ export default function GalleryPage() {
 
   const onPreviewOpenChange = useCallback((open: boolean) => {
     setPreviewOpen(Boolean(open));
+  }, []);
+
+  // antd Image 预览在关闭时有动画：如果立刻把 current 重置为 0，会在动画末尾闪回第一张。
+  // 所以把“重置索引”延后到关闭动画结束后。
+  const onPreviewAfterOpenChange = useCallback((open: boolean) => {
     if (!open) setPreviewIndex(0);
   }, []);
 
@@ -562,13 +565,23 @@ export default function GalleryPage() {
       open: previewOpen,
       current: previewIndex,
       onOpenChange: onPreviewOpenChange,
+      afterOpenChange: onPreviewAfterOpenChange,
       onChange: onPreviewChange
     }),
-    [onPreviewChange, onPreviewOpenChange, previewIndex, previewOpen]
+    [
+      onPreviewAfterOpenChange,
+      onPreviewChange,
+      onPreviewOpenChange,
+      previewIndex,
+      previewOpen
+    ]
   );
 
   const onSelectedPreviewOpenChange = useCallback((open: boolean) => {
     setSelectedPreviewOpen(Boolean(open));
+  }, []);
+
+  const onSelectedPreviewAfterOpenChange = useCallback((open: boolean) => {
     if (!open) setSelectedPreviewIndex(0);
   }, []);
 
@@ -582,9 +595,11 @@ export default function GalleryPage() {
       open: selectedPreviewOpen,
       current: selectedPreviewIndex,
       onOpenChange: onSelectedPreviewOpenChange,
+      afterOpenChange: onSelectedPreviewAfterOpenChange,
       onChange: onSelectedPreviewChange
     }),
     [
+      onSelectedPreviewAfterOpenChange,
       onSelectedPreviewChange,
       onSelectedPreviewOpenChange,
       selectedPreviewIndex,
@@ -681,7 +696,6 @@ export default function GalleryPage() {
         const nextLen = Math.max(0, (prevLen || 0) - 1);
         if (!nextLen) {
           setPreviewOpen(false);
-          setPreviewIndex(0);
         } else {
           setPreviewIndex(Math.min(curIdx, nextLen - 1));
         }
@@ -712,7 +726,6 @@ export default function GalleryPage() {
       const nextLen = Math.max(0, (prevLen || 0) - 1);
       if (!nextLen) {
         setSelectedPreviewOpen(false);
-        setSelectedPreviewIndex(0);
       } else {
         setSelectedPreviewIndex(Math.min(curIdx, nextLen - 1));
       }
