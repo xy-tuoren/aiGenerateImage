@@ -9,6 +9,7 @@ const PAGE_SIZE = 100;
 
 export default function ReferenceGalleryPage() {
   const [messageApi, contextHolder] = message.useMessage();
+  const [noticeQueue, setNoticeQueue] = useState<Array<{ type: "success" | "error"; content: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [fetchingReferenceImages, setFetchingReferenceImages] = useState(false);
@@ -33,6 +34,19 @@ export default function ReferenceGalleryPage() {
   const selectedKeySet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
   const selectedImages = useMemo(() => images.filter((url) => selectedKeys.includes(`${appName}|${url}`)), [images, appName, selectedKeys]);
   const selectedPreviewImages = useMemo(() => selectedImages.slice(0, 80), [selectedImages]);
+
+  const enqueueNotice = useCallback((type: "success" | "error", content: string) => {
+    setNoticeQueue((prev) => [...prev, { type, content }]);
+  }, []);
+
+  useEffect(() => {
+    if (!noticeQueue.length) return;
+    for (const n of noticeQueue) {
+      if (n.type === "success") messageApi.success(n.content);
+      else messageApi.error(n.content);
+    }
+    setNoticeQueue([]);
+  }, [messageApi, noticeQueue]);
 
   const uniqKeepOrder = useCallback((arr: string[]) => {
     const set = new Set<string>();
@@ -101,18 +115,18 @@ export default function ReferenceGalleryPage() {
       const res = await fetch("/api/reference-images?names=1", { method: "GET" });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        messageApi.error(data?.error || "获取 appName 列表失败");
+        enqueueNotice("error", data?.error || "获取 appName 列表失败");
         return;
       }
       const next = Array.isArray(data?.appNames) ? data.appNames.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
       setAppNames(next);
       setAppName((prev) => prev || next[0] || "");
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueNotice("error", e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, [messageApi]);
+  }, [enqueueNotice]);
 
   const fetchImages = useCallback(
     async (nextAppName: string, pageNum: number, append: boolean) => {
@@ -133,7 +147,7 @@ export default function ReferenceGalleryPage() {
         const res = await fetch(`/api/reference-images?${qs.toString()}`, { method: "GET" });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
-          messageApi.error(data?.error || "获取参考图失败");
+          enqueueNotice("error", data?.error || "获取参考图失败");
           return;
         }
         const list = Array.isArray(data?.images) ? data.images.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
@@ -147,13 +161,13 @@ export default function ReferenceGalleryPage() {
           setLoadedPageCount(1);
         }
       } catch (e) {
-        messageApi.error(e instanceof Error ? e.message : String(e));
+        enqueueNotice("error", e instanceof Error ? e.message : String(e));
       } finally {
         if (append) setLoadingMore(false);
         else setLoading(false);
       }
     },
-    [messageApi, uniqKeepOrder]
+    [enqueueNotice, uniqKeepOrder]
   );
 
   const handleFetchReferenceImages = useCallback(async () => {
@@ -166,21 +180,21 @@ export default function ReferenceGalleryPage() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        messageApi.error(data?.error || "获取参考图失败");
+        enqueueNotice("error", data?.error || "获取参考图失败");
         return;
       }
-      messageApi.success(`获取参考图成功：app=${data?.appNames || 0} items=${data?.totalItems || 0} files=${data?.totalFiles || 0}`);
+      enqueueNotice("success", `获取参考图成功：app=${data?.appNames || 0} items=${data?.totalItems || 0} files=${data?.totalFiles || 0}`);
       fetchAppNames();
       if (appName) {
         setLoadedPageCount(0);
         fetchImages(appName, 1, false);
       }
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueNotice("error", e instanceof Error ? e.message : String(e));
     } finally {
       setFetchingReferenceImages(false);
     }
-  }, [appName, fetchAppNames, fetchImages, messageApi]);
+  }, [appName, enqueueNotice, fetchAppNames, fetchImages]);
 
   useEffect(() => {
     fetchAppNames();
@@ -267,7 +281,7 @@ export default function ReferenceGalleryPage() {
 
   const handleCopyReferencePath = useCallback(async () => {
     if (!appName) {
-      messageApi.error("请先选择 appName");
+      enqueueNotice("error", "请先选择 appName");
       return;
     }
     setCopyingPath(true);
@@ -276,21 +290,21 @@ export default function ReferenceGalleryPage() {
         const res = await fetch(`/api/reference-images?folderPath=1&appName=${encodeURIComponent(appName)}`, { method: "GET" });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
-          messageApi.error(data?.error || "获取文件夹路径失败");
+          enqueueNotice("error", data?.error || "获取文件夹路径失败");
           return;
         }
         const folderPath = String(data?.folderPath ?? "").trim();
         if (!folderPath) {
-          messageApi.error("文件夹路径为空");
+          enqueueNotice("error", "文件夹路径为空");
           return;
         }
         await navigator.clipboard.writeText(folderPath);
-        messageApi.success("已复制整个 appName 文件夹路径");
+        enqueueNotice("success", "已复制整个 appName 文件夹路径");
         return;
       }
       const urls = selectedImages.map((u) => u).filter(Boolean);
       if (!urls.length) {
-        messageApi.error("选中的图片无效");
+        enqueueNotice("error", "选中的图片无效");
         return;
       }
       const qs = new URLSearchParams();
@@ -300,22 +314,22 @@ export default function ReferenceGalleryPage() {
       const res = await fetch(`/api/reference-images?${qs.toString()}`, { method: "GET" });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        messageApi.error(data?.error || "获取路径失败");
+        enqueueNotice("error", data?.error || "获取路径失败");
         return;
       }
       const paths = Array.isArray(data?.paths) ? data.paths.map((x: any) => String(x ?? "").trim()).filter(Boolean) : [];
       if (!paths.length) {
-        messageApi.error("未解析到有效路径");
+        enqueueNotice("error", "未解析到有效路径");
         return;
       }
       await navigator.clipboard.writeText(paths.join("\n"));
-      messageApi.success(`已复制 ${paths.length} 条参考图路径`);
+      enqueueNotice("success", `已复制 ${paths.length} 条参考图路径`);
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueNotice("error", e instanceof Error ? e.message : String(e));
     } finally {
       setCopyingPath(false);
     }
-  }, [appName, messageApi, selectedKeys.length, selectedImages]);
+  }, [appName, enqueueNotice, selectedKeys.length, selectedImages]);
 
   useEffect(() => {
     const sentinel = loadMoreSentinelRef.current;

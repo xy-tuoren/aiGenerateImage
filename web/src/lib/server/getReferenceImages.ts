@@ -67,7 +67,7 @@ export type AdCostMonthSimplifiedItem = {
 export async function fetchAdCostMonthAll(params?: {
   start_date?: string;
   end_date?: string;
-  
+
   category?: string[];
   ad_type?: string[];
   sort_field?: string;
@@ -112,6 +112,8 @@ export async function fetchAdCostMonthAll(params?: {
     const headers: Record<string, string> = { "content-type": "application/json" };
     const cookie = process.env.CERN1_COOKIE || "";
     if (cookie) headers["cookie"] = cookie;
+    const apiKey = process.env.X_API_KEY || "";
+    if (apiKey) headers["X-API-KEY"] = apiKey;
 
     const res = await axios.post<AdCostMonthApiResponse>(endpoint, body, {
       headers,
@@ -144,7 +146,7 @@ export async function fetchAdCostMonthAll(params?: {
     if (!data.length) break;
     page += 1;
   }
-  
+
   return all;
 }
 
@@ -419,7 +421,7 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
     appDirIdPartToFilenameCache.set(appDir, map);
     return map;
   };
- 
+
   await asyncLib.eachLimit(downloadJobs, downloadConcurrency, async (job) => {
     let outcome: "success" | "skipped" | "failed" = "failed";
     try {
