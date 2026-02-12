@@ -50,6 +50,7 @@ export function useGalleryData(args: {
 
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const itemsLengthRef = useRef(0);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setAppNameForFetch(appName), 250);
@@ -73,6 +74,45 @@ export function useGalleryData(args: {
     }
   }, []);
 
+  useEffect(() => {
+    // SSE: push group flags updates in realtime (cut/download/fireplay)
+    // Only for gallery page; batch/history still uses polling.
+    try {
+      if (typeof window === "undefined") return;
+      if (eventSourceRef.current) return;
+      const since = Date.now() - 10_000;
+      const qs = new URLSearchParams();
+      qs.set("since", String(since));
+      qs.set("intervalMs", "2000");
+      const es = new EventSource(`/api/events/gallery-flags?${qs.toString()}`);
+      eventSourceRef.current = es;
+
+      const onFlags = (ev: MessageEvent) => {
+        try {
+          const data = JSON.parse(String(ev?.data || ""));
+          emitFlags(data);
+        } catch {
+        }
+      };
+      es.addEventListener("flags", onFlags as any);
+
+      es.addEventListener("error", () => {
+        // let browser auto-reconnect
+      });
+
+      return () => {
+        try {
+          es.removeEventListener("flags", onFlags as any);
+          es.close();
+        } catch {
+        }
+        eventSourceRef.current = null;
+      };
+    } catch {
+      // ignore
+    }
+  }, [emitFlags]);
+
   const fetchImages = useCallback(
     async (offset = 0) => {
       const isAppend = offset > 0;
@@ -80,6 +120,7 @@ export function useGalleryData(args: {
       else setLoading(true);
       try {
         const qs = new URLSearchParams();
+        qs.set("scope", "gallery");
         qs.set("status", "completed");
         qs.set("limit", "800");
         qs.set("offset", String(offset));
@@ -110,7 +151,7 @@ export function useGalleryData(args: {
           .filter(Boolean);
         if (urlsToFetchFlags.length) {
           const firstBatchUrls = urlsToFetchFlags.slice(0, 300);
-          const res2 = await fetch("/api/cut-records/flags", {
+          const res2 = await fetch("/api/cut-records/flags?scope=gallery", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ urls: firstBatchUrls }),
@@ -120,7 +161,7 @@ export function useGalleryData(args: {
 
           const restUrls = urlsToFetchFlags.slice(300);
           if (restUrls.length) {
-            fetch("/api/cut-records/flags", {
+            fetch("/api/cut-records/flags?scope=gallery", {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify({ urls: restUrls }),

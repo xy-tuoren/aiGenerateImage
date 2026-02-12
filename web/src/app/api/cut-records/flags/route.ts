@@ -1,5 +1,5 @@
 import { getMongoDb } from "@/lib/server/mongodb";
-import { requireApiAccess } from "@/lib/server/auth";
+import { requireApiAccess, resolveGalleryGroupUserIds } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,24 +12,29 @@ export async function POST(req: Request) {
   const guard = requireApiAccess(req);
   if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
   const user = guard.user;
+  const { searchParams } = new URL(req.url);
+  const scope = String(searchParams.get("scope") || "").trim();
+  const useGalleryScope = scope === "gallery";
+  const groupUserIds = useGalleryScope ? resolveGalleryGroupUserIds(user.username) : [];
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
   const urlsRaw = (body as any).urls;
   const urls = Array.isArray(urlsRaw) ? urlsRaw.map((x) => String(x || "").trim()).filter(Boolean) : [];
   if (!urls.length) return Response.json({ ok: false, error: "urls 不能为空" }, { status: 400 });
   const uniq = Array.from(new Set(urls));
+  const userIdFilter = useGalleryScope && groupUserIds.length ? { $in: groupUserIds } : user.userId;
 
   const db = await getMongoDb();
   const col = db.collection<CutRecordDoc>("cut_records");
-  const docs = await col.find({ userId: user.userId, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } }).toArray();
+  const docs = await col.find({ userId: userIdFilter, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } }).toArray();
   const cutUrls = docs.map((d: any) => String(d.sourceUrl || "")).filter(Boolean);
 
   const fireplayCol = db.collection<{ sourceUrl: string }>("fireplay_upload_records");
-  const fireplayDocs = await fireplayCol.find({ userId: user.userId, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } }).toArray();
+  const fireplayDocs = await fireplayCol.find({ userId: userIdFilter, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } }).toArray();
   const fireplayUploadedUrls = fireplayDocs.map((d: any) => String(d.sourceUrl || "")).filter(Boolean);
 
   const downloadCol = db.collection<{ sourceUrl: string }>("download_records");
-  const downloadDocs = await downloadCol.find({ userId: user.userId, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } }).toArray();
+  const downloadDocs = await downloadCol.find({ userId: userIdFilter, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } }).toArray();
   const downloadedUrls = downloadDocs.map((d: any) => String(d.sourceUrl || "")).filter(Boolean);
 
   return Response.json({ ok: true, cutUrls, fireplayUploadedUrls, downloadedUrls });

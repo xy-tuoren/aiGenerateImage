@@ -104,11 +104,19 @@ export function getCentralPositionPrompt({ appName, lang, prompt, aspectRatio }:
 
 export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   const appDesc = appName ? `${appName}应用的` : '参考图中应用的（请根据参考图自行推断应用名称）';
-  return `生成一张${getRatioDesc(aspectRatio)}。从参考图中提取${appDesc}图标与推广文字，作为唯一主体放在画面中心。
-  【构图】主体（图标+文案）占画面约 65%-85%。
-  【层级】图标最大最醒目；文案仅 1-2 行短语（可以适当优化文案内容），清晰可读。
-  【背景处理】保留裁剪区域的背景质感。
-  【严格限制】应用图标外观必须与参考图 100% 一致（形状/颜色/细节不改、不重绘、不变形）；文字语言必须与参考图一致；其他无关元素一律丢弃。`;
+  const langDesc = lang ? `${lang}语言的` : '参考图中语言的（请根据参考图自行推断语言）';
+  return `## 目标
+生成一张${getRatioDesc(aspectRatio)}。从参考图中提取${appDesc}图标与推广文字，作为唯一主体放在画面中心。
+
+## 要求
+- **构图**：主体（图标 + 文案）占画面约 65% - 85%。
+- **层级**：图标最大最醒目；文案仅 1 - 2 行短语（可适当优化文案内容），清晰可读。
+- **背景处理**：保留裁剪区域的背景质感。
+
+## 严格限制（必须遵守）
+- **图标**：外观必须与参考图 100% 一致（形状/颜色/细节不改、不重绘、不变形）。
+- **文字**：语言必须为${langDesc}。
+- **元素**：其他无关元素一律丢弃。`;
 }
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {

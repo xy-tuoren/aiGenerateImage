@@ -6,7 +6,7 @@ import sharp from "sharp";
 import { Readable } from "stream";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { extFromMime } from "@/lib/server/utils";
-import { requireApiAccess } from "@/lib/server/auth";
+import { requireApiAccess, resolveGalleryGroupUserIds } from "@/lib/server/auth";
 import { addMetadataToImage, DEFAULT_IMAGE_METADATA } from "@/common/utils";
 
 export const runtime = "nodejs";
@@ -118,6 +118,7 @@ export async function POST(req: Request) {
   const guard = requireApiAccess(req);
   if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
   const user = guard.user;
+  const galleryUserIds = resolveGalleryGroupUserIds(user.username);
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
@@ -130,7 +131,7 @@ export async function POST(req: Request) {
     const genCol = db.collection<GenerationRecordDoc>("generation_records");
     const uniq = Array.from(new Set(urls0.map((x) => String(x || "").trim()).filter(Boolean)));
     const docs = uniq.length
-      ? await genCol.find({ userId: user.userId, status: "completed", url: { $in: uniq } } as any, { projection: { url: 1 } as any }).toArray()
+      ? await genCol.find({ userId: galleryUserIds.length ? { $in: galleryUserIds } : user.userId, status: "completed", url: { $in: uniq } } as any, { projection: { url: 1 } as any }).toArray()
       : [];
     const allowed = new Set(docs.map((d: any) => String(d?.url || "").trim()).filter(Boolean));
     const urls = urls0.map((x) => String(x || "").trim()).filter((u) => u && allowed.has(u));

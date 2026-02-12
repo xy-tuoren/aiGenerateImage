@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
       // Write the new image (may have different extension)
       const ext = mimeToExt(mimeType);
       const origExt = path.extname(absPath).replace(".", "").toLowerCase();
-      
+
       if (ext === origExt) {
         // Same extension, overwrite in place
         await fs.writeFile(absPath, buf);
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
       // Update database record
       const db = await getMongoDb();
       const recordsCol = db.collection("generation_records");
-      
+
       // Try to update the record URL if extension changed
       const newUrl = ext !== origExt
         ? originalUrlForDb.replace(/\.[^.]+$/, `.${ext}`)

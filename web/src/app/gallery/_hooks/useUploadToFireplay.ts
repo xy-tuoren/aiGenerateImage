@@ -53,7 +53,7 @@ export function useUploadToFireplay(args: {
       const imageUrls = picked
         .map((x) => String(x.url || "").trim())
         .filter(Boolean);
-      const res = await axios.post("/api/fireplay/batch-upload", {
+      const res = await axios.post("/api/fireplay/batch-upload?scope=gallery", {
         imageUrls,
         type: "app",
         ownerId: 0,

@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { requireApiAccess } from "@/lib/server/auth";
+import { requireApiAccess, resolveGalleryGroupUserIds } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,6 +60,9 @@ export async function GET(req: Request) {
   if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
   const user = guard.user;
   const { searchParams } = new URL(req.url);
+  const scope = String(searchParams.get("scope") || "").trim();
+  const useGalleryScope = scope === "gallery";
+  const groupUserIds = useGalleryScope ? resolveGalleryGroupUserIds(user.username) : [];
   const limitRaw = searchParams.get("limit");
   const pageRaw = searchParams.get("page");
   const pageSizeRaw = searchParams.get("pageSize") ?? searchParams.get("page_size");
@@ -77,7 +80,7 @@ export async function GET(req: Request) {
   const jobId = (searchParams.get("jobId") || "").trim();
 
   const filter: any = {};
-  filter.userId = user.userId;
+  filter.userId = useGalleryScope && groupUserIds.length ? { $in: groupUserIds } : user.userId;
   if (status) {
     if (status !== "queued" && status !== "running" && status !== "completed" && status !== "failed") {
       return Response.json({ ok: false, error: "status 非法" }, { status: 400 });

@@ -9,6 +9,11 @@ export type EnvAuthUser = {
   username: string;
   password: string;
   role?: string;
+  /**
+   * 关联账号（填写另一个 username）。
+   * 用于“图片广场”共享：相关接口会把数据归属到关联账号（或其链路最终指向的账号）。
+   */
+  related?: string;
 };
 
 export type ResolvedAuthz = {
@@ -209,6 +214,7 @@ export function readUsersFromEnv(): EnvAuthUser[] {
           username: String(x?.username || "").trim(),
           password: String(x?.password || "").trim(),
           role: String(x?.role || "").trim() || undefined,
+          related: String(x?.related || "").trim() || undefined,
         }))
         .filter((x) => x.username && x.password);
     } catch {
@@ -220,6 +226,80 @@ export function readUsersFromEnv(): EnvAuthUser[] {
   const r = String(process.env.AUTH_ROLE || "").trim();
   if (u && p) return [{ username: u, password: p, role: r || undefined }];
   return [];
+}
+
+/**
+ * 解析“图片广场”的归属 username（related 链最终指向的账号）：
+ * - 默认返回自己
+ * - 若配置了 related 且 related 指向一个存在的账号，则追溯 related 链路的最终目标（最多 10 跳，防止循环）
+ */
+export function resolveGalleryOwnerUsername(username: string): string {
+  const u0 = String(username || "").trim();
+  if (!u0) return "";
+  const users = readUsersFromEnv();
+  const relatedMap = new Map<string, string>();
+  for (const u of users) {
+    const name = String(u?.username || "").trim();
+    if (!name) continue;
+    relatedMap.set(name, String(u?.related || "").trim());
+  }
+
+  let cur = u0;
+  const seen = new Set<string>([cur]);
+  for (let i = 0; i < 10; i += 1) {
+    const next = String(relatedMap.get(cur) || "").trim();
+    if (!next || next === cur) break;
+    // 仅允许关联到“存在于配置中的账号”，避免拼错导致越权/错路由
+    if (!relatedMap.has(next)) break;
+    if (seen.has(next)) break;
+    cur = next;
+    seen.add(cur);
+  }
+  return cur;
+}
+
+export function resolveGalleryOwnerUserId(username: string): string {
+  const owner = resolveGalleryOwnerUsername(username);
+  return owner ? toUserId(owner) : "";
+}
+
+/**
+ * 解析“图片广场共享组”的所有 userId。
+ * 规则：所有 related 链最终指向同一个 owner 的账号，视为同一共享组。
+ * 这样既能“互相看到广场”，又不需要把数据强行写到同一个 userId 下。
+ */
+export function resolveGalleryGroupUserIds(username: string): string[] {
+  const u0 = String(username || "").trim();
+  if (!u0) return [];
+  const users = readUsersFromEnv();
+
+  const relatedMap = new Map<string, string>();
+  for (const u of users) {
+    const name = String(u?.username || "").trim();
+    if (!name) continue;
+    relatedMap.set(name, String(u?.related || "").trim());
+  }
+
+  const resolveOwner = (name0: string) => {
+    let cur = String(name0 || "").trim();
+    if (!cur) return "";
+    const seen = new Set<string>([cur]);
+    for (let i = 0; i < 10; i += 1) {
+      const next = String(relatedMap.get(cur) || "").trim();
+      if (!next || next === cur) break;
+      if (!relatedMap.has(next)) break; // 只允许指向配置中存在的账号
+      if (seen.has(next)) break;
+      cur = next;
+      seen.add(cur);
+    }
+    return cur;
+  };
+
+  const myOwner = resolveOwner(u0) || u0;
+  const groupUsernames = Array.from(relatedMap.keys()).filter((u) => (resolveOwner(u) || u) === myOwner);
+  // 保底把自己和 owner 加进去（即使没出现在 AUTH_USERS_JSON 解析结果里也不至于空）
+  const uniq = new Set<string>([...groupUsernames, u0, myOwner].map((s) => String(s || "").trim()).filter(Boolean));
+  return Array.from(uniq).map((u) => toUserId(u));
 }
 
 export function isSuperAdminUser(username: string, role?: string) {
@@ -335,7 +415,7 @@ function resolveApiPermissionKey(pathname: string, method: string): string | nul
   }
 
   if (parts[1] === "cut-jobs") {
-    if (parts.length === 3 && parts[2] === "start") {
+    if (parts.length === 3 && (parts[2] === "start" || parts[2] === "start2")) {
       if (m === "POST") return "api:cut-jobs:start";
       return null;
     }

@@ -836,7 +836,7 @@ export default function GalleryPage() {
     }
     setCreatingCut(true);
     try {
-      const res = await fetch("/api/cut-jobs/start", {
+      const res = await fetch("/api/cut-jobs/start?scope=gallery", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({

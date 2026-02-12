@@ -5,7 +5,7 @@ import FormData from "form-data";
 import path from "path";
 import { chunkArray, mimeFromExt } from "@/lib/server/utils";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { requireApiAccess } from "@/lib/server/auth";
+import { requireApiAccess, resolveGalleryGroupUserIds } from "@/lib/server/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -50,6 +50,11 @@ export async function POST(req: Request) {
     const guard = requireApiAccess(req);
     if (!guard.ok) return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
     const user = guard.user;
+    const { searchParams } = new URL(req.url);
+    const scope = String(searchParams.get("scope") || "").trim();
+    const useGalleryScope = scope === "gallery";
+    const groupUserIds = useGalleryScope ? resolveGalleryGroupUserIds(user.username) : [];
+    const userIdFilter = useGalleryScope && groupUserIds.length ? { $in: groupUserIds } : user.userId;
     const authHeader = getFireplayAuthHeader(req);
     const body: any = await req.json().catch(() => ({}));
     const imageUrls: string[] = Array.isArray(body?.imageUrls)
@@ -62,9 +67,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "imageUrls 不能为空" }, { status: 400 });
     }
 
+    // 同组去重：已经上传过 Fireplay 的源图不再重复上传
+    let urlsToUpload = imageUrls;
+    let skippedSourceUrls: string[] = [];
+    try {
+      const db = await getMongoDb();
+      const col = db.collection<{ userId: string; sourceUrl: string }>("fireplay_upload_records");
+      const uniq = Array.from(new Set(imageUrls.map((x) => String(x || "").trim()).filter(Boolean)));
+      const existing = uniq.length
+        ? await col.find({ userId: userIdFilter as any, sourceUrl: { $in: uniq } } as any, { projection: { sourceUrl: 1 } as any } as any).toArray()
+        : [];
+      const existedSet = new Set(existing.map((d: any) => String(d?.sourceUrl || "").trim()).filter(Boolean));
+      skippedSourceUrls = uniq.filter((u) => existedSet.has(u));
+      urlsToUpload = imageUrls.filter((u) => !existedSet.has(String(u || "").trim()));
+    } catch {
+      // ignore, fallback to upload all
+      urlsToUpload = imageUrls;
+      skippedSourceUrls = [];
+    }
+
+    if (!urlsToUpload.length) {
+      return NextResponse.json({ ok: true, uploadedUrls: [], uploadedSourceUrls: [], skippedSourceUrls, data: { results: [] } });
+    }
+
     const uploadedUrls: string[] = [];
     const localUrlsForUploaded: string[] = [];
-    const chunks = chunkArray(imageUrls, BATCH_MAX_FILES);
+    const chunks = chunkArray(urlsToUpload, BATCH_MAX_FILES);
 
     for (let batchIndex = 0; batchIndex < chunks.length; batchIndex++) {
       const urls: string[] = chunks[batchIndex] as string[];
@@ -139,7 +167,7 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ ok: true, uploadedUrls, uploadedSourceUrls, data: batchJson.data });
+    return NextResponse.json({ ok: true, uploadedUrls, uploadedSourceUrls, skippedSourceUrls, data: batchJson.data });
   } catch (e) {
     const anyErr: any = e;
     const message =

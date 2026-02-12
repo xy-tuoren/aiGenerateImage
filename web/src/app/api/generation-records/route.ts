@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { requireApiAccess } from "@/lib/server/auth";
+import { requireApiAccess, resolveGalleryGroupUserIds } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +64,9 @@ export async function GET(req: Request) {
   if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
   const user = guard.user;
   const { searchParams } = new URL(req.url);
+  const scope = String(searchParams.get("scope") || "").trim();
+  const useGalleryScope = scope === "gallery";
+  const galleryUserIds = useGalleryScope ? resolveGalleryGroupUserIds(user.username) : [];
   const limitRaw = searchParams.get("limit");
   const limit = Math.min(5000, Math.max(1, Number(limitRaw ?? 200) || 200));
   const offsetRaw = searchParams.get("offset");
@@ -84,7 +87,7 @@ export async function GET(req: Request) {
   const jobConfigsCol = db.collection<BatchJobConfigDoc>("batch_job_configs");
 
   const filter: any = {};
-  filter.userId = user.userId;
+  filter.userId = useGalleryScope && galleryUserIds.length ? { $in: galleryUserIds } : user.userId;
   if (jobId) {
     if (!ObjectId.isValid(jobId)) return Response.json({ ok: false, error: "jobId 非法" }, { status: 400 });
     filter.jobId = new ObjectId(jobId);
@@ -130,16 +133,16 @@ export async function GET(req: Request) {
     filter.status && filter.status !== "failed"
       ? []
       : await jobConfigsCol
-          .find(
-            {
-              userId: user.userId,
-              ...(filter.jobId ? { jobId: filter.jobId } : {}),
-              ...(filter.configId ? { configId: filter.configId } : {}),
-              status: "failed",
-            } as any,
-            { sort: { updatedAt: -1 }, limit: fetchLimit } as any
-          )
-          .toArray();
+        .find(
+          {
+            userId: filter.userId,
+            ...(filter.jobId ? { jobId: filter.jobId } : {}),
+            ...(filter.configId ? { configId: filter.configId } : {}),
+            status: "failed",
+          } as any,
+          { sort: { updatedAt: -1 }, limit: fetchLimit } as any
+        )
+        .toArray();
   const extraRecordsFromJobConfigs = extraFailedFromJobConfigs.map((jc) => ({
     jobId: jc.jobId,
     configId: jc.configId,
@@ -171,11 +174,11 @@ export async function GET(req: Request) {
   // configId -> sourceConfigId 映射（用于“同一配置跨多次任务合并”）
   const jobCfgMetas = configObjectIds.length
     ? await jobConfigsCol
-        .find(
-          { userId: user.userId, configId: { $in: configObjectIds } } as any,
-          { projection: { configId: 1, sourceConfigId: 1, config: 1 } as any }
-        )
-        .toArray()
+      .find(
+        { userId: filter.userId, configId: { $in: configObjectIds } } as any,
+        { projection: { configId: 1, sourceConfigId: 1, config: 1 } as any }
+      )
+      .toArray()
     : [];
   const cfgIdToSourceId = new Map<string, ObjectId>();
   const jobCfgSnapMap = new Map<string, any>();
@@ -213,13 +216,13 @@ export async function GET(req: Request) {
       referenceImages: referenceImages2,
       configMeta: appName2 || lang2 || batchFun2 || aspectRatio2 || referenceImages2
         ? {
-            appName: appName2,
-            lang: lang2,
-            batchFun: batchFun2,
-            aspectRatio: aspectRatio2,
-            prompt: r.prompt || cfg?.prompt,
-            referenceImages: referenceImages2,
-          }
+          appName: appName2,
+          lang: lang2,
+          batchFun: batchFun2,
+          aspectRatio: aspectRatio2,
+          prompt: r.prompt || cfg?.prompt,
+          referenceImages: referenceImages2,
+        }
         : undefined,
     };
   });

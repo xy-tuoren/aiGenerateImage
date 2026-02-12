@@ -66,7 +66,7 @@ export type GlobalPromptContext = {
 export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
   return `
   【绝对禁止事项】
-    - 推广文案不能出现如:"旧版本无法使用"等不真实欺骗文案
+    - 推广文案不能出现如:"旧版本无法使用、旧版本终止服务、旧版本支持结束"等不真实欺骗文案
   【仅作为补充参考】
     - 现在为${new Date().getFullYear()}年
   `;

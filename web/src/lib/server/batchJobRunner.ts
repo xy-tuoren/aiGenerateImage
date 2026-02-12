@@ -612,7 +612,10 @@ async function runBatchJob(input: StartJobInput) {
     const overrideCount = input.countOverrideMap ? input.countOverrideMap[String(configId)] : undefined;
     const count = Math.max(0, overrideCount !== undefined ? Number(overrideCount) : Number(cfg?.count ?? 1) || 0);
     if (input.onlyMissing) {
-      const completedIdxs = await recordsCol.distinct("index" as any, { ...(userId ? { userId } : {}), jobId: jobObjectId, configId: new ObjectId(configId), status: "completed" } as any);
+      const completedIdxs = await recordsCol.distinct(
+        "index" as any,
+        { ...(userId ? { userId } : {}), jobId: jobObjectId, configId: new ObjectId(configId), status: "completed" } as any
+      );
       const completedSet = new Set<number>((Array.isArray(completedIdxs) ? completedIdxs : []).map((x: any) => Number(x)).filter((n: any) => Number.isFinite(n)));
       for (let i = 0; i < count; i += 1) {
         if (!completedSet.has(i)) tasks.push({ configId, index: i });
