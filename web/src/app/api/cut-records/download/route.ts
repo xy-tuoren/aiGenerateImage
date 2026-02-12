@@ -67,6 +67,22 @@ async function readAsJpegBuffer(absPath: string): Promise<Buffer> {
 
 const addMetaEnv = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
 
+function abortArchiveSilently(archive: any) {
+  try {
+    archive.abort();
+  } catch {
+  }
+}
+
+async function finalizeArchiveSilently(archive: any) {
+  try {
+    const ret = archive.finalize();
+    if (ret && typeof (ret as any).then === "function") await ret;
+  } catch {
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function jpegWithMeta(jpegBuffer: Buffer, rec: CutRecordDoc): Buffer {
   if (!addMetaEnv) return jpegBuffer;
   try {
@@ -123,8 +139,17 @@ export async function POST(req: Request) {
     const archive = archiver("zip", { zlib: { level: 9 } });
     const webStream = Readable.toWeb(archive as any) as unknown as ReadableStream;
 
+    let aborted = false;
+    const abortNow = () => {
+      if (aborted) return;
+      aborted = true;
+      abortArchiveSilently(archive);
+    };
+    if (req.signal?.aborted) abortNow();
+    else req.signal?.addEventListener("abort", abortNow);
+
     let added = 0;
-    (async () => {
+    void (async () => {
       const pad4 = (n: number) => String(n).padStart(4, "0");
       const sanitize = (s: string) => s.replace(/[\\/:*?"<>|\s]+/g, "-").replace(/-+/g, "-").replace(/(^-|-$)/g, "");
       const folderName = sanitize(String((body as any).folderName ?? "images").trim() || "images");
@@ -132,10 +157,12 @@ export async function POST(req: Request) {
 
       try {
         for (let i = 0; i < urls.length; i++) {
+          if (aborted) break;
           try {
             const u = String(urls[i] || "").trim();
             if (!u) continue;
             const got = await readUrlAsRawBuffer(u);
+            if (aborted) break;
             if (!got?.buf?.length) continue;
             const rawName = (() => {
               try {
@@ -153,16 +180,12 @@ export async function POST(req: Request) {
           }
         }
       } finally {
-        archive.finalize();
+        if (aborted) abortNow();
+        else await finalizeArchiveSilently(archive);
       }
-    })();
+    })().catch(() => abortNow());
 
-    archive.on("error", () => {
-      try {
-        archive.abort();
-      } catch {
-      }
-    });
+    archive.on("error", () => abortNow());
 
     const pad2 = (n: number) => String(n).padStart(2, "0");
     const now = new Date();
@@ -215,10 +238,20 @@ export async function POST(req: Request) {
   const archive = archiver("zip", { zlib: { level: 9 } });
   const webStream = Readable.toWeb(archive as any) as unknown as ReadableStream;
 
+  let aborted = false;
+  const abortNow = () => {
+    if (aborted) return;
+    aborted = true;
+    abortArchiveSilently(archive);
+  };
+  if (req.signal?.aborted) abortNow();
+  else req.signal?.addEventListener("abort", abortNow);
+
   let added = 0;
-  (async () => {
+  void (async () => {
     try {
       for (let i = 0; i < orderedDocs.length; i++) {
+        if (aborted) break;
         const folderIndex = startFolderIndex + i;
         const folder = `${folderIndex}/`;
         const rec = orderedDocs[i];
@@ -228,6 +261,7 @@ export async function POST(req: Request) {
           const srcAbs = String(rec.sourceAbsPath || "").trim();
           if (srcAbs && await fs.pathExists(srcAbs)) {
             const jpg = await readAsJpegBuffer(srcAbs);
+            if (aborted) break;
             archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}@${fixedCode}-landscape-1.jpg` });
             added += 1;
           }
@@ -249,6 +283,7 @@ export async function POST(req: Request) {
               const abs = publicUrlToAbsPath(url);
               if (!(await fs.pathExists(abs))) continue;
               const jpg = await readAsJpegBuffer(abs);
+              if (aborted) break;
               n += 1;
               archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}@${fixedCode}-square-${n}.jpg` });
               added += 1;
@@ -272,6 +307,7 @@ export async function POST(req: Request) {
               const abs = publicUrlToAbsPath(url);
               if (!(await fs.pathExists(abs))) continue;
               const jpg = await readAsJpegBuffer(abs);
+              if (aborted) break;
               n += 1;
               archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}@${fixedCode}-vertical-${n}.jpg` });
               added += 1;
@@ -281,16 +317,12 @@ export async function POST(req: Request) {
         }
       }
     } finally {
-      archive.finalize();
+      if (aborted) abortNow();
+      else await finalizeArchiveSilently(archive);
     }
-  })();
+  })().catch(() => abortNow());
 
-  archive.on("error", () => {
-    try {
-      archive.abort();
-    } catch {
-    }
-  });
+  archive.on("error", () => abortNow());
 
   const pad2 = (n: number) => String(n).padStart(2, "0");
   const now = new Date();
