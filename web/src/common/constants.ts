@@ -64,7 +64,10 @@ export type GlobalPromptContext = {
  * 这里放“跨模板的硬性约束”，避免在每个模板里重复写。
  */
 export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
-  return `【绝对禁止事项】
-  - 推广文案不能出现如:"旧版本无法使用"等不真实欺骗文案
+  return `
+  【绝对禁止事项】
+    - 推广文案不能出现如:"旧版本无法使用"等不真实欺骗文案
+  【仅作为补充参考】
+    - 现在为${new Date().getFullYear()}年
   `;
 }
