@@ -30,13 +30,25 @@ type CutRecordItem = {
 export default function CropPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const [recordsLoading, setRecordsLoading] = useState(false);
-  const [records, setRecords] = useState<CutRecordItem[]>([]);
+  const [rawRecords, setRawRecords] = useState<CutRecordItem[]>([]);
   const [recordsTotal, setRecordsTotal] = useState(0);
   const recordCacheRef = useRef<Map<string, CutRecordItem>>(new Map());
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
-  const outputThumbSize = 88;
-  const sourceThumbSize = 160;
+  // 表格展示默认尽可能放大缩略图；如需更大/更小可在工具栏手动调节
+  const [outputThumbSize, setOutputThumbSize] = useState<number>(120);
+  const [sourceThumbSize, setSourceThumbSize] = useState<number>(220);
+  const [isWideScreen, setIsWideScreen] = useState(false);
+  const tableWrapRef = useRef<HTMLDivElement | null>(null);
+  const tableScrollElRef = useRef<HTMLElement | null>(null);
+  const stickyHScrollRef = useRef<HTMLDivElement | null>(null);
+  const syncScrollingRef = useRef<"table" | "sticky" | null>(null);
+  const [stickyHScroll, setStickyHScroll] = useState<{ visible: boolean; left: number; width: number; scrollWidth: number }>({
+    visible: false,
+    left: 0,
+    width: 0,
+    scrollWidth: 0,
+  });
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [downloadStartFolderIndex, setDownloadStartFolderIndex] = useState<number>(1);
   const [downloadFixedCode, setDownloadFixedCode] = useState<string>("404");
@@ -59,7 +71,8 @@ export default function CropPage() {
     const norm = (v: any) => String(v ?? "").trim();
     const normLower = (v: any) => norm(v).toLowerCase();
     const timeMs = (row: CutRecordItem) => {
-      const s = norm(row.updatedAt || row.createdAt);
+      // 默认按创建时间：重新裁剪/重新生成只更新 updatedAt，不会导致记录“跳到第一个”
+      const s = norm(row.createdAt || row.updatedAt);
       if (!s) return 0;
       const t = Date.parse(s);
       return Number.isFinite(t) ? t : 0;
@@ -106,6 +119,109 @@ export default function CropPage() {
     return arr;
   }, []);
 
+  const records = useMemo(() => sortCutRecordsForDisplay(rawRecords), [rawRecords, sortCutRecordsForDisplay]);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1600px)");
+    const apply = () => setIsWideScreen(Boolean(mql.matches));
+    apply();
+    // Safari/旧浏览器兼容（matchMedia 旧 API）
+    if ("addEventListener" in mql) {
+      mql.addEventListener("change", apply);
+      return () => mql.removeEventListener("change", apply);
+    }
+    (mql as any).addListener?.(apply);
+    return () => (mql as any).removeListener?.(apply);
+  }, []);
+
+  // 固定屏幕底部的横向滚动条：与 AntD Table 横向滚动同步（不用滚到表格最底部）
+  useEffect(() => {
+    const wrap = tableWrapRef.current;
+    if (!wrap) return;
+
+    const findScrollEl = () =>
+      (wrap.querySelector(".ant-table-body") as HTMLElement | null) ||
+      (wrap.querySelector(".ant-table-content") as HTMLElement | null) ||
+      null;
+
+    const updateMetrics = () => {
+      const sc = findScrollEl();
+      tableScrollElRef.current = sc;
+
+      const rect = wrap.getBoundingClientRect();
+      const width = Math.max(0, Math.floor(rect.width));
+      const left = Math.floor(rect.left);
+
+      const scrollWidth = sc ? Math.floor(sc.scrollWidth || 0) : 0;
+      const clientWidth = sc ? Math.floor(sc.clientWidth || 0) : 0;
+      const visible = Boolean(sc && scrollWidth > clientWidth + 2);
+
+      setStickyHScroll((prev) => {
+        const next = { visible, left, width, scrollWidth };
+        if (
+          prev.visible === next.visible &&
+          prev.left === next.left &&
+          prev.width === next.width &&
+          prev.scrollWidth === next.scrollWidth
+        ) {
+          return prev;
+        }
+        return next;
+      });
+
+      // 同步当前 scrollLeft
+      if (visible && sc && stickyHScrollRef.current) {
+        stickyHScrollRef.current.scrollLeft = sc.scrollLeft;
+      }
+    };
+
+    const onTableScroll = () => {
+      const sc = tableScrollElRef.current;
+      const sticky = stickyHScrollRef.current;
+      if (!sc || !sticky) return;
+      if (syncScrollingRef.current === "sticky") return;
+      syncScrollingRef.current = "table";
+      sticky.scrollLeft = sc.scrollLeft;
+      queueMicrotask(() => {
+        if (syncScrollingRef.current === "table") syncScrollingRef.current = null;
+      });
+    };
+
+    const onStickyScroll = () => {
+      const sc = tableScrollElRef.current;
+      const sticky = stickyHScrollRef.current;
+      if (!sc || !sticky) return;
+      if (syncScrollingRef.current === "table") return;
+      syncScrollingRef.current = "sticky";
+      sc.scrollLeft = sticky.scrollLeft;
+      queueMicrotask(() => {
+        if (syncScrollingRef.current === "sticky") syncScrollingRef.current = null;
+      });
+    };
+
+    const ro = new ResizeObserver(() => updateMetrics());
+    ro.observe(wrap);
+
+    // 初次与后续重算
+    const raf = requestAnimationFrame(updateMetrics);
+    window.addEventListener("resize", updateMetrics);
+
+    // 绑定滚动监听
+    const sc0 = findScrollEl();
+    if (sc0) sc0.addEventListener("scroll", onTableScroll, { passive: true });
+    const sticky0 = stickyHScrollRef.current;
+    if (sticky0) sticky0.addEventListener("scroll", onStickyScroll, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", updateMetrics);
+      ro.disconnect();
+      const sc = findScrollEl();
+      if (sc) sc.removeEventListener("scroll", onTableScroll as any);
+      if (sticky0) sticky0.removeEventListener("scroll", onStickyScroll as any);
+    };
+  }, [cropPage, cropPageSize, isWideScreen, outputThumbSize, rawRecords.length, recordsLoading, recordsTotal, sourceThumbSize]);
+
   const fetchRecords = useCallback(async () => {
     setRecordsLoading(true);
     try {
@@ -121,13 +237,12 @@ export default function CropPage() {
         return;
       }
       const arr = Array.isArray(data.items) ? data.items : [];
-      const sorted = sortCutRecordsForDisplay(arr);
-      for (const r of sorted) {
+      for (const r of arr) {
         if (r && typeof r === "object" && (r as any).id) {
           recordCacheRef.current.set(String((r as any).id), r as any);
         }
       }
-      setRecords(sorted);
+      setRawRecords(arr);
       const total = Number((data as any)?.total);
       setRecordsTotal(Number.isFinite(total) ? total : arr.length);
     } catch (e) {
@@ -135,7 +250,7 @@ export default function CropPage() {
     } finally {
       setRecordsLoading(false);
     }
-  }, [appName, cropPage, cropPageSize, lang, messageApi, sortCutRecordsForDisplay]);
+  }, [appName, cropPage, cropPageSize, lang, messageApi]);
 
   const downloadSelected = async () => {
     if (!selectedRowKeys.length) {
@@ -219,7 +334,7 @@ export default function CropPage() {
             }
             throw e;
           }
-          messageApi.success("已保存");
+          messageApi?.success("已保存");
           setSelectedRowKeys([]);
           return;
         } catch (e) {
@@ -541,25 +656,43 @@ export default function CropPage() {
         title: "时间",
         dataIndex: "updatedAt",
         key: "updatedAt",
-        width: 120,
+        width: 132,
         align: "center",
         render: (v: any, row: CutRecordItem) => {
           const s = (v || row.createdAt) ? String(v || row.createdAt) : "";
           if (!s) return <Typography.Text type="secondary">-</Typography.Text>;
           const d = new Date(s);
-          return <Typography.Text>{Number.isNaN(d.getTime()) ? s : d.toLocaleString()}</Typography.Text>;
+          if (Number.isNaN(d.getTime())) return <Typography.Text>{s}</Typography.Text>;
+          return (
+            <div style={{ lineHeight: 1.15 }}>
+              <Typography.Text style={{ whiteSpace: "nowrap" }}>{d.toLocaleDateString()}</Typography.Text>
+              <br />
+              <Typography.Text type="secondary" style={{ whiteSpace: "nowrap" }}>
+                {d.toLocaleTimeString()}
+              </Typography.Text>
+            </div>
+          );
         },
       },
-      { title: "状态", dataIndex: "status", key: "status", width: 80, align: "center" },
+      { title: "状态", dataIndex: "status", key: "status", width: 60, align: "center" },
       {
         title: "原图",
         dataIndex: "sourceUrl",
         key: "sourceUrl",
-        width: 180,
+        width: 240,
         align: "center",
         render: (v: any) => {
           const s = v ? String(v) : "";
-          return s ? <Image width={sourceThumbSize} style={{ height: "auto" }} src={s} alt={s} /> : <Typography.Text type="secondary">-</Typography.Text>;
+          return s ? (
+            <Image
+              width={sourceThumbSize}
+              style={{ height: "auto", display: "block", marginInline: "auto" }}
+              src={s}
+              alt={s}
+            />
+          ) : (
+            <Typography.Text type="secondary">-</Typography.Text>
+          );
         },
       },
     ];
@@ -567,7 +700,8 @@ export default function CropPage() {
     const ratioCols = ratioKeys.map((ratio) => ({
       title: ratio,
       key: `ratio:${ratio}`,
-      width: 380,
+      // 比例列尽量窄：缩略图强制单行，超出在单元格内横向滚动
+      width: Math.max(260, outputThumbSize * 2 + 16),
       align: "center",
       render: (_v: any, row: CutRecordItem) => {
         const byTpl = row.outputs && row.outputs[ratio] ? row.outputs[ratio] : undefined;
@@ -586,12 +720,14 @@ export default function CropPage() {
         if (!hasAnyUrl) return <Typography.Text type="secondary">-</Typography.Text>;
         return (
           <div
+            className="cropRatioRow"
             style={{
               display: "flex",
-              flexWrap: "wrap",
-              gap: 6,
-              overflow: "hidden",
-              justifyContent: "center",
+              flexWrap: "nowrap",
+              gap: 4,
+              overflowX: "auto",
+              overflowY: "hidden",
+              justifyContent: "flex-start",
             }}
           >
             {items
@@ -600,7 +736,11 @@ export default function CropPage() {
                 <div
                   key={it.tpl}
                   title={it.tpl}
-                  style={{ width: outputThumbSize, filter: excludedKeys[it.k] ? "grayscale(1) opacity(0.35)" : undefined }}
+                  style={{
+                    width: outputThumbSize,
+                    lineHeight: 0,
+                    filter: excludedKeys[it.k] ? "grayscale(1) opacity(0.35)" : undefined,
+                  }}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     toggleExclude(it.k);
@@ -627,18 +767,33 @@ export default function CropPage() {
         title: "appName",
         dataIndex: "appName",
         key: "appName",
-        width: 100,
+        width: isWideScreen ? 240 : 120,
         align: "center",
         render: (v: any) => {
           const s = v ? String(v) : "";
-          return s ? <Typography.Text>{s}</Typography.Text> : <Typography.Text type="secondary">-</Typography.Text>;
+          return s ? (
+            <Typography.Text
+              title={s}
+              style={{
+                display: "block",
+                maxWidth: "100%",
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                lineHeight: 1.15,
+              }}
+            >
+              {s}
+            </Typography.Text>
+          ) : (
+            <Typography.Text type="secondary">-</Typography.Text>
+          );
         },
       },
       {
         title: "lang",
         dataIndex: "lang",
         key: "lang",
-        width: 50,
+        width: 40,
         align: "center",
         render: (v: any) => {
           const s = v ? String(v) : "";
@@ -647,16 +802,25 @@ export default function CropPage() {
       },
     );
     base.push({
-      title: "任务",
+      title: "job",
       dataIndex: "jobId",
       key: "jobId",
-      width: 100,
+      width: 50,
       align: "center",
       render: (v: any) => {
         const s = v ? String(v) : "";
         return s ? (
-          <Typography.Link href={`/batch?jobId=${encodeURIComponent(s)}`} target="_blank">
-            {s}
+          <Typography.Link
+            href={`/batch?jobId=${encodeURIComponent(s)}`}
+            target="_blank"
+            title={s}
+            style={{
+              display: "inline-block",
+              maxWidth: "100%",
+              whiteSpace: "nowrap",
+            }}
+          >
+            跳转
           </Typography.Link>
         ) : (
           <Typography.Text type="secondary">-</Typography.Text>
@@ -665,12 +829,49 @@ export default function CropPage() {
     });
 
     return base;
-  }, [ratioKeys, excludedKeys, openRowPreview, toggleExclude]);
+  }, [excludedKeys, isWideScreen, openRowPreview, outputThumbSize, ratioKeys, sourceThumbSize, toggleExclude]);
 
   return (
     <AdminShell defaultSelectedKey="/crop" headerTitle="裁图展示">
       {contextHolder}
       <Card styles={{ body: { padding: 8 } }}>
+        <style jsx global>{`
+          .cropTable .ant-table {
+            font-size: 12px;
+          }
+          .cropTable .ant-table-thead > tr > th,
+          .cropTable .ant-table-tbody > tr > td {
+            padding: 4px 6px !important;
+          }
+          .cropTable .ant-typography {
+            font-size: 12px;
+          }
+          /* 输出缩略图：强制单行，不换行（可横向滚动） */
+          .cropTable .cropRatioRow::-webkit-scrollbar {
+            height: 6px;
+          }
+          .cropTable .cropRatioRow::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 999px;
+          }
+
+          /* 固定底部横向滚动条（同步表格横向滚动） */
+          .cropStickyHScroll {
+            height: 12px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(6px);
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+          }
+          .cropStickyHScroll::-webkit-scrollbar {
+            height: 10px;
+          }
+          .cropStickyHScroll::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.18);
+            border-radius: 999px;
+          }
+        `}</style>
         <Image.PreviewGroup
           items={previewItems.map((x) => x.url)}
           preview={{
@@ -724,6 +925,26 @@ export default function CropPage() {
               setCropPage(1);
             }}
           />
+          <Space size={6}>
+            <Typography.Text type="secondary">原图</Typography.Text>
+            <InputNumber
+              size="small"
+              min={120}
+              max={520}
+              step={20}
+              value={sourceThumbSize}
+              onChange={(v) => setSourceThumbSize(Number(v || 220))}
+            />
+            <Typography.Text type="secondary">输出</Typography.Text>
+            <InputNumber
+              size="small"
+              min={64}
+              max={260}
+              step={8}
+              value={outputThumbSize}
+              onChange={(v) => setOutputThumbSize(Number(v || 120))}
+            />
+          </Space>
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchRecords} loading={recordsLoading}>
             刷新
           </Button>
@@ -757,33 +978,54 @@ export default function CropPage() {
             </Button>
           </Space>
         </Space>
-        <Table
-          size="small"
-          rowKey="id"
-          loading={recordsLoading}
-          dataSource={records}
-          pagination={{
-            current: cropPage,
-            pageSize: cropPageSize,
-            total: recordsTotal,
-            showSizeChanger: true,
-            pageSizeOptions: ["10", "20", "50", "100"],
-            showTotal: (total) => `共 ${total} 条`,
-            onChange: (page, pageSize) => {
-              setCropPage(page);
-              if (pageSize !== cropPageSize) {
-                setCropPageSize(pageSize);
-                setCropPage(1);
-              }
-            },
-          }}
-          columns={columns}
-          scroll={{ x: "max-content" }}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: (keys) => setSelectedRowKeys(keys as string[]),
-          }}
-        />
+        <div ref={tableWrapRef} style={{ paddingBottom: stickyHScroll.visible ? 14 : 0 }}>
+          <Table
+            className="cropTable"
+            size="small"
+            rowKey="id"
+            loading={recordsLoading}
+            dataSource={records}
+            pagination={{
+              current: cropPage,
+              pageSize: cropPageSize,
+              total: recordsTotal,
+              showSizeChanger: true,
+              pageSizeOptions: ["10", "20", "50", "100"],
+              showTotal: (total) => `共 ${total} 条`,
+              onChange: (page, pageSize) => {
+                setCropPage(page);
+                if (pageSize !== cropPageSize) {
+                  setCropPageSize(pageSize);
+                  setCropPage(1);
+                }
+              },
+            }}
+            columns={columns}
+            // 不强制按内容撑开整张表，1920 下尽量不出现表格外层左右滚动条
+            scroll={{ x: 1600 }}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (keys) => setSelectedRowKeys(keys as string[]),
+            }}
+          />
+        </div>
+
+        {stickyHScroll.visible ? (
+          <div
+            ref={stickyHScrollRef}
+            className="cropStickyHScroll"
+            style={{
+              position: "fixed",
+              left: stickyHScroll.left,
+              bottom: 0,
+              width: stickyHScroll.width,
+              zIndex: 999,
+            }}
+          >
+            {/* 只用来撑出 scrollWidth，从而生成滚动条 */}
+            <div style={{ width: stickyHScroll.scrollWidth, height: 1 }} />
+          </div>
+        ) : null}
       </Card>
     </AdminShell>
   );

@@ -106,17 +106,18 @@ export function getCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: { 
   const appDesc = appName ? `${appName}应用的` : '参考图中应用的（请根据参考图自行推断应用名称）';
   const langDesc = lang ? `${lang}语言的` : '参考图中语言的（请根据参考图自行推断语言）';
   return `## 目标
-生成一张${getRatioDesc(aspectRatio)}。从参考图中提取${appDesc}图标与推广文字，作为唯一主体放在画面中心。
+生成一张${getRatioDesc(aspectRatio)}。从参考图中提取${appDesc}图标与文字，作为唯一主体放在画面中心。
 
 ## 要求
-- **构图**：主体（图标 + 文案）占画面约 65% - 85%。
-- **层级**：图标最大最醒目；文案仅 1 - 2 行短语（可适当优化文案内容），清晰可读。
-- **背景处理**：保留裁剪区域的背景质感。
+- **构图**：主体（图标 + 文案）占画面约 65% - 75%。
+- **层级**：应用图标最大最醒目，文字次之。
+- **文字**：文字提取1-2条核心文字,可以换行或者适当精简优化文字内容不要显得过于拥挤。
+- **背景**：保留裁剪区域的背景。
 
 ## 严格限制（必须遵守）
-- **图标**：外观必须与参考图 100% 一致（形状/颜色/细节不改、不重绘、不变形）。
+- **图标**：外观必须与参考图${appDesc}图标100%一致。
 - **文字**：语言必须为${langDesc}。
-- **元素**：其他无关元素一律丢弃。`;
+- **元素**：其他元素一律丢弃。`;
 }
 
 export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
@@ -234,7 +235,7 @@ export function getCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: {
 
 export function getCutVerticalCollagePrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
   return `1、生成一张${getRatioDesc(aspectRatio)}，上下结构且上下都为原图的组合图。
-  2、上下两部分应该是参考图的完整视觉呈现，确保图片内容自然协调，没有被挤压或拉伸的痕迹。
+  2、上下两部分应该是参考图的完整视觉呈现，确保图片内容自然协调，其中元素不能有被挤压或拉伸的痕迹。
   3、${prompt}
   `;
 }
