@@ -22,6 +22,11 @@ export async function GET(req: Request) {
     const qAppName = String(searchParams.get("appName") || "").trim();
     const qAppNameNorm = qAppName.toLowerCase();
     const urlsParam = searchParams.get("urls") || "";
+    const sortByCostRaw = String(searchParams.get("sortByCost") || "default")
+      .trim()
+      .toLowerCase();
+    const sortByCost: "default" | "asc" | "desc" =
+      sortByCostRaw === "asc" ? "asc" : sortByCostRaw === "desc" ? "desc" : "default";
     const qPageRaw = Number(searchParams.get("page") || "1");
     const qPageSizeRaw = Number(searchParams.get("pageSize") || "100");
     const page = Number.isFinite(qPageRaw) && qPageRaw > 0 ? Math.floor(qPageRaw) : 1;
@@ -99,16 +104,53 @@ export async function GET(req: Request) {
       } else {
         const absDir = path.join(publicMaterialDir, resolvedAppName);
         const names = await fs.readdir(absDir).catch(() => []);
+        // 注意：这里缓存“原始文件列表”，排序会受 sortByCost 影响（必须先排序再分页）
         all = names
           .map((x) => String(x || "").trim())
-          .filter((x) => x && isImageFileName(x))
-          .sort((a, b) => a.localeCompare(b));
+          .filter((x) => x && isImageFileName(x));
         cachedFilesByApp.set(resolvedAppName, { at: now, files: all });
       }
-      const total = all.length;
+
+      const extractCostFromFilename = (filename: string): number | null => {
+        const base = String(filename || "").trim();
+        if (!base) return null;
+        const stem = base.replace(/\.[^.]+$/, "");
+        const parts = stem.split("-").map((x) => x.trim()).filter(Boolean);
+        const isNum = (s: string) => /^\d+$/.test(s);
+        // 参考图下载命名：{idPart}-{costInt}[ -{k} ].ext
+        // - 优先取倒数第二段（当最后一段是并发/冲突后缀时）
+        if (parts.length >= 3 && isNum(parts[parts.length - 1]!) && isNum(parts[parts.length - 2]!)) {
+          return Number(parts[parts.length - 2]!);
+        }
+        if (parts.length >= 2 && isNum(parts[parts.length - 1]!)) {
+          return Number(parts[parts.length - 1]!);
+        }
+        return null;
+      };
+
+      const sortedAll =
+        sortByCost === "default"
+          ? [...all].sort((a, b) => a.localeCompare(b))
+          : [...all].sort((a, b) => {
+            const ca = extractCostFromFilename(a);
+            const cb = extractCostFromFilename(b);
+            const aHas = typeof ca === "number" && Number.isFinite(ca);
+            const bHas = typeof cb === "number" && Number.isFinite(cb);
+            // 没有 cost 的统一排到最后（不论 asc/desc）
+            if (aHas && !bHas) return -1;
+            if (!aHas && bHas) return 1;
+            if (!aHas && !bHas) return a.localeCompare(b);
+            if (ca === cb) return a.localeCompare(b);
+            return sortByCost === "asc" ? (ca! - cb!) : (cb! - ca!);
+          });
+
+      const total = sortedAll.length;
       const start = (page - 1) * pageSize;
-      const slice = all.slice(start, start + pageSize).map((file) => `/material/${encodeURIComponent(resolvedAppName)}/${encodeURIComponent(file)}`);
-      return NextResponse.json({ ok: true, appNames: appDirs, appName: resolvedAppName, page, pageSize, total, images: slice }, { headers: cacheHeaders });
+      const slice = sortedAll.slice(start, start + pageSize).map((file) => `/material/${encodeURIComponent(resolvedAppName)}/${encodeURIComponent(file)}`);
+      return NextResponse.json(
+        { ok: true, appNames: appDirs, appName: resolvedAppName, page, pageSize, total, images: slice },
+        { headers: cacheHeaders }
+      );
     }
 
     const groups: Array<{ appName: string; images: string[] }> = [];

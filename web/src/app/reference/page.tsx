@@ -80,9 +80,17 @@ export default function ReferenceGalleryPage() {
       const lastSeg = lastSegRaw.split("?")[0]?.split("#")[0] || "";
       const decoded = decodeURIComponent(lastSeg);
       const base = decoded.replace(/\.[^.]+$/, "");
-      const m = base.match(/-(\d+)$/);
-      const cost = m?.[1] ?? "";
-      return cost;
+      const parts = base.split("-").map((x) => x.trim()).filter(Boolean);
+      const isNum = (s: string) => /^\d+$/.test(s);
+      // 文件命名：{idPart}-{costInt}[ -{k} ].ext
+      // - 如果最后一段是并发/冲突后缀，则 cost 在倒数第二段
+      if (parts.length >= 3 && isNum(parts[parts.length - 1]!) && isNum(parts[parts.length - 2]!)) {
+        return parts[parts.length - 2]!;
+      }
+      if (parts.length >= 2 && isNum(parts[parts.length - 1]!)) {
+        return parts[parts.length - 1]!;
+      }
+      return "";
     } catch {
       return "";
     }
@@ -96,18 +104,8 @@ export default function ReferenceGalleryPage() {
     return map;
   }, [images, getCostFromImageUrl]);
 
-  const sortedImages = useMemo(() => {
-    if (sortByCost === "default") return images;
-    return [...images].sort((a, b) => {
-      const costA = imageCostMap.get(a) ?? "";
-      const costB = imageCostMap.get(b) ?? "";
-      const numA = parseInt(costA, 10);
-      const numB = parseInt(costB, 10);
-      const valA = Number.isFinite(numA) ? numA : sortByCost === "asc" ? Infinity : -Infinity;
-      const valB = Number.isFinite(numB) ? numB : sortByCost === "asc" ? Infinity : -Infinity;
-      return sortByCost === "asc" ? valA - valB : valB - valA;
-    });
-  }, [images, imageCostMap, sortByCost]);
+  // 注意：排序必须由后端完成（先排序再分页），避免分页导致的全局排序错误
+  const imagesToRender = images;
 
   const fetchAppNames = useCallback(async () => {
     setLoading(true);
@@ -144,6 +142,7 @@ export default function ReferenceGalleryPage() {
         qs.set("appName", a);
         qs.set("page", String(pageNum || 1));
         qs.set("pageSize", String(PAGE_SIZE));
+        if (sortByCost !== "default") qs.set("sortByCost", sortByCost);
         const res = await fetch(`/api/reference-images?${qs.toString()}`, { method: "GET" });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
@@ -167,7 +166,7 @@ export default function ReferenceGalleryPage() {
         else setLoading(false);
       }
     },
-    [enqueueNotice, uniqKeepOrder]
+    [enqueueNotice, uniqKeepOrder, sortByCost]
   );
 
   const handleFetchReferenceImages = useCallback(async () => {
@@ -206,7 +205,7 @@ export default function ReferenceGalleryPage() {
     setTotal(0);
     setLoadedPageCount(0);
     fetchImages(appName, 1, false);
-  }, [appName, fetchImages]);
+  }, [appName, sortByCost, fetchImages]);
 
   useEffect(() => {
     setSelectedKeys([]);
@@ -482,7 +481,7 @@ export default function ReferenceGalleryPage() {
                     }}
                   />
                 ) : null}
-                {sortedImages.map((url) => {
+                {imagesToRender.map((url) => {
                   const key = `${appName}|${url}`;
                   const selected = selectedKeySet.has(key);
                   const cost = imageCostMap.get(url) ?? "";
