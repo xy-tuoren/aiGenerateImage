@@ -35,9 +35,9 @@ export default function CropPage() {
   const recordCacheRef = useRef<Map<string, CutRecordItem>>(new Map());
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
-  // 表格展示默认尽可能放大缩略图；如需更大/更小可在工具栏手动调节
-  const [outputThumbSize, setOutputThumbSize] = useState<number>(120);
-  const [sourceThumbSize, setSourceThumbSize] = useState<number>(220);
+  // 缩略图尺寸固定（如需恢复调节，可把工具栏的输入框加回来）
+  const [outputThumbSize] = useState<number>(120);
+  const [sourceThumbSize] = useState<number>(220);
   const [isWideScreen, setIsWideScreen] = useState(false);
   const tableWrapRef = useRef<HTMLDivElement | null>(null);
   const tableScrollElRef = useRef<HTMLElement | null>(null);
@@ -727,7 +727,7 @@ export default function CropPage() {
               gap: 4,
               overflowX: "auto",
               overflowY: "hidden",
-              justifyContent: "flex-start",
+              justifyContent: "center",
             }}
           >
             {items
@@ -767,7 +767,7 @@ export default function CropPage() {
         title: "appName",
         dataIndex: "appName",
         key: "appName",
-        width: isWideScreen ? 240 : 120,
+        width: isWideScreen ? 220 : 120,
         align: "center",
         render: (v: any) => {
           const s = v ? String(v) : "";
@@ -925,26 +925,6 @@ export default function CropPage() {
               setCropPage(1);
             }}
           />
-          <Space size={6}>
-            <Typography.Text type="secondary">原图</Typography.Text>
-            <InputNumber
-              size="small"
-              min={120}
-              max={520}
-              step={20}
-              value={sourceThumbSize}
-              onChange={(v) => setSourceThumbSize(Number(v || 220))}
-            />
-            <Typography.Text type="secondary">输出</Typography.Text>
-            <InputNumber
-              size="small"
-              min={64}
-              max={260}
-              step={8}
-              value={outputThumbSize}
-              onChange={(v) => setOutputThumbSize(Number(v || 120))}
-            />
-          </Space>
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchRecords} loading={recordsLoading}>
             刷新
           </Button>
