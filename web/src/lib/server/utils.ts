@@ -223,7 +223,7 @@ const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(mi
 
 export const CUT_TEMPLATE_TEMPERATURE: Record<string, number> = {
   getCutLogoFinalPrompt: 0.5,
-  getCutOtherFinalPrompt: 1.5,
+  getCutOtherFinalPrompt: 1.1,
   getCutScaleFinalPrompt: 1,
   getCutVerticalCollagePrompt: 0.5,
   // stitchLongImage1024 不走 Gemini 生图，这里无需配置

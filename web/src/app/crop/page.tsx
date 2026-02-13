@@ -33,6 +33,15 @@ export default function CropPage() {
   const [rawRecords, setRawRecords] = useState<CutRecordItem[]>([]);
   const [recordsTotal, setRecordsTotal] = useState(0);
   const recordCacheRef = useRef<Map<string, CutRecordItem>>(new Map());
+  // UI 行 key 需要绝对唯一且稳定（批量时后端 id 若碰撞，会导致表格/缩略图复用错位）
+  const UI_ROW_SEP = "\u0001";
+  const getUiRowKey = useCallback((row: CutRecordItem) => {
+    const id = String((row as any)?.id ?? "");
+    const jobId = String((row as any)?.jobId ?? "");
+    const src = String((row as any)?.sourceAbsPath ?? (row as any)?.sourceUrl ?? "");
+    // id|jobId|src：尽量避免同名文件/多任务批量时 key 冲突
+    return `${id}${UI_ROW_SEP}${jobId}${UI_ROW_SEP}${src}`;
+  }, []);
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
   // 缩略图尺寸固定（如需恢复调节，可把工具栏的输入框加回来）
@@ -239,7 +248,7 @@ export default function CropPage() {
       const arr = Array.isArray(data.items) ? data.items : [];
       for (const r of arr) {
         if (r && typeof r === "object" && (r as any).id) {
-          recordCacheRef.current.set(String((r as any).id), r as any);
+          recordCacheRef.current.set(getUiRowKey(r as any), r as any);
         }
       }
       setRawRecords(arr);
@@ -250,7 +259,7 @@ export default function CropPage() {
     } finally {
       setRecordsLoading(false);
     }
-  }, [appName, cropPage, cropPageSize, lang, messageApi]);
+  }, [appName, cropPage, cropPageSize, getUiRowKey, lang, messageApi]);
 
   const downloadSelected = async () => {
     if (!selectedRowKeys.length) {
@@ -263,8 +272,9 @@ export default function CropPage() {
     const now = new Date();
     const datePrefix = `${pad2(now.getMonth() + 1)}${pad2(now.getDate())}`;
     const selectedRows = selectedRowKeys
-      .map((id) => recordIdToRow.get(id) || recordCacheRef.current.get(id))
+      .map((k) => recordKeyToRow.get(k) || recordCacheRef.current.get(k))
       .filter(Boolean) as CutRecordItem[];
+    const selectedIds = selectedRows.map((r) => String(r.id)).filter(Boolean);
     const pickedAppNames = selectedRows.map((d) => String(d.appName || "").trim()).filter(Boolean);
     const pickedLangs = selectedRows.map((d) => String(d.lang || "").trim()).filter(Boolean);
     const appNamePicked =
@@ -299,7 +309,7 @@ export default function CropPage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              ids: selectedRowKeys,
+              ids: selectedIds,
               startFolderIndex: downloadStartFolderIndex,
               fixedCode: downloadFixedCode,
               excludedKeys: Object.keys(excludedKeys),
@@ -353,7 +363,7 @@ export default function CropPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ids: selectedRowKeys,
+          ids: selectedIds,
           startFolderIndex: downloadStartFolderIndex,
           fixedCode: downloadFixedCode,
           excludedKeys: Object.keys(excludedKeys),
@@ -392,11 +402,11 @@ export default function CropPage() {
     }
   };
 
-  const recordIdToRow = useMemo(() => {
+  const recordKeyToRow = useMemo(() => {
     const m = new Map<string, CutRecordItem>();
-    for (const r of records) m.set(String(r.id), r);
+    for (const r of records) m.set(getUiRowKey(r), r);
     return m;
-  }, [records]);
+  }, [getUiRowKey, records]);
 
   const excludedKeysScoped = useMemo(() => {
     const keys = Object.keys(excludedKeys || {});
@@ -404,16 +414,16 @@ export default function CropPage() {
     if (!selectedRowKeys.length) return keys;
     const selectedSet = new Set(selectedRowKeys);
     return keys.filter((k) => {
-      const id = k.split("|", 1)[0];
-      return id && selectedSet.has(id);
+      const rowK = k.split("|", 1)[0];
+      return rowK && selectedSet.has(rowK);
     });
   }, [excludedKeys, selectedRowKeys]);
 
   const selectedRows = useMemo(() => {
     return selectedRowKeys
-      .map((id) => recordIdToRow.get(id) || recordCacheRef.current.get(id))
+      .map((k) => recordKeyToRow.get(k) || recordCacheRef.current.get(k))
       .filter(Boolean) as CutRecordItem[];
-  }, [recordIdToRow, selectedRowKeys]);
+  }, [recordKeyToRow, selectedRowKeys]);
 
   const regenerateSelectedSquarePortrait = async () => {
     if (!selectedRows.length) {
@@ -438,13 +448,14 @@ export default function CropPage() {
         if (!row?.sourceUrl) continue;
         const outs = row.outputs && typeof row.outputs === "object" ? row.outputs : undefined;
         if (!outs) continue;
+        const rowK = getUiRowKey(row);
 
         for (const ratio of Object.keys(outs)) {
           if (!isSquareOrPortrait(ratio)) continue;
           const byTpl = (outs as any)[ratio] as Record<string, CutRecordOutputItem> | undefined;
           if (!byTpl || typeof byTpl !== "object") continue;
           for (const templateName of Object.keys(byTpl)) {
-            const k = `${row.id}|${ratio}|${templateName}`;
+            const k = `${rowK}|${ratio}|${templateName}`;
             if (dedupe.has(k)) continue;
             dedupe.add(k);
             items.push({
@@ -504,9 +515,9 @@ export default function CropPage() {
     try {
       const items: Array<{ sourceUrl: string; ratio: string; templateName: string; appName?: string; lang?: string }> = [];
       for (const k of excludedKeysScoped) {
-        const [id, ratio, templateName] = k.split("|");
-        if (!id || !ratio || !templateName) continue;
-        const row = recordIdToRow.get(id) || recordCacheRef.current.get(id);
+        const [rowK, ratio, templateName] = k.split("|");
+        if (!rowK || !ratio || !templateName) continue;
+        const row = recordKeyToRow.get(rowK) || recordCacheRef.current.get(rowK);
         if (!row?.sourceUrl) continue;
         items.push({
           sourceUrl: String(row.sourceUrl),
@@ -571,6 +582,7 @@ export default function CropPage() {
   const buildRowPreviewItems = useCallback((row: CutRecordItem) => {
     const outs = row.outputs && typeof row.outputs === "object" ? row.outputs : undefined;
     if (!outs) return [];
+    const rowK = getUiRowKey(row);
     const ratioOrder: Record<string, number> = { "1:1": 1, "4:5": 2, "16:9": 3, "9:16": 4 };
     const ratios = Object.keys(outs).sort((a, b) => (ratioOrder[a] ?? 999) - (ratioOrder[b] ?? 999) || a.localeCompare(b));
     const templateOrder = ["getCutLogoFinalPrompt", "getCutOtherFinalPrompt", "getCutScaleFinalPrompt"];
@@ -584,11 +596,11 @@ export default function CropPage() {
         const it = (byTpl as any)[tpl] as CutRecordOutputItem | undefined;
         const url = it?.outputUrl ? String(it.outputUrl) : "";
         if (!url) continue;
-        items.push({ k: `${row.id}|${ratio}|${tpl}`, url });
+        items.push({ k: `${rowK}|${ratio}|${tpl}`, url });
       }
     }
     return items;
-  }, []);
+  }, [getUiRowKey]);
 
   const openRowPreview = useCallback((row: CutRecordItem, k: string) => {
     const items = buildRowPreviewItems(row);
@@ -713,7 +725,7 @@ export default function CropPage() {
           const url = it?.outputUrl ? String(it.outputUrl) : "";
           const err = it?.error ? String(it.error) : "";
           const st = it?.status ? String(it.status) : "";
-          const k = `${row.id}|${ratio}|${tpl}`;
+          const k = `${getUiRowKey(row)}|${ratio}|${tpl}`;
           return { tpl, url, err, st, k };
         });
         const hasAnyUrl = items.some((it) => it.url);
@@ -734,7 +746,7 @@ export default function CropPage() {
               .filter((it) => it.url)
               .map((it) => (
                 <div
-                  key={it.tpl}
+                  key={it.k}
                   title={it.tpl}
                   style={{
                     width: outputThumbSize,
@@ -829,7 +841,7 @@ export default function CropPage() {
     });
 
     return base;
-  }, [excludedKeys, isWideScreen, openRowPreview, outputThumbSize, ratioKeys, sourceThumbSize, toggleExclude]);
+  }, [excludedKeys, getUiRowKey, isWideScreen, openRowPreview, outputThumbSize, ratioKeys, sourceThumbSize, toggleExclude]);
 
   return (
     <AdminShell defaultSelectedKey="/crop" headerTitle="裁图展示">
@@ -962,7 +974,7 @@ export default function CropPage() {
           <Table
             className="cropTable"
             size="small"
-            rowKey="id"
+            rowKey={getUiRowKey}
             loading={recordsLoading}
             dataSource={records}
             pagination={{
