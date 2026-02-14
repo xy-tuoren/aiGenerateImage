@@ -7,8 +7,8 @@ const fs = require('fs');
 const path = require('path');
 const AdmZip = require('adm-zip');
 
-const TARGET_DIR = 'Z:\\陈靖\\1图片素材';
-// const TARGET_DIR = 'Z:\\刘杰梅\\肖轶的图片素材';
+// const TARGET_DIR = 'Z:\\陈靖\\1图片素材';
+const TARGET_DIR = 'Z:\\刘杰梅\\肖轶的图片素材';
 
 const getZipFiles = (dir, files = []) => {
   if (!fs.existsSync(dir)) {

@@ -29,6 +29,16 @@ type CutRecordItem = {
 
 export default function CropPage() {
   const [messageApi, contextHolder] = message.useMessage();
+  const isMountedRef = useRef(true);
+  const downloadAbortRef = useRef<AbortController | null>(null);
+  const [toast, setToast] = useState<
+    | {
+        type: "success" | "error" | "warning" | "info";
+        content: string;
+        id: number;
+      }
+    | null
+  >(null);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [rawRecords, setRawRecords] = useState<CutRecordItem[]>([]);
   const [recordsTotal, setRecordsTotal] = useState(0);
@@ -73,6 +83,34 @@ export default function CropPage() {
   const [appName, setAppName] = useState<string>("");
   const [lang, setLang] = useState<string>("");
   const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      downloadAbortRef.current?.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    // 通过 effect 触发，避免 React 18 并发模式下 antd 提示 “notice in render”
+    switch (toast.type) {
+      case "success":
+        messageApi.success(toast.content);
+        break;
+      case "error":
+        messageApi.error(toast.content);
+        break;
+      case "warning":
+        messageApi.warning(toast.content);
+        break;
+      case "info":
+      default:
+        messageApi.info(toast.content);
+        break;
+    }
+  }, [toast, messageApi]);
 
   const sortCutRecordsForDisplay = useCallback((items: CutRecordItem[]) => {
     const langRank = new Map<string, number>(SUPPORTED_LANGUAGES.map((x, i) => [String(x).toLowerCase(), i]));
@@ -303,7 +341,10 @@ export default function CropPage() {
       }
 
       if (fileHandle) {
-        setDownloading(true);
+        if (isMountedRef.current) setDownloading(true);
+        downloadAbortRef.current?.abort();
+        const controller = new AbortController();
+        downloadAbortRef.current = controller;
         try {
           const res = await fetch("/api/cut-records/download", {
             method: "POST",
@@ -314,6 +355,7 @@ export default function CropPage() {
               fixedCode: downloadFixedCode,
               excludedKeys: Object.keys(excludedKeys),
             }),
+            signal: controller.signal,
           });
           if (!res.ok) {
             const data = await res.json().catch(() => null);
@@ -344,19 +386,30 @@ export default function CropPage() {
             }
             throw e;
           }
-          messageApi?.success("已保存");
-          setSelectedRowKeys([]);
+          if (isMountedRef.current) {
+            setToast({ type: "success", content: "已保存", id: Date.now() });
+            setSelectedRowKeys([]);
+          }
           return;
         } catch (e) {
-          messageApi.error(e instanceof Error ? e.message : String(e));
+          const anyErr = e as any;
+          const name = anyErr?.name ? String(anyErr.name) : "";
+          if (name === "AbortError") return;
+          if (isMountedRef.current) {
+            setToast({ type: "error", content: e instanceof Error ? e.message : String(e), id: Date.now() });
+          }
           return;
         } finally {
-          setDownloading(false);
+          if (downloadAbortRef.current === controller) downloadAbortRef.current = null;
+          if (isMountedRef.current) setDownloading(false);
         }
       }
     }
 
-    setDownloading(true);
+    if (isMountedRef.current) setDownloading(true);
+    downloadAbortRef.current?.abort();
+    const controller = new AbortController();
+    downloadAbortRef.current = controller;
     try {
       // 发送下载请求
       const res = await fetch("/api/cut-records/download", {
@@ -368,6 +421,7 @@ export default function CropPage() {
           fixedCode: downloadFixedCode,
           excludedKeys: Object.keys(excludedKeys),
         }),
+        signal: controller.signal,
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -390,15 +444,20 @@ export default function CropPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      messageApi.success("下载已开始");
-      setSelectedRowKeys([]);
+      if (isMountedRef.current) {
+        setToast({ type: "success", content: "下载已开始", id: Date.now() });
+        setSelectedRowKeys([]);
+      }
     } catch (e) {
       const anyErr = e as any;
       const name = anyErr?.name ? String(anyErr.name) : "";
       if (name === "AbortError") return;
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      if (isMountedRef.current) {
+        setToast({ type: "error", content: e instanceof Error ? e.message : String(e), id: Date.now() });
+      }
     } finally {
-      setDownloading(false);
+      if (downloadAbortRef.current === controller) downloadAbortRef.current = null;
+      if (isMountedRef.current) setDownloading(false);
     }
   };
 

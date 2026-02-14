@@ -128,7 +128,7 @@ export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: {
 
 ## 构图要求
 - **整体画面**：要有“铺满感”，主体（图标 + 最大元素）+ 文字区域尽量占满画面高度。
-- **禁止**：出现明显的大面积上/下/左/右只有背景的纯色空洞。
+- **禁止**：出现明显的大面积上/下/左/右只有背景的空洞。
 - **手段**（必要时可用）：重新排版、适度放大主体、调整元素位置，或用同风格背景延展/补全填满画面边缘，让构图紧凑饱满。
 
 ## 文案要求
@@ -234,10 +234,26 @@ export function getCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: {
 }
 
 export function getCutVerticalCollagePrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
-  return `1、生成一张${getRatioDesc(aspectRatio)}，上下结构且上下都为原图的组合图。
-  2、上下两部分应该是参考图的完整视觉呈现，确保图片内容自然协调，其中元素不能有被挤压或拉伸的痕迹。
-  3、${prompt}
-  `;
+  return `## 目标
+生成一张${getRatioDesc(aspectRatio)}的上下拼图（上半部分与下半部分都为同一张参考图）。
+
+## 构图要求
+- 上下两部分都应尽可能呈现参考图的完整视觉内容（不要只截取局部主体）。
+- 画面内容自然协调。
+
+## 严格限制（必须遵守）
+- **严禁拉伸变形**：绝对禁止对任一部分进行非等比缩放、挤压、拉伸、扭曲、压缩。
+- 人物/文字/物体比例必须自然真实，不得出现任何变形痕迹。
+
+## 比例适配方式（仅允许以下手段）
+- 等比缩放（保持原始比例）。
+- 合理留白/补边：可延展背景、模糊背景、同风格背景填充。
+- 适度裁切（优先裁切背景区域，避免裁掉关键信息）。
+- **禁止**：为了填满画面而拉伸内容。
+
+## 额外指令
+${prompt}
+`;
 }
 
 export function getBackgroundPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
