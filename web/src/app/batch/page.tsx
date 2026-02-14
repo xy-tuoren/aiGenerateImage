@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card, Form, InputNumber, Progress, Select, Space, Table, Tabs, Typography, message, Image, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { PlayCircleOutlined, ReloadOutlined } from "@ant-design/icons";
@@ -90,6 +90,31 @@ export default function BatchPage() {
   const STUCK_RETRY_MS = 90 * 1000;
   const STUCK_RETRY_SECONDS = Math.round(STUCK_RETRY_MS / 1000);
 
+  // antd messageApi may warn if triggered while React is concurrently rendering.
+  // Route all toasts through an effect to avoid "calling notice in render" warnings.
+  type ToastKind = "success" | "error" | "info" | "warning";
+  const toastQueueRef = useRef<Array<{ kind: ToastKind; content: string }>>([]);
+  const toastTickRef = useRef(0);
+  const [toastTick, setToastTick] = useState(0);
+  const lastHandledToastTickRef = useRef(0);
+
+  const enqueueToast = useCallback((kind: ToastKind, content: string) => {
+    toastQueueRef.current.push({ kind, content });
+    toastTickRef.current += 1;
+    setToastTick(toastTickRef.current);
+  }, []);
+
+  useEffect(() => {
+    // Idempotent under React.StrictMode double-invocation.
+    if (toastTick === lastHandledToastTickRef.current) return;
+    lastHandledToastTickRef.current = toastTick;
+    const toasts = toastQueueRef.current.splice(0);
+    for (const t of toasts) {
+      const fn = (messageApi as any)?.[t.kind];
+      if (typeof fn === "function") fn(t.content);
+    }
+  }, [toastTick, messageApi]);
+
   const [configsLoading, setConfigsLoading] = useState(false);
   const [configs, setConfigs] = useState<ConfigItem[]>([]);
   const [job, setJob] = useState<Job | null>(null);
@@ -145,12 +170,12 @@ export default function BatchPage() {
       const res = await fetch("/api/configs", { method: "GET" });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
-        messageApi.error(data?.error || "获取配置失败");
+        enqueueToast("error", data?.error || "获取配置失败");
         return;
       }
       setConfigs(Array.isArray(data.items) ? data.items : []);
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueToast("error", e instanceof Error ? e.message : String(e));
     } finally {
       setConfigsLoading(false);
     }
@@ -164,7 +189,7 @@ export default function BatchPage() {
       if (!res.ok || !data?.ok) throw new Error(data?.error || "获取任务列表失败");
       setJobList(Array.isArray(data.items) ? data.items : []);
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueToast("error", e instanceof Error ? e.message : String(e));
     } finally {
       setJobListLoading(false);
     }
@@ -185,7 +210,7 @@ export default function BatchPage() {
       const res = await fetch("/api/generation-records?limit=200", { method: "GET" });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
-        messageApi.error(data?.error || "获取历史记录失败");
+        enqueueToast("error", data?.error || "获取历史记录失败");
         return;
       }
       const arr = Array.isArray(data.items) ? data.items : [];
@@ -248,7 +273,7 @@ export default function BatchPage() {
       }).sort((a, b) => new Date(b.createdAt || 0 as any).getTime() - new Date(a.createdAt || 0 as any).getTime());
       setHistory(grouped);
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueToast("error", e instanceof Error ? e.message : String(e));
     } finally {
       setHistoryLoading(false);
     }
@@ -307,7 +332,7 @@ export default function BatchPage() {
       const j = await fetchJob(id);
       if (j?.status !== "completed" && j?.status !== "failed") startPolling(id);
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueToast("error", e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -393,7 +418,7 @@ export default function BatchPage() {
     if (!jobId) return;
     const cfgIds = Array.isArray((row as any).subConfigIds) ? (row as any).subConfigIds.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
     if (!cfgIds.length) {
-      messageApi.error("configIds 为空，无法重试");
+      enqueueToast("error", "configIds 为空，无法重试");
       return;
     }
     setRetryingKey(String((row as any).id || (row as any).configId || cfgIds[0] || ""));
@@ -405,12 +430,12 @@ export default function BatchPage() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) throw new Error(data?.error || "重试");
-      messageApi.success(`已重试 ${Number(data?.retried || 0)} 个配置`);
+      enqueueToast("success", `已重试 ${Number(data?.retried || 0)} 个配置`);
       await fetchJob(jobId);
       startPolling(jobId);
       fetchJobList();
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueToast("error", e instanceof Error ? e.message : String(e));
     } finally {
       setRetryingKey("");
     }
@@ -441,7 +466,7 @@ export default function BatchPage() {
     );
 
     if (!cfgIds.length) {
-      messageApi.info("当前任务没有失败或超时的配置可重试");
+      enqueueToast("info", "当前任务没有失败或超时的配置可重试");
       return;
     }
 
@@ -454,12 +479,12 @@ export default function BatchPage() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) throw new Error(data?.error || "重试");
-      messageApi.success(`已重试 ${Number(data?.retried || 0)} 个配置`);
+      enqueueToast("success", `已重试 ${Number(data?.retried || 0)} 个配置`);
       await fetchJob(jobId);
       startPolling(jobId);
       fetchJobList();
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueToast("error", e instanceof Error ? e.message : String(e));
     } finally {
       setRetryingAll(false);
     }
@@ -806,7 +831,7 @@ export default function BatchPage() {
     const values = await form.validateFields();
     const configIds = Array.isArray(values.configIds) ? values.configIds : [];
     if (!configIds.length) {
-      messageApi.error("请先选择配置");
+      enqueueToast("error", "请先选择配置");
       return;
     }
     setStarting(true);
@@ -825,7 +850,7 @@ export default function BatchPage() {
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
-        messageApi.error(data?.error || "启动失败");
+        enqueueToast("error", data?.error || "启动失败");
         return;
       }
       const jobId = String(data.jobId);
@@ -843,9 +868,9 @@ export default function BatchPage() {
       fetchHistory();
       const total = data?.total !== undefined && data?.total !== null ? String(data.total) : "";
       const ac = data?.actualCount !== undefined && data?.actualCount !== null ? String(data.actualCount) : "";
-      messageApi.success(`已启动任务: ${jobId}${ac ? `，实际数量=${ac}` : ""}${total ? `，总数=${total}` : ""}`);
+      enqueueToast("success", `已启动任务: ${jobId}${ac ? `，实际数量=${ac}` : ""}${total ? `，总数=${total}` : ""}`);
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueToast("error", e instanceof Error ? e.message : String(e));
     } finally {
       setStarting(false);
     }
@@ -860,7 +885,7 @@ export default function BatchPage() {
       if (job?.id) promises.push(fetchJob(job.id));
       await Promise.all(promises);
     } catch (e) {
-      messageApi.error(e instanceof Error ? e.message : String(e));
+      enqueueToast("error", e instanceof Error ? e.message : String(e));
     } finally {
       setRefreshingAll(false);
     }
