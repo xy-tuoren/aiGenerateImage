@@ -107,14 +107,29 @@ export async function expandConfigByBatchFun(
   if (!batchFun || typeof batchFun !== "string") return [{ ...config }];
 
   if (batchFun === "batch" && Array.isArray(config.referenceImages) && config.referenceImages.length > 0) {
-    const ref0 = String(config.referenceImages[0] || "").trim();
-    if (!ref0) return [{ ...config }];
-    const ref0Resolved = await resolveRefPath(ref0);
-    const st = await fs.stat(ref0Resolved).catch(() => null);
-    if (!st) throw new Error(`batchFun 模式下读取 referenceImages 路径失败: ${ref0}`);
-    const paths = st.isDirectory() ? await collectImagesFromDirRecursive(ref0Resolved) : [ref0Resolved];
-    if (!paths.length) throw new Error(`batchFun 模式下，referenceImages 文件夹中没有找到图片文件: ${ref0}`);
-    return paths.map((p) => {
+    const allPaths: string[] = [];
+    const errors: string[] = [];
+
+    for (const ref of config.referenceImages) {
+      const r = String(ref || "").trim();
+      if (!r) continue;
+      try {
+        allPaths.push(...(await expandReferenceToPaths(r)));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        errors.push(`${r}: ${msg}`);
+      }
+    }
+
+    const uniquePaths = [...new Set(allPaths)];
+    if (!uniquePaths.length) {
+      if (errors.length) {
+        throw new Error(`batchFun 模式下未找到任何可用参考图。\n失败原因：\n${errors.join("\n")}`);
+      }
+      return [{ ...config }];
+    }
+
+    return uniquePaths.map((p) => {
       const next: WebImageConfig = { ...config, referenceImages: [p] };
       if (options?.countOverride !== undefined) next.count = options.countOverride;
       return next;

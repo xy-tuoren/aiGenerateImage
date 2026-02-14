@@ -84,6 +84,41 @@ export default function CropPage() {
   const [lang, setLang] = useState<string>("");
   const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
 
+  // 输出模板固定顺序：避免某些模板缺失时“拼图/长图缩略图位置乱跳”。
+  const BASE_TEMPLATE_ORDER = useMemo(
+    () => ["getCutLogoFinalPrompt", "getCutOtherFinalPrompt", "getCutScaleFinalPrompt"],
+    []
+  );
+  const EXTRA_TEMPLATE_ORDER_BY_RATIO = useMemo<Record<string, string[]>>(
+    () => ({
+      // 长图（拼长图）
+      "1:1": ["stitchLongImage1024"],
+      // 竖向拼图（4:5）
+      "4:5": ["getCutVerticalCollagePrompt"],
+    }),
+    []
+  );
+  const getOrderedTemplates = useCallback(
+    (ratio: string, tplNames: string[]) => {
+      const seen = new Set<string>();
+      const out: string[] = [];
+      const push = (t: string) => {
+        const s = String(t || "").trim();
+        if (!s || seen.has(s)) return;
+        seen.add(s);
+        out.push(s);
+      };
+      for (const t of BASE_TEMPLATE_ORDER) push(t);
+      for (const t of EXTRA_TEMPLATE_ORDER_BY_RATIO[ratio] || []) push(t);
+      // 其它模板：保持字母序（稳定）
+      const rest = Array.isArray(tplNames) ? tplNames.map((x) => String(x || "").trim()).filter(Boolean) : [];
+      rest.sort();
+      for (const t of rest) push(t);
+      return out;
+    },
+    [BASE_TEMPLATE_ORDER, EXTRA_TEMPLATE_ORDER_BY_RATIO]
+  );
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -644,13 +679,12 @@ export default function CropPage() {
     const rowK = getUiRowKey(row);
     const ratioOrder: Record<string, number> = { "1:1": 1, "4:5": 2, "16:9": 3, "9:16": 4 };
     const ratios = Object.keys(outs).sort((a, b) => (ratioOrder[a] ?? 999) - (ratioOrder[b] ?? 999) || a.localeCompare(b));
-    const templateOrder = ["getCutLogoFinalPrompt", "getCutOtherFinalPrompt", "getCutScaleFinalPrompt"];
     const items: { k: string; url: string }[] = [];
     for (const ratio of ratios) {
       const byTpl = outs[ratio];
       if (!byTpl || typeof byTpl !== "object") continue;
-      const tplNames = Object.keys(byTpl).sort();
-      const orderedTpls = [...templateOrder, ...tplNames.filter((t) => !templateOrder.includes(t))];
+      const tplNames = Object.keys(byTpl);
+      const orderedTpls = getOrderedTemplates(ratio, tplNames);
       for (const tpl of orderedTpls) {
         const it = (byTpl as any)[tpl] as CutRecordOutputItem | undefined;
         const url = it?.outputUrl ? String(it.outputUrl) : "";
@@ -659,7 +693,7 @@ export default function CropPage() {
       }
     }
     return items;
-  }, [getUiRowKey]);
+  }, [getOrderedTemplates, getUiRowKey]);
 
   const openRowPreview = useCallback((row: CutRecordItem, k: string) => {
     const items = buildRowPreviewItems(row);
@@ -777,18 +811,17 @@ export default function CropPage() {
       render: (_v: any, row: CutRecordItem) => {
         const byTpl = row.outputs && row.outputs[ratio] ? row.outputs[ratio] : undefined;
         if (!byTpl || typeof byTpl !== "object") return <Typography.Text type="secondary">-</Typography.Text>;
-        const tplNames = Object.keys(byTpl).sort();
-        if (!tplNames.length) return <Typography.Text type="secondary">-</Typography.Text>;
-        const items = tplNames.map((tpl) => {
-          const it = byTpl[tpl];
+        const tplNames = Object.keys(byTpl);
+        const orderedTpls = getOrderedTemplates(ratio, tplNames);
+        if (!orderedTpls.length) return <Typography.Text type="secondary">-</Typography.Text>;
+        const items = orderedTpls.map((tpl) => {
+          const it = (byTpl as any)[tpl] as CutRecordOutputItem | undefined;
           const url = it?.outputUrl ? String(it.outputUrl) : "";
           const err = it?.error ? String(it.error) : "";
           const st = it?.status ? String(it.status) : "";
           const k = `${getUiRowKey(row)}|${ratio}|${tpl}`;
           return { tpl, url, err, st, k };
         });
-        const hasAnyUrl = items.some((it) => it.url);
-        if (!hasAnyUrl) return <Typography.Text type="secondary">-</Typography.Text>;
         return (
           <div
             className="cropRatioRow"
@@ -801,32 +834,58 @@ export default function CropPage() {
               justifyContent: "center",
             }}
           >
-            {items
-              .filter((it) => it.url)
-              .map((it) => (
+            {items.map((it) => {
+              const disabled = !it.url;
+              const title = `${it.tpl}${it.st ? ` (${it.st})` : ""}${it.err ? `: ${it.err}` : ""}`;
+              return (
                 <div
                   key={it.k}
-                  title={it.tpl}
+                  title={title}
                   style={{
                     width: outputThumbSize,
                     lineHeight: 0,
                     filter: excludedKeys[it.k] ? "grayscale(1) opacity(0.35)" : undefined,
+                    cursor: disabled ? "default" : "pointer",
                   }}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     toggleExclude(it.k);
                   }}
-                  onClick={() => openRowPreview(row, it.k)}
+                  onClick={() => {
+                    if (!disabled) openRowPreview(row, it.k);
+                  }}
                 >
-                  <Image
-                    width={outputThumbSize}
-                    style={{ height: "auto" }}
-                    src={it.url}
-                    alt={it.tpl}
-                    preview={false}
-                  />
+                  {it.url ? (
+                    <Image
+                      width={outputThumbSize}
+                      style={{ height: "auto" }}
+                      src={it.url}
+                      alt={it.tpl}
+                      preview={false}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: outputThumbSize,
+                        height: Math.max(56, Math.floor(outputThumbSize * 0.75)),
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "rgba(0,0,0,0.03)",
+                        border: "1px solid rgba(0,0,0,0.06)",
+                        borderRadius: 6,
+                        padding: 6,
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <Typography.Text type="secondary" style={{ fontSize: 11, lineHeight: 1.1 }}>
+                        {it.st || "-"}
+                      </Typography.Text>
+                    </div>
+                  )}
                 </div>
-              ))}
+              );
+            })}
           </div>
         );
       },
@@ -900,7 +959,7 @@ export default function CropPage() {
     });
 
     return base;
-  }, [excludedKeys, getUiRowKey, isWideScreen, openRowPreview, outputThumbSize, ratioKeys, sourceThumbSize, toggleExclude]);
+  }, [excludedKeys, getOrderedTemplates, getUiRowKey, isWideScreen, openRowPreview, outputThumbSize, ratioKeys, sourceThumbSize, toggleExclude]);
 
   return (
     <AdminShell defaultSelectedKey="/crop" headerTitle="裁图展示">

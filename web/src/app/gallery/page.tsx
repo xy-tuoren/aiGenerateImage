@@ -80,6 +80,12 @@ export default function GalleryPage() {
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
 
+  const blurActiveElement = useCallback(() => {
+    if (typeof document === "undefined") return;
+    const el = document.activeElement as any;
+    if (el && typeof el.blur === "function") el.blur();
+  }, []);
+
   const paginationResetKey = `${appName}|${lang}|${aspectRatio}|${cutFilter}|${downloadedFilter}`;
   const onFlagsLoaded = useCallback(
     (flags: {
@@ -543,7 +549,8 @@ export default function GalleryPage() {
     }
     setPreviewIndex(idx);
     setPreviewOpen(true);
-  }, []);
+    blurActiveElement();
+  }, [blurActiveElement]);
 
   const onPreviewOpenChange = useCallback((open: boolean) => {
     setPreviewOpen(Boolean(open));
@@ -673,6 +680,8 @@ export default function GalleryPage() {
       const img = paginatedGridImages[previewIndex];
       if (!img) return;
       e.preventDefault();
+      e.stopPropagation();
+      (e as any).stopImmediatePropagation?.();
       if (k === "c") {
         togglePick(img.key);
         setPreviewIndex((cur) => {
@@ -702,8 +711,8 @@ export default function GalleryPage() {
         return;
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [
     previewOpen,
     previewIndex,
@@ -720,6 +729,8 @@ export default function GalleryPage() {
       const img = selectedPreviewImages[selectedPreviewIndex];
       if (!img) return;
       e.preventDefault();
+      e.stopPropagation();
+      (e as any).stopImmediatePropagation?.();
       togglePick(img.key);
       const curIdx = selectedPreviewIndex;
       const prevLen = selectedPreviewImages.length;
@@ -730,8 +741,8 @@ export default function GalleryPage() {
         setSelectedPreviewIndex(Math.min(curIdx, nextLen - 1));
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [
     selectedPreviewOpen,
     selectedPreviewIndex,
@@ -1035,6 +1046,7 @@ export default function GalleryPage() {
           onOpenPreviewAt={(i) => {
             setSelectedPreviewIndex(i);
             setSelectedPreviewOpen(true);
+            blurActiveElement();
           }}
           onRemove={togglePick}
           selectedCount={selectedImages.length}
