@@ -8,10 +8,6 @@ import { requireApiAccess, resolveGalleryOwnerUserId } from "@/lib/server/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Use A-scheme implementation (dedupe locks + operator-owned outputs).
-// Keep legacy implementation below for reference, but do not export it as POST.
-export { POST } from "../start2/route";
-
 const envInt = (name: string, fallback: number) => {
   const raw = String(process.env[name] ?? "").trim();
   const n = raw ? Number(raw) : NaN;
@@ -19,7 +15,7 @@ const envInt = (name: string, fallback: number) => {
   return Math.max(1, Math.floor(n));
 };
 
-let ensuredIndexes = false;
+let ensuredLockIndex = false;
 
 type CutJobItemDoc = {
   _id?: ObjectId;
@@ -55,6 +51,21 @@ type CutRecordDoc = {
   updatedAt: Date;
 };
 
+type CutDedupeLockDoc = {
+  _id?: ObjectId;
+  ownerUserId: string;
+  sourceUrl: string;
+  sourceAbsPath: string;
+  ratio: string;
+  templateName: string;
+  status: "queued" | "running" | "completed" | "failed";
+  requestId: string;
+  operatorUserId: string;
+  operatorUsername: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 function publicUrlToAbsPath(u: string) {
   const url = String(u || "").trim();
   if (!url.startsWith("/")) throw new Error("url 必须是站内路径（以 / 开头）");
@@ -66,8 +77,7 @@ function publicUrlToAbsPath(u: string) {
       if (!seg) return seg;
       try {
         const d = decodeURIComponent(seg);
-        if (d.includes("/") || d.includes("\\"))
-          throw new Error("非法路径");
+        if (d.includes("/") || d.includes("\\")) throw new Error("非法路径");
         return d;
       } catch {
         return seg;
@@ -79,16 +89,19 @@ function publicUrlToAbsPath(u: string) {
   return join(process.cwd(), "public", rel.replace(/^\//, ""));
 }
 
-export async function POST_old(req: Request) {
+export async function POST(req: Request) {
   const guard = requireApiAccess(req);
   if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
   const user = guard.user;
+
   const { searchParams } = new URL(req.url);
   const scope = String(searchParams.get("scope") || "").trim();
   const useGalleryScope = scope === "gallery";
-  // 仅图片广场使用“同组去重锁”；裁剪产物仍归属操作者账号（避免“跑到主账号”）
-  const lockUserId = useGalleryScope ? (resolveGalleryOwnerUserId(user.username) || user.userId) : user.userId;
-  const jobUserId = user.userId;
+
+  const operatorUserId = user.userId;
+  const operatorUsername = String(user.username || "").trim();
+  const ownerUserId = useGalleryScope ? (resolveGalleryOwnerUserId(user.username) || user.userId) : user.userId;
+
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
@@ -113,95 +126,58 @@ export async function POST_old(req: Request) {
   const verticalCollageTemplateName = "getCutVerticalCollagePrompt";
 
   const now = new Date();
+  const requestId = new ObjectId();
+
   const db = await getMongoDb();
   const jobsCol = db.collection("batch_jobs");
   const cutItemsCol = db.collection<CutJobItemDoc>("cut_job_items");
   const cutRecordsCol = db.collection<CutRecordDoc>("cut_records");
+  const locksCol = db.collection<CutDedupeLockDoc>("cut_dedupe_locks");
 
-  // Ensure unique key for cut_records per group owner + sourceAbsPath (best-effort).
-  // This prevents race conditions from inserting duplicate aggregate records.
-  if (!ensuredIndexes) {
-    ensuredIndexes = true;
-    void cutRecordsCol.createIndex({ userId: 1, sourceAbsPath: 1 }, { unique: true } as any).catch(() => {
-      // ignore
-    });
+  if (useGalleryScope && !ensuredLockIndex) {
+    ensuredLockIndex = true;
+    void locksCol
+      .createIndex({ ownerUserId: 1, sourceAbsPath: 1, ratio: 1, templateName: 1 }, { unique: true } as any)
+      .catch(() => { });
   }
 
-  const requestId = new ObjectId();
-  const claimOutput = async (args: {
-    url: string;
-    abs: string;
-    appName?: string;
-    lang?: string;
-    ratio: string;
-    templateName: string;
-  }) => {
-    const { url, abs, appName, lang, ratio, templateName } = args;
-    const key = `outputs.${ratio}.${templateName}`;
-    const statusKey = `${key}.status`;
-    const allowedWhen = {
-      $or: [
-        { [statusKey]: { $exists: false } },
-        { [statusKey]: "failed" },
-        { [statusKey]: "" },
-        { [statusKey]: null },
-      ],
-    } as any;
-
+  const claimLock = async (d: { url: string; abs: string; ratio: string; templateName: string }) => {
+    if (!useGalleryScope) return true;
+    const staleMs = 30 * 60 * 1000;
+    const staleBefore = new Date(Date.now() - staleMs);
+    const filter: any = {
+      ownerUserId,
+      sourceAbsPath: d.abs,
+      ratio: d.ratio,
+      templateName: d.templateName,
+      $or: [{ status: { $exists: false } }, { status: "failed" }, { updatedAt: { $lt: staleBefore } }],
+    };
     const update: any = {
       $set: {
-        userId: lockUserId,
-        sourceUrl: url,
-        sourceAbsPath: abs,
-        ...(appName ? { appName } : {}),
-        ...(lang ? { lang } : {}),
+        ownerUserId,
+        sourceUrl: d.url,
+        sourceAbsPath: d.abs,
+        ratio: d.ratio,
+        templateName: d.templateName,
         status: "queued",
+        requestId: String(requestId),
+        operatorUserId,
+        operatorUsername,
         updatedAt: now,
-        [key]: { status: "queued", updatedAt: now, requestId: String(requestId) },
       },
       $setOnInsert: { createdAt: now },
     };
-
     try {
-      const r: any = await cutRecordsCol.updateOne(
-        { userId: lockUserId, sourceAbsPath: abs, ...allowedWhen } as any,
-        update,
-        { upsert: true } as any
-      );
-      const changed = Boolean(r?.modifiedCount) || Boolean(r?.upsertedCount);
-      if (changed && jobUserId && jobUserId !== lockUserId) {
-        // 同步写一份到操作者账号下（便于操作者在“素材库/裁图展示”看到自己的裁剪记录）
-        try {
-          await cutRecordsCol.updateOne(
-            { userId: jobUserId, sourceAbsPath: abs } as any,
-            {
-              $set: {
-                userId: jobUserId,
-                sourceUrl: url,
-                sourceAbsPath: abs,
-                ...(appName ? { appName } : {}),
-                ...(lang ? { lang } : {}),
-                status: "queued",
-                updatedAt: now,
-                [key]: { status: "queued", updatedAt: now, requestId: String(requestId) },
-              },
-              $setOnInsert: { createdAt: now },
-            } as any,
-            { upsert: true } as any
-          );
-        } catch {
-        }
-      }
-      return changed;
+      const r: any = await locksCol.updateOne(filter, update, { upsert: true } as any);
+      return Boolean(r?.modifiedCount) || Boolean(r?.upsertedCount);
     } catch (e: any) {
-      // Duplicate key on upsert race: treat as "not claimed" and let the other request win.
       const msg = String(e?.message || "");
       if (msg.includes("E11000")) return false;
       return false;
     }
   };
 
-  // Build desired outputs then atomically claim them (prevents duplicate work when two users click at once).
+  // Build desired outputs list
   const desired: Array<{ url: string; abs: string; appName?: string; lang?: string; ratio: string; templateName: string }> = [];
   if (!isRegenerate) {
     for (const it of images) {
@@ -233,20 +209,56 @@ export async function POST_old(req: Request) {
     }
   }
 
-  const claimed: Array<{ url: string; abs: string; appName?: string; lang?: string; ratio: string; templateName: string }> = [];
+  // Claim locks (gallery scope) and collect claimed
+  const claimed: typeof desired = [];
   for (const d of desired) {
-    const ok = await claimOutput(d);
+    const ok = await claimLock({ url: d.url, abs: d.abs, ratio: d.ratio, templateName: d.templateName });
     if (ok) claimed.push(d);
   }
 
-  if (!claimed.length) {
-    return Response.json({ ok: true, jobId: null, createdItems: 0, skipped: true });
-  }
+  if (!claimed.length) return Response.json({ ok: true, jobId: null, createdItems: 0, skipped: true });
+
+  // Upsert operator cut_records: only for claimed outputs
+  try {
+    const byAbs = new Map<string, { sourceUrl: string; sourceAbsPath: string; appName?: string; lang?: string; set: any }>();
+    for (const c of claimed) {
+      const abs = String(c.abs);
+      const got = byAbs.get(abs) || { sourceUrl: c.url, sourceAbsPath: abs, appName: c.appName, lang: c.lang, set: {} as any };
+      got.sourceUrl = c.url;
+      got.appName = c.appName;
+      got.lang = c.lang;
+      got.set[`outputs.${String(c.ratio)}.${String(c.templateName)}`] = { status: "queued", updatedAt: now };
+      byAbs.set(abs, got);
+    }
+    const ops: any[] = [];
+    for (const v of byAbs.values()) {
+      ops.push({
+        updateOne: {
+          filter: { userId: operatorUserId, sourceAbsPath: v.sourceAbsPath } as any,
+          update: {
+            $set: {
+              userId: operatorUserId,
+              sourceUrl: v.sourceUrl,
+              sourceAbsPath: v.sourceAbsPath,
+              ...(v.appName ? { appName: v.appName } : {}),
+              ...(v.lang ? { lang: v.lang } : {}),
+              status: "queued",
+              updatedAt: now,
+              ...v.set,
+            } as any,
+            $setOnInsert: { createdAt: now } as any,
+          } as any,
+          upsert: true,
+        },
+      });
+    }
+    if (ops.length) await cutRecordsCol.bulkWrite(ops as any[], { ordered: false } as any);
+  } catch { }
 
   const total = claimed.length;
   const job = {
-    userId: jobUserId,
-    username: user.username,
+    userId: operatorUserId,
+    username: operatorUsername,
     role: guard.authz.role,
     isSuperAdmin: guard.authz.isSuperAdmin,
     status: "queued",
@@ -255,25 +267,18 @@ export async function POST_old(req: Request) {
     done: 0,
     createdAt: now,
     updatedAt: now,
-    extra: { type: "cut", operatorUserId: user.userId, operatorUsername: user.username, lockUserId },
+    extra: useGalleryScope ? { type: "cut", scope: "gallery", ownerUserId } : { type: "cut" },
   };
   const insertJob = await jobsCol.insertOne(job as any);
   const jobId = insertJob.insertedId as ObjectId;
 
-  // Attach jobId to records for better traceability (best-effort)
   try {
     const absSet = Array.from(new Set(claimed.map((x) => String(x.abs || "").trim()).filter(Boolean)));
-    if (absSet.length) {
-      await cutRecordsCol.updateMany(
-        { userId: jobUserId, sourceAbsPath: { $in: absSet } } as any,
-        { $set: { jobId, updatedAt: now } } as any
-      );
-    }
-  } catch {
-  }
+    if (absSet.length) await cutRecordsCol.updateMany({ userId: operatorUserId, sourceAbsPath: { $in: absSet } } as any, { $set: { jobId, updatedAt: now } } as any);
+  } catch { }
 
-  const itemDocs: Array<CutJobItemDoc> = claimed.map((c) => ({
-    userId: jobUserId,
+  const itemDocs: Array<Omit<CutJobItemDoc, "_id">> = claimed.map((c) => ({
+    userId: operatorUserId,
     jobId,
     sourceUrl: c.url,
     sourceAbsPath: c.abs,
@@ -289,11 +294,6 @@ export async function POST_old(req: Request) {
   }));
   await cutItemsCol.insertMany(itemDocs as any[]);
 
-  await startCutJob({
-    jobId: String(jobId),
-    concurrency,
-  });
-
+  await startCutJob({ jobId: String(jobId), concurrency });
   return Response.json({ ok: true, jobId: String(jobId), createdItems: total });
 }
-
