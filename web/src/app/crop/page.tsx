@@ -809,6 +809,15 @@ export default function CropPage() {
       width: Math.max(260, outputThumbSize * 2 + 16),
       align: "center",
       render: (_v: any, row: CutRecordItem) => {
+        const calcThumbHeight = (ratioStr: string, w: number) => {
+          const m = String(ratioStr || "").trim().match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+          const a = m?.[1] ? Number(m[1]) : NaN;
+          const b = m?.[2] ? Number(m[2]) : NaN;
+          if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) return Math.max(56, Math.floor(w * 0.75));
+          return Math.max(56, Math.round((w * b) / a));
+        };
+        const thumbH = calcThumbHeight(ratio, outputThumbSize);
+
         const byTpl = row.outputs && row.outputs[ratio] ? row.outputs[ratio] : undefined;
         if (!byTpl || typeof byTpl !== "object") return <Typography.Text type="secondary">-</Typography.Text>;
         const tplNames = Object.keys(byTpl);
@@ -867,7 +876,7 @@ export default function CropPage() {
                     <div
                       style={{
                         width: outputThumbSize,
-                        height: Math.max(56, Math.floor(outputThumbSize * 0.75)),
+                        height: thumbH,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
