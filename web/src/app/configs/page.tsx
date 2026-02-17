@@ -119,6 +119,22 @@ export default function ConfigsPage() {
     useState(false);
   const refFolderInput = useRef<HTMLInputElement>(null);
   const refFilesInput = useRef<HTMLInputElement>(null);
+  const [isNarrowScreen, setIsNarrowScreen] = useState(false);
+  const tableWrapRef = useRef<HTMLDivElement | null>(null);
+  const tableScrollElRef = useRef<HTMLElement | null>(null);
+  const stickyHScrollRef = useRef<HTMLDivElement | null>(null);
+  const syncScrollingRef = useRef<"table" | "sticky" | null>(null);
+  const [stickyHScroll, setStickyHScroll] = useState<{
+    visible: boolean;
+    left: number;
+    width: number;
+    scrollWidth: number;
+  }>({
+    visible: false,
+    left: 0,
+    width: 0,
+    scrollWidth: 0
+  });
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -1143,6 +1159,127 @@ export default function ConfigsPage() {
   }, []);
 
   useEffect(() => {
+    const mql = window.matchMedia("(max-width: 1919px)");
+    const apply = () => setIsNarrowScreen(Boolean(mql.matches));
+    apply();
+    // Safari/旧浏览器兼容（matchMedia 旧 API）
+    if ("addEventListener" in mql) {
+      mql.addEventListener("change", apply);
+      return () => mql.removeEventListener("change", apply);
+    }
+    (mql as any).addListener?.(apply);
+    return () => (mql as any).removeListener?.(apply);
+  }, []);
+
+  // 固定屏幕底部的横向滚动条：<1920 时常驻显示，并与 AntD Table 横向滚动同步
+  useEffect(() => {
+    const wrap = tableWrapRef.current;
+    if (!wrap) return;
+
+    if (!isNarrowScreen) {
+      setStickyHScroll((prev) =>
+        prev.visible ? { ...prev, visible: false } : prev
+      );
+      return;
+    }
+
+    const findScrollEl = () =>
+      (wrap.querySelector(".ant-table-content") as HTMLElement | null) ||
+      (wrap.querySelector(".ant-table-body") as HTMLElement | null) ||
+      null;
+
+    const update = () => {
+      const sc = findScrollEl();
+      tableScrollElRef.current = sc;
+
+      const rect = wrap.getBoundingClientRect();
+      const width = Math.max(0, Math.floor(rect.width));
+      const left = Math.floor(rect.left);
+
+      const scrollWidth0 = sc ? Math.floor(sc.scrollWidth || 0) : 0;
+      const clientWidth0 = sc ? Math.floor(sc.clientWidth || 0) : 0;
+      // “常驻”：只要能找到表格滚动容器，就显示底部条；是否能滚动由 scrollWidth 决定
+      const visible = Boolean(sc);
+      const scrollWidth = Math.max(scrollWidth0, clientWidth0 + 2);
+
+      setStickyHScroll((prev) => {
+        const next = { visible, left, width, scrollWidth };
+        if (
+          prev.visible === next.visible &&
+          prev.left === next.left &&
+          prev.width === next.width &&
+          prev.scrollWidth === next.scrollWidth
+        ) {
+          return prev;
+        }
+        return next;
+      });
+
+      // 同步当前 scrollLeft
+      if (visible && sc && stickyHScrollRef.current) {
+        stickyHScrollRef.current.scrollLeft = sc.scrollLeft;
+      }
+    };
+
+    const onTableScroll = () => {
+      const sc = tableScrollElRef.current;
+      const sticky = stickyHScrollRef.current;
+      if (!sc || !sticky) return;
+      if (syncScrollingRef.current === "sticky") return;
+      syncScrollingRef.current = "table";
+      sticky.scrollLeft = sc.scrollLeft;
+      queueMicrotask(() => {
+        if (syncScrollingRef.current === "table")
+          syncScrollingRef.current = null;
+      });
+    };
+
+    const onStickyScroll = () => {
+      const sc = tableScrollElRef.current;
+      const sticky = stickyHScrollRef.current;
+      if (!sc || !sticky) return;
+      if (syncScrollingRef.current === "table") return;
+      syncScrollingRef.current = "sticky";
+      sc.scrollLeft = sticky.scrollLeft;
+      queueMicrotask(() => {
+        if (syncScrollingRef.current === "sticky")
+          syncScrollingRef.current = null;
+      });
+    };
+
+    const ro = new ResizeObserver(() => update());
+    ro.observe(wrap);
+
+    // 初次与后续重算
+    const raf = requestAnimationFrame(update);
+    window.addEventListener("resize", update);
+
+    const sc0 = findScrollEl();
+    if (sc0) sc0.addEventListener("scroll", onTableScroll, { passive: true });
+    const sticky0 = stickyHScrollRef.current;
+    if (sticky0)
+      sticky0.addEventListener("scroll", onStickyScroll, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", update);
+      ro.disconnect();
+      const sc = findScrollEl();
+      if (sc) sc.removeEventListener("scroll", onTableScroll as any);
+      if (sticky0) sticky0.removeEventListener("scroll", onStickyScroll as any);
+    };
+  }, [
+    configPage,
+    configPageSize,
+    filterAppName,
+    filterLang,
+    isNarrowScreen,
+    items.length,
+    loading,
+    tableEditMode
+  ]);
+
+  useEffect(() => {
     setConfigPage(1);
   }, [filterAppName, filterLang]);
 
@@ -1398,40 +1535,85 @@ export default function ConfigsPage() {
         </Card>
 
         <Card>
-          <Table
-            rowKey="id"
-            loading={loading}
-            columns={columns}
-            dataSource={filteredItems}
-            tableLayout="fixed"
-            pagination={{
-              current: configPage,
-              pageSize: configPageSize,
-              showSizeChanger: true,
-              pageSizeOptions: ["10", "20", "50", "100"],
-              showTotal: (total) => {
-                const pages = Math.max(
-                  1,
-                  Math.ceil(
-                    (Number(total) || 0) / (Number(configPageSize) || 10)
-                  )
-                );
-                return `共 ${total} 条 / ${pages} 页`;
-              },
-              onChange: (page, pageSize) => {
-                if (pageSize !== configPageSize) {
-                  setConfigPageSize(pageSize);
-                  setConfigPage(1);
-                } else {
-                  setConfigPage(page);
+          <style jsx global>{`
+            /* 固定底部横向滚动条（同步表格横向滚动） */
+            .configsStickyHScroll {
+              height: 14px;
+              overflow-x: scroll; /* 尽量保持滚动条常驻显示 */
+              overflow-y: hidden;
+              background: rgba(255, 255, 255, 0.92);
+              backdrop-filter: blur(6px);
+              border-top: 1px solid rgba(0, 0, 0, 0.06);
+            }
+            .configsStickyHScroll::-webkit-scrollbar {
+              height: 10px;
+            }
+            .configsStickyHScroll::-webkit-scrollbar-thumb {
+              background: rgba(0, 0, 0, 0.18);
+              border-radius: 999px;
+            }
+          `}</style>
+
+          <div
+            ref={tableWrapRef}
+            style={{
+              paddingBottom: isNarrowScreen && stickyHScroll.visible ? 14 : 0
+            }}
+          >
+            <Table
+              rowKey="id"
+              loading={loading}
+              columns={columns}
+              dataSource={filteredItems}
+              tableLayout="fixed"
+              // 强制表格在窄屏使用自身横向滚动，避免 UI 直接溢出
+              scroll={{ x: "max-content" }}
+              pagination={{
+                current: configPage,
+                pageSize: configPageSize,
+                showSizeChanger: true,
+                pageSizeOptions: ["10", "20", "50", "100"],
+                showTotal: (total) => {
+                  const pages = Math.max(
+                    1,
+                    Math.ceil(
+                      (Number(total) || 0) / (Number(configPageSize) || 10)
+                    )
+                  );
+                  return `共 ${total} 条 / ${pages} 页`;
+                },
+                onChange: (page, pageSize) => {
+                  if (pageSize !== configPageSize) {
+                    setConfigPageSize(pageSize);
+                    setConfigPage(1);
+                  } else {
+                    setConfigPage(page);
+                  }
                 }
-              }
-            }}
-            rowSelection={{
-              selectedRowKeys,
-              onChange: (keys) => setSelectedRowKeys(keys as string[])
-            }}
-          />
+              }}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (keys) => setSelectedRowKeys(keys as string[])
+              }}
+            />
+          </div>
+
+          {isNarrowScreen && stickyHScroll.visible ? (
+            <div
+              ref={stickyHScrollRef}
+              className="configsStickyHScroll"
+              style={{
+                position: "fixed",
+                left: stickyHScroll.left,
+                bottom: 0,
+                width: stickyHScroll.width,
+                zIndex: 999
+              }}
+            >
+              {/* 只用来撑出 scrollWidth，从而生成滚动条 */}
+              <div style={{ width: stickyHScroll.scrollWidth, height: 1 }} />
+            </div>
+          ) : null}
         </Card>
       </Space>
 
