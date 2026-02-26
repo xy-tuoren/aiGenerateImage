@@ -33,6 +33,7 @@ export interface ImageMetadata {
  * 默认写入到图片中的元数据（用于标记生成来源）
  */
 export const DEFAULT_IMAGE_METADATA: ImageMetadata = {
+  artist: "d-404",
   custom: {
     tableName: "d-404",
     id: "d-404",
@@ -90,7 +91,7 @@ export function addMetadataToImage(
       if (meta.description) ifd0[piexif.ImageIFD.ImageDescription] = meta.description;
       if (meta.copyright) ifd0[piexif.ImageIFD.Copyright] = meta.copyright;
       if (meta.software) ifd0[piexif.ImageIFD.Software] = meta.software;
-        // piexif 按 Ascii 写 UserComment，非 ASCII 会导致段长度错误、JPEG 损坏。将 custom 中字符串的非 ASCII 替换为 ?，保证可读且不损坏
+      // piexif 按 Ascii 写 UserComment，非 ASCII 会导致段长度错误、JPEG 损坏。将 custom 中字符串的非 ASCII 替换为 ?，保证可读且不损坏
       const toAsciiSafe = (v: unknown): unknown => {
         if (typeof v === 'string') return v.replace(/[\x80-\uFFFF]/g, '?');
         if (v != null && typeof v === 'object' && !Array.isArray(v)) {
