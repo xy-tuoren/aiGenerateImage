@@ -300,6 +300,8 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
   offset?: number;
   cacheMaxAgeMs?: number;
   forceRefresh?: boolean;
+  /** 是否下载图片到 public/material。false 时仅更新远端映射文件（remoteAppNames/remoteIndex） */
+  downloadFiles?: boolean;
   downloadConcurrency?: number;
   downloadTimeoutMs?: number;
   progressEvery?: number;
@@ -307,6 +309,7 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
   const cacheMaxAgeMs =
     typeof params?.cacheMaxAgeMs === "number" && Number.isFinite(params.cacheMaxAgeMs) && params.cacheMaxAgeMs >= 0 ? params.cacheMaxAgeMs : 24 * 60 * 60 * 1000;
   const forceRefresh = params?.forceRefresh === true;
+  const downloadFiles = params?.downloadFiles !== false;
   const downloadConcurrency =
     typeof params?.downloadConcurrency === "number" && Number.isFinite(params.downloadConcurrency) && params.downloadConcurrency > 0 ? Math.floor(params.downloadConcurrency) : 64;
   const downloadTimeoutMs =
@@ -329,6 +332,8 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
     )
     .digest("hex");
   const cacheFile = path.join(cacheDir, `adCostMonth.byAppName.${cacheKey}.json`);
+  const remoteAppNamesCacheFile = path.join(cacheDir, "referenceImages.remoteAppNames.json");
+  const remoteIndexCacheFile = path.join(cacheDir, "referenceImages.remoteIndex.json");
 
   let byAppName: AdCostMonthByAppNameCache | null = null;
   if (!forceRefresh) {
@@ -345,7 +350,15 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
     for (const it of all) {
       const package_id = extractPackageIdFromFinalUrls(it.final_urls);
       const app_names = package_id ? packageIdToAppNamesMap[package_id] || [] : [];
-      const item: AdCostMonthWithAppNamesItem = { ...it, package_id, app_names };
+      const item: AdCostMonthWithAppNamesItem = {
+        url: it.url,
+        final_urls: it.final_urls,
+        category: it.category,
+        project: it.project,
+        cost: it.cost,
+        package_id,
+        app_names,
+      };
       for (const app_name of app_names) {
         const key = normalizeAppName(app_name);
         if (!key) continue;
@@ -363,6 +376,83 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
     if (bucket.app_name !== k) bucket.app_name = k;
     if (!Array.isArray(bucket.items)) bucket.items = [];
     if (!Array.isArray(bucket.local_files)) bucket.local_files = [];
+  }
+
+  // 兼容旧缓存：items 中可能缺少 package_id / app_names，允许使用 final_urls 补齐
+  try {
+    const sites = Array.from(
+      new Set(
+        Object.values(byAppName)
+          .flatMap((b) => (Array.isArray(b?.items) ? b.items : []))
+          .map((it: any) => (typeof it?.project === "string" ? it.project.trim() : ""))
+          .filter(Boolean)
+      )
+    );
+    const packageIdToAppNamesMap = await fetchPackageIdToAppNamesMap({ site: sites, forceRefresh: false });
+    for (const bucket of Object.values(byAppName)) {
+      if (!bucket || typeof bucket !== "object") continue;
+      const items = Array.isArray((bucket as any).items) ? ((bucket as any).items as any[]) : [];
+      for (const it of items) {
+        if (!it || typeof it !== "object") continue;
+        const hasPkg = typeof it.package_id === "string" && it.package_id.trim();
+        const finalUrls = typeof it.final_urls === "string" ? it.final_urls : "";
+        if (!hasPkg && finalUrls) {
+          it.package_id = extractPackageIdFromFinalUrls(finalUrls);
+        }
+        if (!Array.isArray(it.app_names)) {
+          const pkg = typeof it.package_id === "string" ? it.package_id.trim() : "";
+          it.app_names = pkg ? packageIdToAppNamesMap[pkg] || [] : [];
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 为参考图广场 names=1 提供一个很小的 appName 列表缓存，避免解析大文件
+  try {
+    const uniq = new Set<string>();
+    for (const bucket of Object.values(byAppName)) {
+      const n = String(bucket?.app_name || "").trim();
+      if (n) uniq.add(n);
+    }
+    const remoteAppNames = Array.from(uniq).sort((a, b) => a.localeCompare(b));
+    // 优化格式：直接写 array，不包 updatedAt/data
+    await fs.ensureDir(cacheDir);
+    await fs.writeFile(remoteAppNamesCacheFile, JSON.stringify(remoteAppNames), "utf8");
+  } catch {
+    // ignore cache write failure
+  }
+
+  // 为参考图广场远端 fallback 提供一个更小的索引：appName -> items:[{url,cost}]
+  try {
+    const index: Record<string, Array<{ url: string; cost: number }>> = {};
+    for (const bucket of Object.values(byAppName)) {
+      const appName = String(bucket?.app_name || "").trim();
+      if (!appName) continue;
+      const itemsRaw = Array.isArray(bucket?.items) ? bucket.items : [];
+      const seenUrl = new Set<string>();
+      const items: Array<{ url: string; cost: number }> = [];
+      for (const it of itemsRaw as any[]) {
+        const url = String(it?.url || "").trim();
+        if (!url) continue;
+        if (seenUrl.has(url)) continue;
+        seenUrl.add(url);
+        const cost = typeof it?.cost === "number" && Number.isFinite(it.cost) ? it.cost : 0;
+        items.push({ url, cost });
+      }
+      index[appName] = items;
+    }
+    // 优化格式：直接写 object，不包 updatedAt/data
+    await fs.ensureDir(cacheDir);
+    await fs.writeFile(remoteIndexCacheFile, JSON.stringify(index), "utf8");
+  } catch {
+    // ignore cache write failure
+  }
+
+  if (!downloadFiles) {
+    console.log("[reference-images] download disabled: only write remote mapping files");
+    return byAppName;
   }
 
   const publicMaterialDir = path.join(process.cwd(), "public", "material");
