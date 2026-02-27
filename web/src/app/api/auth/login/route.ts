@@ -4,6 +4,16 @@ import { buildSessionToken, computePwdSig, getSessionCookieName, getSessionMaxAg
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function isHttpsRequest(req: NextRequest) {
+  const xfProto = String(req.headers.get("x-forwarded-proto") || "").split(",")[0].trim().toLowerCase();
+  if (xfProto) return xfProto === "https";
+  try {
+    return new URL(req.url).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
@@ -36,7 +46,7 @@ export async function POST(req: NextRequest) {
   res.cookies.set(getSessionCookieName(), token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttpsRequest(req),
     path: "/",
     maxAge: getSessionMaxAgeSeconds(),
   });

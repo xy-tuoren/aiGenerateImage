@@ -10,7 +10,6 @@
 !.yarn/releases
 !.yarn/versions
 
-/public/generated
 
 # testing
 /coverage
@@ -45,6 +44,7 @@ next-env.d.ts
 /public/cut
 /public/reference-images
 /public/material
+/public2
 /.cache
 certificates
 refImageDatas
