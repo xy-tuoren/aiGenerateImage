@@ -137,12 +137,21 @@ export class GeminiClient {
   }
 
   async generateImage(prompt: string, options: GenerateImageOptions = {}, ctx?: GeminiQueueContext): Promise<GeneratedImage> {
+    const defaultImageSize = String(process.env.GEMINI_DEFAULT_IMAGE_SIZE || "").trim() || "1K";
+    const mergedImageConfig =
+      options.imageConfig && typeof options.imageConfig === "object"
+        ? { ...(options.imageConfig as any) }
+        : undefined;
+    if (mergedImageConfig && !mergedImageConfig.imageSize) {
+      mergedImageConfig.imageSize = defaultImageSize;
+    }
+
     const body: any = (() => {
       if (Array.isArray(options.contents) && options.contents.length > 0) {
         return {
           contents: options.contents,
           responseModalities: options.responseModalities || ["IMAGE"],
-          ...(options.imageConfig ? { imageConfig: options.imageConfig } : {}),
+          ...(mergedImageConfig ? { imageConfig: mergedImageConfig } : {}),
           ...(options.generationConfig ? { generationConfig: options.generationConfig } : {}),
           tools: [{ google_search: {} }],
         };
@@ -167,7 +176,7 @@ export class GeminiClient {
           },
         ],
         responseModalities: options.responseModalities || ["IMAGE"],
-        ...(options.imageConfig ? { imageConfig: options.imageConfig } : {}),
+        ...(mergedImageConfig ? { imageConfig: mergedImageConfig } : {}),
         ...(options.generationConfig ? { generationConfig: options.generationConfig } : {}),
         tools: [{ google_search: {} }],
       };
@@ -250,30 +259,71 @@ export class GeminiClient {
         }
       }
 
-      const mimeType = imagePart.inlineData.mimeType || "";
       const rawBase64 = imagePart.inlineData.data || "";
-      const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
-      const imageData = addMetadata
-        ? (() => {
-          const rawBuffer = Buffer.from(rawBase64, "base64");
-          const withMetaBuffer = addMetadataToImage(
-            rawBuffer.buffer.slice(rawBuffer.byteOffset, rawBuffer.byteOffset + rawBuffer.byteLength),
-            mimeType,
-            DEFAULT_IMAGE_METADATA
-          );
-          return Buffer.from(withMetaBuffer).toString("base64");
-        })()
-        : rawBase64;
+      const rawBuffer = Buffer.from(rawBase64, "base64");
+      try {
+        const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
 
-      const thoughtSignature =
-        (imagePart as any)?.thoughtSignature ||
-        (imagePart as any)?.thought_signature ||
-        undefined;
-      return {
-        mimeType,
-        data: imageData,
-        thoughtSignature,
-      };
+        let meta: any | undefined;
+        try {
+          meta = await sharp(rawBuffer, { failOnError: false }).metadata();
+        } catch {
+        }
+
+        const isAlreadyJpeg = String(meta?.format || "").toLowerCase() === "jpeg";
+        const hasAlpha = meta?.hasAlpha === true;
+        const forceReencode = ["1", "true", "yes"].includes(String(process.env.GEMINI_FORCE_REENCODE_JPEG || "").toLowerCase());
+        const enableSharpen = ["1", "true", "yes"].includes(String(process.env.GEMINI_JPEG_SHARPEN || "").toLowerCase());
+
+        const qRaw = Number(String(process.env.GEMINI_JPEG_QUALITY || "").trim() || "100");
+        const quality = Number.isFinite(qRaw) ? Math.max(1, Math.min(100, Math.floor(qRaw))) : 100;
+
+        const jpgBuffer = isAlreadyJpeg && !forceReencode
+          ? rawBuffer
+          : await (async () => {
+            let img = sharp(rawBuffer, { failOnError: false });
+            if (hasAlpha) img = img.flatten({ background: { r: 255, g: 255, b: 255 } });
+            if (enableSharpen) img = img.sharpen();
+            return await img
+              .jpeg({
+                quality,
+                chromaSubsampling: "4:4:4",
+                optimiseCoding: true,
+                optimiseScans: true,
+                trellisQuantisation: true,
+                overshootDeringing: true,
+                mozjpeg: true,
+              })
+              .toBuffer();
+          })();
+
+        const imageData = addMetadata
+          ? (() => {
+            const jpgArrayBuffer = jpgBuffer.buffer.slice(
+              jpgBuffer.byteOffset,
+              jpgBuffer.byteOffset + jpgBuffer.byteLength
+            ) as ArrayBuffer;
+            const withMetaBuffer = addMetadataToImage(
+              jpgArrayBuffer,
+              "image/jpeg",
+              DEFAULT_IMAGE_METADATA
+            );
+            return Buffer.from(withMetaBuffer).toString("base64");
+          })()
+          : Buffer.from(jpgBuffer).toString("base64");
+
+        const thoughtSignature =
+          (imagePart as any)?.thoughtSignature ||
+          (imagePart as any)?.thought_signature ||
+          undefined;
+        return {
+          mimeType: "image/jpeg",
+          data: imageData,
+          thoughtSignature,
+        };
+      } catch (e) {
+        throw new Error(`转为 JPG 失败: ${e instanceof Error ? e.message : String(e)}`);
+      }
     }, ctx);
   }
 }

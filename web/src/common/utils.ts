@@ -50,6 +50,7 @@ export function addMetadataToImage(
   metadata: ImageMetadata
 ): ArrayBuffer {
   const uint8Array = new Uint8Array(imageBuffer);
+  const normalizedMime = String(mimeType || "").split(";")[0].trim().toLowerCase();
 
   function addMetadataToJpeg(imageData: Uint8Array, meta: ImageMetadata): ArrayBuffer {
     try {
@@ -134,29 +135,30 @@ export function addMetadataToImage(
 
   function addMetadataToPng(imageData: Uint8Array, meta: ImageMetadata): ArrayBuffer {
     try {
-      const iendMarker = new Uint8Array([0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]);
-      let iendIndex = -1;
-      for (let i = 0; i <= imageData.length - iendMarker.length; i++) {
-        let match = true;
-        for (let j = 0; j < iendMarker.length; j++) {
-          if (imageData[i + j] !== iendMarker[j]) {
-            match = false;
-            break;
-          }
-        }
-        if (match) {
-          iendIndex = i;
-          break;
-        }
-      }
-      if (iendIndex === -1) {
-        throw new Error('无法找到 PNG IEND 标记');
-      }
-
       const textChunks: Uint8Array[] = [];
+      const toAscii = (s: string) => String(s || "").replace(/[\x80-\uFFFF]/g, "?");
+      const crc32 = (() => {
+        let table: Uint32Array | null = null;
+        const makeTable = () => {
+          const t = new Uint32Array(256);
+          for (let i = 0; i < 256; i++) {
+            let c = i;
+            for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            t[i] = c >>> 0;
+          }
+          table = t;
+        };
+        return (data: Uint8Array) => {
+          if (!table) makeTable();
+          let c = 0xFFFFFFFF;
+          for (let i = 0; i < data.length; i++) c = (table as Uint32Array)[(c ^ data[i]) & 0xFF] ^ (c >>> 8);
+          return (c ^ 0xFFFFFFFF) >>> 0;
+        };
+      })();
+
       const addTextChunk = (keyword: string, text: string) => {
-        const keywordBytes = new TextEncoder().encode(keyword);
-        const textBytes = new TextEncoder().encode(text);
+        const keywordBytes = new TextEncoder().encode(toAscii(keyword));
+        const textBytes = new TextEncoder().encode(toAscii(text));
         const chunkData = new Uint8Array(keywordBytes.length + 1 + textBytes.length);
         chunkData.set(keywordBytes, 0);
         chunkData[keywordBytes.length] = 0x00;
@@ -166,6 +168,10 @@ export function addMetadataToImage(
         new DataView(length.buffer).setUint32(0, chunkData.length, false);
         const type = new TextEncoder().encode('tEXt');
         const crc = new Uint8Array(4);
+        const crcInput = new Uint8Array(type.length + chunkData.length);
+        crcInput.set(type, 0);
+        crcInput.set(chunkData, type.length);
+        new DataView(crc.buffer).setUint32(0, crc32(crcInput), false);
 
         const chunk = new Uint8Array(4 + 4 + chunkData.length + 4);
         chunk.set(length, 0);
@@ -175,20 +181,54 @@ export function addMetadataToImage(
         textChunks.push(chunk);
       };
 
-      if (meta.artist) addTextChunk('Artist', meta.artist);
+      if (meta.artist) {
+        addTextChunk('Artist', meta.artist);
+        addTextChunk('Author', meta.artist);
+      }
       if (meta.description) addTextChunk('Description', meta.description);
       if (meta.copyright) addTextChunk('Copyright', meta.copyright);
       if (meta.software) addTextChunk('Software', meta.software);
       if (meta.userComment) addTextChunk('Comment', meta.userComment);
       if (meta.custom) {
-        for (const [key, value] of Object.entries(meta.custom)) {
-          addTextChunk(key, String(value));
+        if (typeof meta.custom === "string") {
+          addTextChunk("Custom", meta.custom);
+          addTextChunk("Comment", meta.custom);
+        } else {
+          for (const [key, value] of Object.entries(meta.custom)) {
+            addTextChunk(key, String(value));
+          }
         }
       }
 
       if (textChunks.length === 0) {
         return imageData.buffer.slice(0) as ArrayBuffer;
       }
+
+      // 解析 PNG chunk，定位 IEND 起始位置（length 字段处）
+      // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+      if (imageData.length < 8) throw new Error("PNG 数据过短");
+      const sig = imageData.slice(0, 8);
+      const expectedSig = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+      for (let i = 0; i < 8; i++) if (sig[i] !== expectedSig[i]) throw new Error("PNG signature 不匹配");
+
+      let offsetWalk = 8;
+      let iendIndex = -1;
+      const dv = new DataView(imageData.buffer, imageData.byteOffset, imageData.byteLength);
+      while (offsetWalk + 12 <= imageData.length) {
+        const len = dv.getUint32(offsetWalk, false);
+        const type0 = imageData[offsetWalk + 4];
+        const type1 = imageData[offsetWalk + 5];
+        const type2 = imageData[offsetWalk + 6];
+        const type3 = imageData[offsetWalk + 7];
+        const chunkTotal = 12 + len;
+        if (offsetWalk + chunkTotal > imageData.length) throw new Error("PNG chunk 越界");
+        if (type0 === 0x49 && type1 === 0x45 && type2 === 0x4e && type3 === 0x44) {
+          iendIndex = offsetWalk;
+          break;
+        }
+        offsetWalk += chunkTotal;
+      }
+      if (iendIndex === -1) throw new Error("无法找到 PNG IEND chunk");
 
       const beforeIend = imageData.slice(0, iendIndex);
       const iend = imageData.slice(iendIndex);
@@ -210,10 +250,10 @@ export function addMetadataToImage(
     }
   }
 
-  if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
+  if (normalizedMime === 'image/jpeg' || normalizedMime === 'image/jpg') {
     return addMetadataToJpeg(uint8Array, metadata);
   }
-  if (mimeType === 'image/png') {
+  if (normalizedMime === 'image/png') {
     return addMetadataToPng(uint8Array, metadata);
   }
   console.warn(`不支持为 ${mimeType} 格式添加元数据，返回原图`);

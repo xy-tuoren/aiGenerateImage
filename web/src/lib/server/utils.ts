@@ -265,8 +265,8 @@ export const CUT_TEMPLATE_TEMPERATURE: Record<string, number> = {
 export const CUT_TEMPLATE_THINKING_LEVEL: Record<string, string> = {
   getCutLogoFinalPrompt: "minimal",
   getCutOtherFinalPrompt: "High",
-  getCutScaleFinalPrompt: "medium",
-  getCutVerticalCollagePrompt: "medium",
+  getCutScaleFinalPrompt: "minimal",
+  getCutVerticalCollagePrompt: "minimal",
   // stitchLongImage1024 不走 Gemini 生图，这里无需配置
 };
 

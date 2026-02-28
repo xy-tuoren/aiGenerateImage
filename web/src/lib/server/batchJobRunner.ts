@@ -156,6 +156,38 @@ type CutRecordDoc = {
   updatedAt: Date;
 };
 
+function detectMimeTypeFromBuffer(buf: Buffer, fallbackMime?: string): string {
+  if (!buf || buf.length < 12) return String(fallbackMime || "image/png");
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
+  if (
+    buf[0] === 0x89 &&
+    buf[1] === 0x50 &&
+    buf[2] === 0x4e &&
+    buf[3] === 0x47 &&
+    buf[4] === 0x0d &&
+    buf[5] === 0x0a &&
+    buf[6] === 0x1a &&
+    buf[7] === 0x0a
+  ) return "image/png";
+  if (
+    buf[0] === 0x52 &&
+    buf[1] === 0x49 &&
+    buf[2] === 0x46 &&
+    buf[3] === 0x46 &&
+    buf[8] === 0x57 &&
+    buf[9] === 0x45 &&
+    buf[10] === 0x42 &&
+    buf[11] === 0x50
+  ) return "image/webp";
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return "image/gif";
+  if (
+    (buf[0] === 0x49 && buf[1] === 0x49 && buf[2] === 0x2a && buf[3] === 0x00) ||
+    (buf[0] === 0x4d && buf[1] === 0x4d && buf[2] === 0x00 && buf[3] === 0x2a)
+  ) return "image/tiff";
+  if (buf[0] === 0x42 && buf[1] === 0x4d) return "image/bmp";
+  return String(fallbackMime || "image/png");
+}
+
 function safePathSegment(input: unknown) {
   const s = String(input ?? "").trim();
   const cleaned = s.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_").replace(/\s+/g, " ").trim();
@@ -464,7 +496,6 @@ async function runBatchJob(input: StartJobInput) {
           referenceImages,
         }, { role: jobRole || undefined, isAdmin: jobIsAdmin });
 
-        const ext = extFromMime(generated.mimeType);
         let imageBase64 = generated.data;
         const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
         try {
@@ -472,18 +503,24 @@ async function runBatchJob(input: StartJobInput) {
           imageBase64 = await resizeImageByAspectRatio(imageBase64, ar);
         } catch {
         }
+        let outputMimeType = generated.mimeType;
+        try {
+          outputMimeType = detectMimeTypeFromBuffer(Buffer.from(imageBase64, "base64"), generated.mimeType);
+        } catch {
+        }
         if (addMetadata) {
           try {
             const buf = Buffer.from(imageBase64, "base64");
             const withMeta = addMetadataToImage(
               buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
-              generated.mimeType,
+              outputMimeType,
               DEFAULT_IMAGE_METADATA
             );
             imageBase64 = Buffer.from(withMeta).toString("base64");
           } catch {
           }
         }
+        const ext = extFromMime(outputMimeType);
         const ts = Date.now();
         const ratio = aspectRatioToken((config.imageConfig as any)?.aspectRatio);
         const baseName = `${ts}-${ratio}.${ext}`;
@@ -515,7 +552,7 @@ async function runBatchJob(input: StartJobInput) {
           index: task.index,
           url,
           filePath: absFile,
-          mimeType: generated.mimeType,
+          mimeType: outputMimeType,
           createdAt: now,
           prompt,
           appName: config.appName,
@@ -533,7 +570,7 @@ async function runBatchJob(input: StartJobInput) {
           status: "completed",
           prompt,
           url,
-          mimeType: generated.mimeType,
+          mimeType: outputMimeType,
           createdAt: now,
           appName: config.appName,
           lang: config.lang,
@@ -851,11 +888,15 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
           }
         }
 
-        const ext = extFromMime(generated.mimeType);
         let imageBase64 = generated.data;
         const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
         try {
           imageBase64 = await resizeImageByAspectRatio(imageBase64, item.ratio);
+        } catch {
+        }
+        let outputMimeType = generated.mimeType;
+        try {
+          outputMimeType = detectMimeTypeFromBuffer(Buffer.from(imageBase64, "base64"), generated.mimeType);
         } catch {
         }
         if (addMetadata) {
@@ -863,7 +904,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
             const buf = Buffer.from(imageBase64, "base64");
             const withMeta = addMetadataToImage(
               buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
-              generated.mimeType,
+              outputMimeType,
               DEFAULT_IMAGE_METADATA
             );
             imageBase64 = Buffer.from(withMeta).toString("base64");
@@ -871,6 +912,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
           }
         }
 
+        const ext = extFromMime(outputMimeType);
         const ts = Date.now();
         const ratioToken = aspectRatioToken(item.ratio);
         const baseName = `${ts}-${ratioToken}.${ext}`;
@@ -904,7 +946,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
               updatedAt: now,
               outputUrl: url,
               outputFilePath: absFile,
-              outputMimeType: generated.mimeType,
+              outputMimeType: outputMimeType,
             },
           }
         );
@@ -921,7 +963,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
                 appName: item.appName,
                 lang: item.lang,
                 updatedAt: now,
-                [pathKey]: { status: "completed", outputUrl: url, outputMimeType: generated.mimeType, updatedAt: now },
+                [pathKey]: { status: "completed", outputUrl: url, outputMimeType: outputMimeType, updatedAt: now },
               } as any,
               $setOnInsert: { createdAt: now } as any,
             } as any,
