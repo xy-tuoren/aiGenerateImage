@@ -4,7 +4,7 @@ import path, { join } from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { GeminiClient } from "@/lib/server/gemini";
-import { getCutTemplateTemperature } from "@/lib/server/utils";
+import { getCutTemplateTemperature, getCutTemplateThinkingLevel } from "@/lib/server/utils";
 import * as promptFns from "@/common/prompt";
 import { buildGlobalPromptSuffix } from "@/common/constants";
 import { addMetadataToImage, DEFAULT_IMAGE_METADATA } from "@/common/utils";
@@ -829,6 +829,7 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
               responseModalities: ["IMAGE"],
               imageConfig: { aspectRatio: item.ratio, imageSize: "1K" },
               generationConfig: { temperature: getCutTemplateTemperature(item.templateName) },
+              thinkingConfig: { thinkingLevel: getCutTemplateThinkingLevel(item.templateName) },
               referenceImages,
             }, { role: jobRole || undefined, isAdmin: jobIsAdmin });
             break;

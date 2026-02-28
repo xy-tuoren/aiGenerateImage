@@ -104,6 +104,11 @@ export interface GenerateImageOptions {
     topK?: number;
     [key: string]: any;
   };
+  thinkingConfig?: {
+    thinkingLevel?: string;
+    includeThoughts?: boolean;
+    [key: string]: any;
+  };
   referenceImages?: Array<{
     data: string;
     mimeType: string;
@@ -127,7 +132,8 @@ export class GeminiClient {
       throw new Error("Gemini API key 未配置，请设置环境变量 GEMINI_API_KEY 或在 GeminiConfig 中提供 apiKey");
     }
     this.genAI = new GoogleGenAI({ apiKey });
-    this.model = config.model || "gemini-3-pro-image-preview";
+    //gemini-3-pro-image-preview
+    this.model = config.model || "gemini-3.1-flash-image-preview";
   }
 
   async generateImage(prompt: string, options: GenerateImageOptions = {}, ctx?: GeminiQueueContext): Promise<GeneratedImage> {
@@ -167,10 +173,25 @@ export class GeminiClient {
       };
     })();
 
+    const req: any = {
+      model: this.model,
+      contents: body.contents,
+      ...(body.tools ? { tools: body.tools } : {}),
+      config: {
+        responseModalities: body.responseModalities || ["IMAGE"],
+        thinkingConfig: {
+          thinkingLevel: options.thinkingConfig?.thinkingLevel ?? "High",
+          includeThoughts: options.thinkingConfig?.includeThoughts ?? true,
+          ...(options.thinkingConfig ? options.thinkingConfig : {}),
+        },
+        ...(body.imageConfig ? { imageConfig: body.imageConfig } : {}),
+        ...(body.generationConfig ? { generationConfig: body.generationConfig } : {}),
+      },
+    };
+
     const debugReq = String(process.env.DEBUG_GEMINI_REQUEST || "").toLowerCase();
     if (debugReq === "1" || debugReq === "true" || debugReq === "yes") {
       try {
-        const req: any = { model: this.model, ...body };
         const masked = JSON.parse(
           JSON.stringify(req, (_k, v) => {
             if (v && typeof v === "object" && typeof (v as any).inlineData?.data === "string") {
@@ -193,10 +214,7 @@ export class GeminiClient {
     }
 
     return withGeminiLimit(async () => {
-      const data = await this.genAI.models.generateContent({
-        model: this.model,
-        ...body,
-      });
+      const data = await this.genAI.models.generateContent(req);
 
       const candidates = data.candidates;
       if (!candidates || !candidates.length) {
@@ -237,14 +255,14 @@ export class GeminiClient {
       const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
       const imageData = addMetadata
         ? (() => {
-            const rawBuffer = Buffer.from(rawBase64, "base64");
-            const withMetaBuffer = addMetadataToImage(
-              rawBuffer.buffer.slice(rawBuffer.byteOffset, rawBuffer.byteOffset + rawBuffer.byteLength),
-              mimeType,
-              DEFAULT_IMAGE_METADATA
-            );
-            return Buffer.from(withMetaBuffer).toString("base64");
-          })()
+          const rawBuffer = Buffer.from(rawBase64, "base64");
+          const withMetaBuffer = addMetadataToImage(
+            rawBuffer.buffer.slice(rawBuffer.byteOffset, rawBuffer.byteOffset + rawBuffer.byteLength),
+            mimeType,
+            DEFAULT_IMAGE_METADATA
+          );
+          return Buffer.from(withMetaBuffer).toString("base64");
+        })()
         : rawBase64;
 
       const thoughtSignature =

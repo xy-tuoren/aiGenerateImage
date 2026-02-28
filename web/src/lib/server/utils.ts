@@ -161,7 +161,40 @@ export async function resizeImageByAspectRatio(
     return typeof input === 'string' ? input : Buffer.from(input).toString('base64');
   }
 
+  // 仅针对最终到 1.91:1（16:9 / 2:1）的链路：先等比对齐高度，再只拉伸宽度到目标宽度
+  // 目的：不裁切角标/贴边元素，同时避免“模糊背景铺底”。
+  if (normalizedRatio === '16:9' || normalizedRatio === '2:1') {
+    return await resizeImageStretchWidthOnly(input, dimensions.width, dimensions.height);
+  }
+
   return await resizeImage(input, dimensions.width, dimensions.height, { fit: 'cover' });
+}
+
+async function resizeImageStretchWidthOnly(
+  input: string | ArrayBuffer,
+  width: number,
+  height: number
+): Promise<string> {
+  try {
+    const inputBuffer = typeof input === 'string' ? Buffer.from(input, 'base64') : Buffer.from(input);
+    const metadata = await sharp(inputBuffer).metadata();
+    const outputFormat = (metadata.format || 'png') as keyof sharp.FormatEnum;
+
+    // 1) 先按目标高度等比缩放（不改变高度，仅改变宽度）
+    const stage1 = await sharp(inputBuffer)
+      .resize({ height })
+      .toBuffer();
+
+    // 2) 再把宽度拉到目标宽度（高度已对齐，这一步主要影响宽度）
+    const stage2 = await sharp(stage1)
+      .resize(width, height, { fit: 'fill' })
+      .toFormat(outputFormat)
+      .toBuffer();
+
+    return stage2.toString('base64');
+  } catch (error) {
+    throw new Error(`调整图片尺寸失败: ${error}`);
+  }
 }
 
 /**
@@ -222,10 +255,18 @@ export async function resizeImage(
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
 export const CUT_TEMPLATE_TEMPERATURE: Record<string, number> = {
-  getCutLogoFinalPrompt: 0.5,
+  getCutLogoFinalPrompt: 1,
   getCutOtherFinalPrompt: 1,
   getCutScaleFinalPrompt: 1,
   getCutVerticalCollagePrompt: 1,
+  // stitchLongImage1024 不走 Gemini 生图，这里无需配置
+};
+
+export const CUT_TEMPLATE_THINKING_LEVEL: Record<string, string> = {
+  getCutLogoFinalPrompt: "minimal",
+  getCutOtherFinalPrompt: "High",
+  getCutScaleFinalPrompt: "medium",
+  getCutVerticalCollagePrompt: "medium",
   // stitchLongImage1024 不走 Gemini 生图，这里无需配置
 };
 
@@ -235,4 +276,11 @@ export function getCutTemplateTemperature(templateName: string): number {
   const n = Number(raw);
   if (!Number.isFinite(n)) return 1;
   return clamp(n, 0, 2);
+}
+
+export function getCutTemplateThinkingLevel(templateName: string): string {
+  const key = String(templateName || "").trim();
+  const raw = CUT_TEMPLATE_THINKING_LEVEL[key];
+  const v = String(raw || "").trim();
+  return v || "High";
 }
