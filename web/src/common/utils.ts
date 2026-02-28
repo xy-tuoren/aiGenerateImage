@@ -26,20 +26,15 @@ export interface ImageMetadata {
   /** 用户评论 */
   userComment?: string;
   /** 自定义键值对（会序列化为 JSON 写入 EXIF UserComment，或按 key 写入 PNG tEXt） */
-  custom?: Record<string, string | number | boolean>;
+  custom?: string | Record<string, string | number | boolean>;
 }
 
 /**
  * 默认写入到图片中的元数据（用于标记生成来源）
  */
 export const DEFAULT_IMAGE_METADATA: ImageMetadata = {
-  artist: "d-404",
-  custom: {
-    tableName: "d-404",
-    id: "d-404",
-    userId: "d-404",
-    designer: "d-404",
-  },
+  artist: "d404z",
+  custom: "d404z",
 };
 
 /**
