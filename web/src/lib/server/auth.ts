@@ -36,12 +36,14 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
     "ui:/batch": true,
     "ui:/gallery": true,
     "ui:/crop": true,
+    "ui:/make-image": true,
     "api:*": true,
   },
   // 操作员（示例权限，可按需增删 key）
   operator: {
     "ui:/gallery": true,
     "ui:/crop": true,
+    "ui:/make-image": true,
     "api:*": true,
   },
 };
@@ -439,7 +441,7 @@ function resolveApiPermissionKey(pathname: string, method: string): string | nul
   }
 
   if (parts[1] === "image-edit") {
-    if (parts.length === 3 && parts[2] === "chat" && m === "POST") return "api:image-edit:chat";
+    if (parts.length === 3 && parts[2] === "chat" && (m === "POST" || m === "GET")) return "api:image-edit:chat";
     if (parts.length === 3 && parts[2] === "save" && m === "POST") return "api:image-edit:save";
     return null;
   }

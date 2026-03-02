@@ -136,6 +136,13 @@ export default function AdminShell({
         label: <Link href="/crop">素材库</Link>,
         uiPerm: "ui:/crop",
         apiPerm: "api:cut-records:read"
+      },
+      {
+        key: "/make-image",
+        icon: <PictureOutlined />,
+        label: <Link href="/make-image">制作图片</Link>,
+        uiPerm: "ui:/make-image",
+        apiPerm: "api:make-image:read"
       }
     ];
     const perms =
@@ -170,7 +177,8 @@ export default function AdminShell({
       { prefix: "/configs", uiPerm: "ui:/configs" },
       { prefix: "/batch", uiPerm: "ui:/batch" },
       { prefix: "/gallery", uiPerm: "ui:/gallery" },
-      { prefix: "/crop", uiPerm: "ui:/crop" }
+      { prefix: "/crop", uiPerm: "ui:/crop" },
+      { prefix: "/make-image", uiPerm: "ui:/make-image" }
     ];
     const hit = rules.find(
       (r) => p === r.prefix || p.startsWith(`${r.prefix}/`)

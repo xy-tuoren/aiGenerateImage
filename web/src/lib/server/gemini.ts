@@ -120,6 +120,8 @@ export interface GeneratedImage {
   mimeType: string;
   data: string;
   thoughtSignature?: string;
+  thoughtText?: string;
+  modelPartsForNextTurn?: any[];
 }
 
 export class GeminiClient {
@@ -136,7 +138,7 @@ export class GeminiClient {
     this.model = config.model || "gemini-3.1-flash-image-preview";
   }
 
-  async generateImage(prompt: string, options: GenerateImageOptions = {}, ctx?: GeminiQueueContext): Promise<GeneratedImage> {
+  private buildGenerateRequest(prompt: string, options: GenerateImageOptions = {}) {
     const defaultImageSize = String(process.env.GEMINI_DEFAULT_IMAGE_SIZE || "").trim() || "1K";
     const mergedImageConfig =
       options.imageConfig && typeof options.imageConfig === "object"
@@ -182,21 +184,161 @@ export class GeminiClient {
       };
     })();
 
-    const req: any = {
+    return {
       model: this.model,
       contents: body.contents,
       ...(body.tools ? { tools: body.tools } : {}),
       config: {
         responseModalities: body.responseModalities || ["IMAGE"],
         thinkingConfig: {
-          thinkingLevel: options.thinkingConfig?.thinkingLevel ?? "High",
+          thinkingLevel: options.thinkingConfig?.thinkingLevel ?? "high",
           includeThoughts: options.thinkingConfig?.includeThoughts ?? true,
           ...(options.thinkingConfig ? options.thinkingConfig : {}),
         },
         ...(body.imageConfig ? { imageConfig: body.imageConfig } : {}),
         ...(body.generationConfig ? { generationConfig: body.generationConfig } : {}),
       },
-    };
+    } as any;
+  }
+
+  private async buildGeneratedImageFromParts(prompt: string, contentParts: any[]): Promise<GeneratedImage> {
+    if (!contentParts || !contentParts.length) {
+      throw new Error("Gemini 返回结果中没有内容");
+    }
+
+    const modelPartsForNextTurn = contentParts
+      .map((p: any) => {
+        const sig =
+          p?.thoughtSignature ||
+          p?.thought_signature ||
+          undefined;
+        if (!sig) return null;
+        const out: any = { thoughtSignature: sig };
+        if (typeof p?.text === "string") out.text = p.text;
+        if (p?.inlineData?.data) {
+          out.inlineData = {
+            mimeType: String(p.inlineData.mimeType || "image/png"),
+            data: String(p.inlineData.data || "")
+          };
+        }
+        return out;
+      })
+      .filter(Boolean);
+
+    const thoughtText = contentParts
+      .filter((p: any) => p?.thought === true && typeof p?.text === "string")
+      .map((p: any) => String(p.text || "").trim())
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+    const fallbackText = contentParts
+      .filter((p: any) => typeof p?.text === "string")
+      .map((p: any) => String(p.text || "").trim())
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+
+    const nonThoughtImagePart = [...contentParts]
+      .reverse()
+      .find((p: any) => p?.inlineData?.data && p?.thought !== true);
+    const anyImagePart = [...contentParts]
+      .reverse()
+      .find((p: any) => p?.inlineData?.data);
+    const imagePart: any = nonThoughtImagePart || anyImagePart;
+    if (!imagePart || !imagePart.inlineData) {
+      throw new Error("Gemini 返回结果中没有图片数据 inlineData");
+    }
+
+    const debugSize = String(process.env.DEBUG_GEMINI_IMAGE_SIZE || "").toLowerCase();
+    if (debugSize === "1" || debugSize === "true" || debugSize === "yes") {
+      try {
+        const buf = Buffer.from(imagePart.inlineData.data || "", "base64");
+        const meta = await sharp(buf).metadata();
+        console.log("[gemini:image]", {
+          model: this.model,
+          mimeType: imagePart.inlineData.mimeType || "",
+          format: meta.format,
+          width: meta.width,
+          height: meta.height,
+          sizeBytes: buf.length,
+          promptChars: String(prompt || "").length,
+        });
+      } catch (e) {
+        console.log("[gemini:image] metadata failed:", e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    const rawBase64 = imagePart.inlineData.data || "";
+    const rawBuffer = Buffer.from(rawBase64, "base64");
+    try {
+      const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
+
+      let meta: any | undefined;
+      try {
+        meta = await sharp(rawBuffer, { failOnError: false }).metadata();
+      } catch {
+      }
+
+      const isAlreadyJpeg = String(meta?.format || "").toLowerCase() === "jpeg";
+      const hasAlpha = meta?.hasAlpha === true;
+      const forceReencode = ["1", "true", "yes"].includes(String(process.env.GEMINI_FORCE_REENCODE_JPEG || "").toLowerCase());
+      const enableSharpen = ["1", "true", "yes"].includes(String(process.env.GEMINI_JPEG_SHARPEN || "").toLowerCase());
+
+      const qRaw = Number(String(process.env.GEMINI_JPEG_QUALITY || "").trim() || "100");
+      const quality = Number.isFinite(qRaw) ? Math.max(1, Math.min(100, Math.floor(qRaw))) : 100;
+
+      const jpgBuffer = isAlreadyJpeg && !forceReencode
+        ? rawBuffer
+        : await (async () => {
+          let img = sharp(rawBuffer, { failOnError: false });
+          if (hasAlpha) img = img.flatten({ background: { r: 255, g: 255, b: 255 } });
+          if (enableSharpen) img = img.sharpen();
+          return await img
+            .jpeg({
+              quality,
+              chromaSubsampling: "4:4:4",
+              optimiseCoding: true,
+              optimiseScans: true,
+              trellisQuantisation: true,
+              overshootDeringing: true,
+              mozjpeg: true,
+            })
+            .toBuffer();
+        })();
+
+      const imageData = addMetadata
+        ? (() => {
+          const jpgArrayBuffer = jpgBuffer.buffer.slice(
+            jpgBuffer.byteOffset,
+            jpgBuffer.byteOffset + jpgBuffer.byteLength
+          ) as ArrayBuffer;
+          const withMetaBuffer = addMetadataToImage(
+            jpgArrayBuffer,
+            "image/jpeg",
+            DEFAULT_IMAGE_METADATA
+          );
+          return Buffer.from(withMetaBuffer).toString("base64");
+        })()
+        : Buffer.from(jpgBuffer).toString("base64");
+
+      const thoughtSignature =
+        (imagePart as any)?.thoughtSignature ||
+        (imagePart as any)?.thought_signature ||
+        undefined;
+      return {
+        mimeType: "image/jpeg",
+        data: imageData,
+        thoughtSignature,
+        thoughtText: thoughtText || fallbackText || undefined,
+        modelPartsForNextTurn,
+      };
+    } catch (e) {
+      throw new Error(`转为 JPG 失败: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  async generateImage(prompt: string, options: GenerateImageOptions = {}, ctx?: GeminiQueueContext): Promise<GeneratedImage> {
+    const req: any = this.buildGenerateRequest(prompt, options);
 
     const debugReq = String(process.env.DEBUG_GEMINI_REQUEST || "").toLowerCase();
     if (debugReq === "1" || debugReq === "true" || debugReq === "yes") {
@@ -230,100 +372,55 @@ export class GeminiClient {
         throw new Error("Gemini 返回结果中没有 candidates");
       }
 
-      const contentParts = candidates[0].content?.parts;
-      if (!contentParts || !contentParts.length) {
-        throw new Error("Gemini 返回结果中没有内容");
-      }
+      const contentParts = candidates[0].content?.parts || [];
+      return this.buildGeneratedImageFromParts(prompt, contentParts);
+    }, ctx);
+  }
 
-      const imagePart = contentParts.find((p: any) => p.inlineData?.data);
-      if (!imagePart || !imagePart.inlineData) {
-        throw new Error("Gemini 返回结果中没有图片数据 inlineData");
-      }
+  async generateImageStream(
+    prompt: string,
+    options: GenerateImageOptions = {},
+    ctx?: GeminiQueueContext,
+    onThought?: (deltaText: string) => void
+  ): Promise<GeneratedImage> {
+    const req: any = this.buildGenerateRequest(prompt, options);
+    return withGeminiLimit(async () => {
+      const stream = await this.genAI.models.generateContentStream(req);
+      const collectedParts: any[] = [];
+      let thoughtBuffer = "";
+      let seenFinalImage = false;
 
-      const debugSize = String(process.env.DEBUG_GEMINI_IMAGE_SIZE || "").toLowerCase();
-      if (debugSize === "1" || debugSize === "true" || debugSize === "yes") {
-        try {
-          const buf = Buffer.from(imagePart.inlineData.data || "", "base64");
-          const meta = await sharp(buf).metadata();
-          console.log("[gemini:image]", {
-            model: this.model,
-            mimeType: imagePart.inlineData.mimeType || "",
-            format: meta.format,
-            width: meta.width,
-            height: meta.height,
-            sizeBytes: buf.length,
-            promptChars: String(prompt || "").length,
-          });
-        } catch (e) {
-          console.log("[gemini:image] metadata failed:", e instanceof Error ? e.message : String(e));
+      for await (const chunk of stream as any) {
+        const parts = chunk?.candidates?.[0]?.content?.parts;
+        if (!Array.isArray(parts) || parts.length === 0) continue;
+        for (const p of parts) {
+          collectedParts.push(p);
+          if (p?.inlineData?.data && p?.thought !== true) {
+            seenFinalImage = true;
+          }
+          if (
+            typeof p?.text === "string" &&
+            (p?.thought === true || !seenFinalImage)
+          ) {
+            const next = String(p.text || "");
+            if (!next.trim()) continue;
+            let delta = "";
+            if (next.startsWith(thoughtBuffer)) {
+              delta = next.slice(thoughtBuffer.length);
+              thoughtBuffer = next;
+            } else if (!thoughtBuffer.includes(next)) {
+              delta = thoughtBuffer ? `\n${next}` : next;
+              thoughtBuffer = `${thoughtBuffer}${delta}`;
+            }
+            if (delta) onThought?.(delta);
+          }
         }
       }
 
-      const rawBase64 = imagePart.inlineData.data || "";
-      const rawBuffer = Buffer.from(rawBase64, "base64");
-      try {
-        const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
-
-        let meta: any | undefined;
-        try {
-          meta = await sharp(rawBuffer, { failOnError: false }).metadata();
-        } catch {
-        }
-
-        const isAlreadyJpeg = String(meta?.format || "").toLowerCase() === "jpeg";
-        const hasAlpha = meta?.hasAlpha === true;
-        const forceReencode = ["1", "true", "yes"].includes(String(process.env.GEMINI_FORCE_REENCODE_JPEG || "").toLowerCase());
-        const enableSharpen = ["1", "true", "yes"].includes(String(process.env.GEMINI_JPEG_SHARPEN || "").toLowerCase());
-
-        const qRaw = Number(String(process.env.GEMINI_JPEG_QUALITY || "").trim() || "100");
-        const quality = Number.isFinite(qRaw) ? Math.max(1, Math.min(100, Math.floor(qRaw))) : 100;
-
-        const jpgBuffer = isAlreadyJpeg && !forceReencode
-          ? rawBuffer
-          : await (async () => {
-            let img = sharp(rawBuffer, { failOnError: false });
-            if (hasAlpha) img = img.flatten({ background: { r: 255, g: 255, b: 255 } });
-            if (enableSharpen) img = img.sharpen();
-            return await img
-              .jpeg({
-                quality,
-                chromaSubsampling: "4:4:4",
-                optimiseCoding: true,
-                optimiseScans: true,
-                trellisQuantisation: true,
-                overshootDeringing: true,
-                mozjpeg: true,
-              })
-              .toBuffer();
-          })();
-
-        const imageData = addMetadata
-          ? (() => {
-            const jpgArrayBuffer = jpgBuffer.buffer.slice(
-              jpgBuffer.byteOffset,
-              jpgBuffer.byteOffset + jpgBuffer.byteLength
-            ) as ArrayBuffer;
-            const withMetaBuffer = addMetadataToImage(
-              jpgArrayBuffer,
-              "image/jpeg",
-              DEFAULT_IMAGE_METADATA
-            );
-            return Buffer.from(withMetaBuffer).toString("base64");
-          })()
-          : Buffer.from(jpgBuffer).toString("base64");
-
-        const thoughtSignature =
-          (imagePart as any)?.thoughtSignature ||
-          (imagePart as any)?.thought_signature ||
-          undefined;
-        return {
-          mimeType: "image/jpeg",
-          data: imageData,
-          thoughtSignature,
-        };
-      } catch (e) {
-        throw new Error(`转为 JPG 失败: ${e instanceof Error ? e.message : String(e)}`);
+      if (!collectedParts.length) {
+        throw new Error("Gemini 流式返回中没有可用内容");
       }
+      return this.buildGeneratedImageFromParts(prompt, collectedParts);
     }, ctx);
   }
 }

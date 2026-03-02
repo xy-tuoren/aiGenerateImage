@@ -273,7 +273,9 @@ export function getBuzzDefaultPrompt({
   aspectRatio?: string;
   [key: string]: any
 }) {
-  return `你是一名专业的广告设计师，这是你过去制作的广告图片，为了进一步推广产品，你需要制作更多的广告图片，你应该使用相同风格制作新的广告，但请注意新的广告与现有广告不应过度相似。图片文字语言要为${lang}。`
+  return `1、你是一名专业的buzz广告设计师，参考图 **仅作为风格参考**；你需要通过调整构图、修改元素与背景等方式，避免生成图与参考图过于相似。图片中文字语言必须为${lang}。
+  2、文案可以参考图中的文案，文字不要太多不要太复杂，但是相似度不能太高。
+  3、${prompt}`
 }
 
 export function getBuzzCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
