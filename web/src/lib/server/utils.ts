@@ -247,6 +247,58 @@ export async function resizeImage(
 }
 
 /**
+ * 裁图（/crop）链路中：按 appName + ratio 决定要跑哪些模板。
+ *
+ * - appName 不区分大小写（内部会 lower case）。
+ * - 仅影响“发起裁图任务（/api/cut-jobs/start）”时生成哪些 items；已存在的 items（regenerate）不受影响。
+ * - 默认配置保持现有行为不变。
+ */
+export const CUT_TEMPLATES_BY_APP_RATIO: Record<string, Partial<Record<string, string[]>>> = {
+  "*": {
+    "1:1": [
+      "getCutLogoFinalPrompt",
+      "getCutOtherFinalPrompt",
+      "getCutScaleFinalPrompt",
+      "stitchLongImage1024",
+    ],
+    "4:5": [
+      "getCutLogoFinalPrompt",
+      "getCutOtherFinalPrompt",
+      "getCutScaleFinalPrompt",
+      "getCutVerticalCollagePrompt",
+    ],
+  },
+  buzz: {
+    "1:1": ["getBuzzCutScaleFinalPrompt", "getBuzzCutChangeFinalPrompt"],
+    "4:5": ["getBuzzCutScaleFinalPrompt", "getBuzzCutChangeFinalPrompt"],
+  },
+};
+
+const uniqTrim = (arr: unknown): string[] => {
+  const list = Array.isArray(arr) ? arr : [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const it of list) {
+    const s = String(it || "").trim();
+    if (!s || seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+  }
+  return out;
+};
+
+export function getCutTemplatesForAppRatio(appName: unknown, ratio: unknown): string[] {
+  const appKey = String(appName || "").trim().toLowerCase();
+  const ratioKey = String(ratio || "").trim();
+
+  const byApp = appKey ? CUT_TEMPLATES_BY_APP_RATIO[appKey] : undefined;
+  const picked = uniqTrim(byApp?.[ratioKey]);
+  if (picked.length) return picked;
+
+  return uniqTrim(CUT_TEMPLATES_BY_APP_RATIO["*"]?.[ratioKey]);
+}
+
+/**
  * 裁图（/crop）链路中，不同 prompt 函数对应的 Gemini temperature。
  *
  * 只在服务端使用：你可以直接在这里改每个模板的 temperature。
@@ -259,6 +311,8 @@ export const CUT_TEMPLATE_TEMPERATURE: Record<string, number> = {
   getCutOtherFinalPrompt: 1,
   getCutScaleFinalPrompt: 1,
   getCutVerticalCollagePrompt: 1,
+  getBuzzCutScaleFinalPrompt: 1,
+  getBuzzCutChangeFinalPrompt: 1,
   // stitchLongImage1024 不走 Gemini 生图，这里无需配置
 };
 
@@ -267,6 +321,8 @@ export const CUT_TEMPLATE_THINKING_LEVEL: Record<string, string> = {
   getCutOtherFinalPrompt: "High",
   getCutScaleFinalPrompt: "minimal",
   getCutVerticalCollagePrompt: "minimal",
+  getBuzzCutScaleFinalPrompt: "High",
+  getBuzzCutChangeFinalPrompt: "High",
   // stitchLongImage1024 不走 Gemini 生图，这里无需配置
 };
 

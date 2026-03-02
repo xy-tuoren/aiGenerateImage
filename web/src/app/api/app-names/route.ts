@@ -2,6 +2,48 @@ import { NextResponse } from "next/server";
 import * as fs from "fs-extra";
 import { join } from "path";
 import { requireApiAccess } from "@/lib/server/auth";
+import { CUSTOM_APP_NAMES } from "./customAppNames";
+
+async function readRemoteAdCostMonthFallbackAppNames(cwd: string) {
+  try {
+    const cacheDir = join(cwd, ".cache");
+    const st = await fs.stat(cacheDir).catch(() => null);
+    if (!st?.isDirectory()) return [];
+
+    const names = await fs.readdir(cacheDir).catch(() => []);
+    const targets = names
+      .map((x) => String(x || "").trim())
+      .filter((x) => /^adCostMonth\.byAppName\.[a-f0-9]{40}\.json$/i.test(x));
+    if (!targets.length) return [];
+
+    // 选取最新的一个缓存文件（按 mtime）
+    let best: { name: string; mtimeMs: number } | null = null;
+    for (const name of targets) {
+      const abs = join(cacheDir, name);
+      const st2 = await fs.stat(abs).catch(() => null);
+      if (!st2?.isFile?.()) continue;
+      const mtimeMs = typeof (st2 as any).mtimeMs === "number" ? (st2 as any).mtimeMs : 0;
+      if (!best || mtimeMs > best.mtimeMs) best = { name, mtimeMs };
+    }
+    if (!best) return [];
+
+    const absFile = join(cacheDir, best.name);
+    const raw = await fs.readFile(absFile, "utf8").catch(() => "");
+    if (!raw) return [];
+    const json = JSON.parse(raw) as any;
+    const data =
+      json?.data && typeof json.data === "object" ? (json.data as Record<string, any>) : {};
+
+    const out: string[] = [];
+    for (const [k, bucket] of Object.entries(data)) {
+      const appName = String(bucket?.app_name || k || "").trim();
+      if (appName) out.push(appName);
+    }
+    return Array.from(new Set(out)).sort((a, b) => a.localeCompare(b));
+  } catch {
+    return [];
+  }
+}
 
 export async function GET(req: Request) {
   try {
@@ -37,7 +79,17 @@ export async function GET(req: Request) {
       }
     }
 
-    const merged = Array.from(new Set([...folderNames, ...remoteNames])).sort((a, b) => a.localeCompare(b));
+    if (!remoteNames.length) {
+      remoteNames = await readRemoteAdCostMonthFallbackAppNames(cwd);
+    }
+
+    const customNames = Array.isArray(CUSTOM_APP_NAMES)
+      ? CUSTOM_APP_NAMES.map((x) => String(x || "").trim()).filter(Boolean)
+      : [];
+
+    const merged = Array.from(
+      new Set([...folderNames, ...remoteNames, ...customNames])
+    ).sort((a, b) => a.localeCompare(b));
     return NextResponse.json({ ok: true, items: merged });
   } catch (error) {
     console.error("读取文件夹列表失败:", error);

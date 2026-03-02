@@ -1,7 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button, Card, Image, Input, InputNumber, Select, Space, Table, Typography, message } from "antd";
+import {
+  Button,
+  Card,
+  Image,
+  Input,
+  InputNumber,
+  Select,
+  Space,
+  Table,
+  Typography,
+  message
+} from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
 import { SUPPORTED_LANGUAGES } from "@/common/constants";
@@ -31,14 +42,11 @@ export default function CropPage() {
   const [messageApi, contextHolder] = message.useMessage();
   const isMountedRef = useRef(true);
   const downloadAbortRef = useRef<AbortController | null>(null);
-  const [toast, setToast] = useState<
-    | {
-        type: "success" | "error" | "warning" | "info";
-        content: string;
-        id: number;
-      }
-    | null
-  >(null);
+  const [toast, setToast] = useState<{
+    type: "success" | "error" | "warning" | "info";
+    content: string;
+    id: number;
+  } | null>(null);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [rawRecords, setRawRecords] = useState<CutRecordItem[]>([]);
   const [recordsTotal, setRecordsTotal] = useState(0);
@@ -48,7 +56,9 @@ export default function CropPage() {
   const getUiRowKey = useCallback((row: CutRecordItem) => {
     const id = String((row as any)?.id ?? "");
     const jobId = String((row as any)?.jobId ?? "");
-    const src = String((row as any)?.sourceAbsPath ?? (row as any)?.sourceUrl ?? "");
+    const src = String(
+      (row as any)?.sourceAbsPath ?? (row as any)?.sourceUrl ?? ""
+    );
     // id|jobId|src：尽量避免同名文件/多任务批量时 key 冲突
     return `${id}${UI_ROW_SEP}${jobId}${UI_ROW_SEP}${src}`;
   }, []);
@@ -62,31 +72,45 @@ export default function CropPage() {
   const tableScrollElRef = useRef<HTMLElement | null>(null);
   const stickyHScrollRef = useRef<HTMLDivElement | null>(null);
   const syncScrollingRef = useRef<"table" | "sticky" | null>(null);
-  const [stickyHScroll, setStickyHScroll] = useState<{ visible: boolean; left: number; width: number; scrollWidth: number }>({
+  const [stickyHScroll, setStickyHScroll] = useState<{
+    visible: boolean;
+    left: number;
+    width: number;
+    scrollWidth: number;
+  }>({
     visible: false,
     left: 0,
     width: 0,
-    scrollWidth: 0,
+    scrollWidth: 0
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const [downloadStartFolderIndex, setDownloadStartFolderIndex] = useState<number>(1);
+  const [downloadStartFolderIndex, setDownloadStartFolderIndex] =
+    useState<number>(1);
   const [downloadFixedCode, setDownloadFixedCode] = useState<string>("404");
   const [downloading, setDownloading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [excludedKeys, setExcludedKeys] = useState<Record<string, true>>({});
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewItems, setPreviewItems] = useState<{ k: string; url: string }[]>([]);
+  const [previewItems, setPreviewItems] = useState<
+    { k: string; url: string }[]
+  >([]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [activePreviewKey, setActivePreviewKey] = useState<string | null>(null);
   const [cropPage, setCropPage] = useState(1);
   const [cropPageSize, setCropPageSize] = useState(15);
   const [appName, setAppName] = useState<string>("");
   const [lang, setLang] = useState<string>("");
-  const [appNameOptions, setAppNameOptions] = useState<Array<{ label: string; value: string }>>([]);
+  const [appNameOptions, setAppNameOptions] = useState<
+    Array<{ label: string; value: string }>
+  >([]);
 
   // 输出模板固定顺序：避免某些模板缺失时“拼图/长图缩略图位置乱跳”。
   const BASE_TEMPLATE_ORDER = useMemo(
-    () => ["getCutLogoFinalPrompt", "getCutOtherFinalPrompt", "getCutScaleFinalPrompt"],
+    () => [
+      "getCutLogoFinalPrompt",
+      "getCutOtherFinalPrompt",
+      "getCutScaleFinalPrompt"
+    ],
     []
   );
   const EXTRA_TEMPLATE_ORDER_BY_RATIO = useMemo<Record<string, string[]>>(
@@ -94,16 +118,22 @@ export default function CropPage() {
       // 长图（拼长图）
       "1:1": ["stitchLongImage1024"],
       // 竖向拼图（4:5）
-      "4:5": ["getCutVerticalCollagePrompt"],
+      "4:5": ["getCutVerticalCollagePrompt"]
     }),
     []
   );
   const getOrderedTemplates = useCallback(
     (ratio: string, tplNames: string[]) => {
+      const available = new Set(
+        (Array.isArray(tplNames) ? tplNames : [])
+          .map((x) => String(x || "").trim())
+          .filter(Boolean)
+      );
       const seen = new Set<string>();
       const out: string[] = [];
       const push = (t: string) => {
         const s = String(t || "").trim();
+        if (s && !available.has(s)) return;
         if (!s || seen.has(s)) return;
         seen.add(s);
         out.push(s);
@@ -111,8 +141,7 @@ export default function CropPage() {
       for (const t of BASE_TEMPLATE_ORDER) push(t);
       for (const t of EXTRA_TEMPLATE_ORDER_BY_RATIO[ratio] || []) push(t);
       // 其它模板：保持字母序（稳定）
-      const rest = Array.isArray(tplNames) ? tplNames.map((x) => String(x || "").trim()).filter(Boolean) : [];
-      rest.sort();
+      const rest = [...available].sort();
       for (const t of rest) push(t);
       return out;
     },
@@ -148,7 +177,9 @@ export default function CropPage() {
   }, [toast, messageApi]);
 
   const sortCutRecordsForDisplay = useCallback((items: CutRecordItem[]) => {
-    const langRank = new Map<string, number>(SUPPORTED_LANGUAGES.map((x, i) => [String(x).toLowerCase(), i]));
+    const langRank = new Map<string, number>(
+      SUPPORTED_LANGUAGES.map((x, i) => [String(x).toLowerCase(), i])
+    );
 
     const norm = (v: any) => String(v ?? "").trim();
     const normLower = (v: any) => norm(v).toLowerCase();
@@ -201,7 +232,10 @@ export default function CropPage() {
     return arr;
   }, []);
 
-  const records = useMemo(() => sortCutRecordsForDisplay(rawRecords), [rawRecords, sortCutRecordsForDisplay]);
+  const records = useMemo(
+    () => sortCutRecordsForDisplay(rawRecords),
+    [rawRecords, sortCutRecordsForDisplay]
+  );
 
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 1600px)");
@@ -265,7 +299,8 @@ export default function CropPage() {
       syncScrollingRef.current = "table";
       sticky.scrollLeft = sc.scrollLeft;
       queueMicrotask(() => {
-        if (syncScrollingRef.current === "table") syncScrollingRef.current = null;
+        if (syncScrollingRef.current === "table")
+          syncScrollingRef.current = null;
       });
     };
 
@@ -277,7 +312,8 @@ export default function CropPage() {
       syncScrollingRef.current = "sticky";
       sc.scrollLeft = sticky.scrollLeft;
       queueMicrotask(() => {
-        if (syncScrollingRef.current === "sticky") syncScrollingRef.current = null;
+        if (syncScrollingRef.current === "sticky")
+          syncScrollingRef.current = null;
       });
     };
 
@@ -292,7 +328,8 @@ export default function CropPage() {
     const sc0 = findScrollEl();
     if (sc0) sc0.addEventListener("scroll", onTableScroll, { passive: true });
     const sticky0 = stickyHScrollRef.current;
-    if (sticky0) sticky0.addEventListener("scroll", onStickyScroll, { passive: true });
+    if (sticky0)
+      sticky0.addEventListener("scroll", onStickyScroll, { passive: true });
 
     return () => {
       cancelAnimationFrame(raf);
@@ -302,7 +339,16 @@ export default function CropPage() {
       if (sc) sc.removeEventListener("scroll", onTableScroll as any);
       if (sticky0) sticky0.removeEventListener("scroll", onStickyScroll as any);
     };
-  }, [cropPage, cropPageSize, isWideScreen, outputThumbSize, rawRecords.length, recordsLoading, recordsTotal, sourceThumbSize]);
+  }, [
+    cropPage,
+    cropPageSize,
+    isWideScreen,
+    outputThumbSize,
+    rawRecords.length,
+    recordsLoading,
+    recordsTotal,
+    sourceThumbSize
+  ]);
 
   const fetchRecords = useCallback(async () => {
     setRecordsLoading(true);
@@ -312,7 +358,9 @@ export default function CropPage() {
       qs.set("pageSize", String(cropPageSize));
       if (appName) qs.set("appName", String(appName));
       if (lang) qs.set("lang", String(lang));
-      const res = await fetch(`/api/cut-records?${qs.toString()}`, { method: "GET" });
+      const res = await fetch(`/api/cut-records?${qs.toString()}`, {
+        method: "GET"
+      });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
         messageApi.error(data?.error || "获取裁图记录失败");
@@ -341,24 +389,39 @@ export default function CropPage() {
     }
 
     const pad2 = (n: number) => String(n).padStart(2, "0");
-    const sanitize = (s: string) => String(s || "").replace(/[\\/:*?"<>|\s]+/g, "-").replace(/-+/g, "-").replace(/(^-|-$)/g, "");
+    const sanitize = (s: string) =>
+      String(s || "")
+        .replace(/[\\/:*?"<>|\s]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/(^-|-$)/g, "");
     const now = new Date();
     const datePrefix = `${pad2(now.getMonth() + 1)}${pad2(now.getDate())}`;
     const selectedRows = selectedRowKeys
       .map((k) => recordKeyToRow.get(k) || recordCacheRef.current.get(k))
       .filter(Boolean) as CutRecordItem[];
     const selectedIds = selectedRows.map((r) => String(r.id)).filter(Boolean);
-    const pickedAppNames = selectedRows.map((d) => String(d.appName || "").trim()).filter(Boolean);
-    const pickedLangs = selectedRows.map((d) => String(d.lang || "").trim()).filter(Boolean);
+    const pickedAppNames = selectedRows
+      .map((d) => String(d.appName || "").trim())
+      .filter(Boolean);
+    const pickedLangs = selectedRows
+      .map((d) => String(d.lang || "").trim())
+      .filter(Boolean);
     const appNamePicked =
-      pickedAppNames.length && pickedAppNames.every((x) => x === pickedAppNames[0])
+      pickedAppNames.length &&
+      pickedAppNames.every((x) => x === pickedAppNames[0])
         ? pickedAppNames[0]
-        : (pickedAppNames.length ? "mixed" : "unknown");
+        : pickedAppNames.length
+        ? "mixed"
+        : "unknown";
     const langPicked =
       pickedLangs.length && pickedLangs.every((x) => x === pickedLangs[0])
         ? pickedLangs[0]
-        : (pickedLangs.length ? "mixed" : "unknown");
-    const preSuggestedName = `${datePrefix}-${sanitize(appNamePicked)}-${sanitize(langPicked)}.zip`;
+        : pickedLangs.length
+        ? "mixed"
+        : "unknown";
+    const preSuggestedName = `${datePrefix}-${sanitize(
+      appNamePicked
+    )}-${sanitize(langPicked)}.zip`;
 
     // 为了保证大文件/慢请求时仍能弹出保存窗口：必须先触发文件选择（保持用户手势）再开始下载
     const w = window as any;
@@ -367,11 +430,16 @@ export default function CropPage() {
       try {
         fileHandle = await w.showSaveFilePicker({
           suggestedName: preSuggestedName,
-          types: [{ description: "Zip", accept: { "application/zip": [".zip"] } }],
+          types: [
+            { description: "Zip", accept: { "application/zip": [".zip"] } }
+          ]
         });
       } catch (e: any) {
         if (e?.name === "AbortError") return;
-        console.warn("showSaveFilePicker failed, fallback to traditional download:", e);
+        console.warn(
+          "showSaveFilePicker failed, fallback to traditional download:",
+          e
+        );
         // 继续走降级方案
       }
 
@@ -388,9 +456,9 @@ export default function CropPage() {
               ids: selectedIds,
               startFolderIndex: downloadStartFolderIndex,
               fixedCode: downloadFixedCode,
-              excludedKeys: Object.keys(excludedKeys),
+              excludedKeys: Object.keys(excludedKeys)
             }),
-            signal: controller.signal,
+            signal: controller.signal
           });
           if (!res.ok) {
             const data = await res.json().catch(() => null);
@@ -417,8 +485,7 @@ export default function CropPage() {
             try {
               if (writable?.abort) await writable.abort();
               else if (writable?.close) await writable.close();
-            } catch {
-            }
+            } catch {}
             throw e;
           }
           if (isMountedRef.current) {
@@ -431,11 +498,16 @@ export default function CropPage() {
           const name = anyErr?.name ? String(anyErr.name) : "";
           if (name === "AbortError") return;
           if (isMountedRef.current) {
-            setToast({ type: "error", content: e instanceof Error ? e.message : String(e), id: Date.now() });
+            setToast({
+              type: "error",
+              content: e instanceof Error ? e.message : String(e),
+              id: Date.now()
+            });
           }
           return;
         } finally {
-          if (downloadAbortRef.current === controller) downloadAbortRef.current = null;
+          if (downloadAbortRef.current === controller)
+            downloadAbortRef.current = null;
           if (isMountedRef.current) setDownloading(false);
         }
       }
@@ -454,22 +526,25 @@ export default function CropPage() {
           ids: selectedIds,
           startFolderIndex: downloadStartFolderIndex,
           fixedCode: downloadFixedCode,
-          excludedKeys: Object.keys(excludedKeys),
+          excludedKeys: Object.keys(excludedKeys)
         }),
-        signal: controller.signal,
+        signal: controller.signal
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error((data as any)?.error || `下载失败(${res.status})`);
       }
-      
+
       // 获取后端返回的文件名（格式：日期-appName-语言.zip）
       const cd = res.headers.get("Content-Disposition") || "";
-      const m = /filename\*=UTF-8''([^;]+)/.exec(cd) || /filename="([^"]+)"/.exec(cd);
-      const suggestedName = m?.[1] ? decodeURIComponent(m[1]) : `cut-download-${Date.now()}.zip`;
-      
+      const m =
+        /filename\*=UTF-8''([^;]+)/.exec(cd) || /filename="([^"]+)"/.exec(cd);
+      const suggestedName = m?.[1]
+        ? decodeURIComponent(m[1])
+        : `cut-download-${Date.now()}.zip`;
+
       const blob = await res.blob();
-      
+
       // 降级方案：使用传统的下载方式
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -488,10 +563,15 @@ export default function CropPage() {
       const name = anyErr?.name ? String(anyErr.name) : "";
       if (name === "AbortError") return;
       if (isMountedRef.current) {
-        setToast({ type: "error", content: e instanceof Error ? e.message : String(e), id: Date.now() });
+        setToast({
+          type: "error",
+          content: e instanceof Error ? e.message : String(e),
+          id: Date.now()
+        });
       }
     } finally {
-      if (downloadAbortRef.current === controller) downloadAbortRef.current = null;
+      if (downloadAbortRef.current === controller)
+        downloadAbortRef.current = null;
       if (isMountedRef.current) setDownloading(false);
     }
   };
@@ -529,24 +609,36 @@ export default function CropPage() {
       const [wRaw, hRaw] = String(ratio || "").split(":");
       const w = Number(wRaw);
       const h = Number(hRaw);
-      if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return false;
+      if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0)
+        return false;
       return w <= h; // 方图(=) + 竖图(<)
     };
 
     setRegenerating(true);
     try {
-      const items: Array<{ sourceUrl: string; ratio: string; templateName: string; appName?: string; lang?: string }> = [];
+      const items: Array<{
+        sourceUrl: string;
+        ratio: string;
+        templateName: string;
+        appName?: string;
+        lang?: string;
+      }> = [];
       const dedupe = new Set<string>();
 
       for (const row of selectedRows) {
         if (!row?.sourceUrl) continue;
-        const outs = row.outputs && typeof row.outputs === "object" ? row.outputs : undefined;
+        const outs =
+          row.outputs && typeof row.outputs === "object"
+            ? row.outputs
+            : undefined;
         if (!outs) continue;
         const rowK = getUiRowKey(row);
 
         for (const ratio of Object.keys(outs)) {
           if (!isSquareOrPortrait(ratio)) continue;
-          const byTpl = (outs as any)[ratio] as Record<string, CutRecordOutputItem> | undefined;
+          const byTpl = (outs as any)[ratio] as
+            | Record<string, CutRecordOutputItem>
+            | undefined;
           if (!byTpl || typeof byTpl !== "object") continue;
           for (const templateName of Object.keys(byTpl)) {
             const k = `${rowK}|${ratio}|${templateName}`;
@@ -557,7 +649,7 @@ export default function CropPage() {
               ratio: String(ratio),
               templateName: String(templateName),
               appName: row.appName ? String(row.appName) : undefined,
-              lang: row.lang ? String(row.lang) : undefined,
+              lang: row.lang ? String(row.lang) : undefined
             });
           }
         }
@@ -571,7 +663,7 @@ export default function CropPage() {
       const res = await fetch("/api/cut-jobs/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, concurrency: 32 }),
+        body: JSON.stringify({ items, concurrency: 32 })
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
@@ -584,14 +676,20 @@ export default function CropPage() {
           localStorage.setItem(batchLastJobIdKey, jobId);
           const raw = localStorage.getItem(batchRecentJobIdsKey);
           const arr = raw ? JSON.parse(raw) : [];
-          const prev = Array.isArray(arr) ? arr.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
-          const next = [jobId, ...prev.filter((x: string) => x !== jobId)].slice(0, 50);
+          const prev = Array.isArray(arr)
+            ? arr.map((x: any) => String(x || "").trim()).filter(Boolean)
+            : [];
+          const next = [
+            jobId,
+            ...prev.filter((x: string) => x !== jobId)
+          ].slice(0, 50);
           localStorage.setItem(batchRecentJobIdsKey, JSON.stringify(next));
         }
-      } catch {
-      }
+      } catch {}
 
-      messageApi.success(`已创建重新生成任务(方/竖): ${String(data.jobId || "") || "-"}`);
+      messageApi.success(
+        `已创建重新生成任务(方/竖): ${String(data.jobId || "") || "-"}`
+      );
       fetchRecords();
     } catch (e) {
       messageApi.error(e instanceof Error ? e.message : String(e));
@@ -602,23 +700,34 @@ export default function CropPage() {
 
   const regenerateExcluded = async () => {
     if (!excludedKeysScoped.length) {
-      messageApi.warning(selectedRowKeys.length ? "选中记录中没有置灰的图片" : "当前没有置灰的图片");
+      messageApi.warning(
+        selectedRowKeys.length
+          ? "选中记录中没有置灰的图片"
+          : "当前没有置灰的图片"
+      );
       return;
     }
     setRegenerating(true);
     try {
-      const items: Array<{ sourceUrl: string; ratio: string; templateName: string; appName?: string; lang?: string }> = [];
+      const items: Array<{
+        sourceUrl: string;
+        ratio: string;
+        templateName: string;
+        appName?: string;
+        lang?: string;
+      }> = [];
       for (const k of excludedKeysScoped) {
         const [rowK, ratio, templateName] = k.split("|");
         if (!rowK || !ratio || !templateName) continue;
-        const row = recordKeyToRow.get(rowK) || recordCacheRef.current.get(rowK);
+        const row =
+          recordKeyToRow.get(rowK) || recordCacheRef.current.get(rowK);
         if (!row?.sourceUrl) continue;
         items.push({
           sourceUrl: String(row.sourceUrl),
           ratio: String(ratio),
           templateName: String(templateName),
           appName: row.appName ? String(row.appName) : undefined,
-          lang: row.lang ? String(row.lang) : undefined,
+          lang: row.lang ? String(row.lang) : undefined
         });
       }
       if (!items.length) {
@@ -629,7 +738,7 @@ export default function CropPage() {
       const res = await fetch("/api/cut-jobs/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, concurrency: 32 }),
+        body: JSON.stringify({ items, concurrency: 32 })
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
@@ -642,12 +751,16 @@ export default function CropPage() {
           localStorage.setItem(batchLastJobIdKey, jobId);
           const raw = localStorage.getItem(batchRecentJobIdsKey);
           const arr = raw ? JSON.parse(raw) : [];
-          const prev = Array.isArray(arr) ? arr.map((x: any) => String(x || "").trim()).filter(Boolean) : [];
-          const next = [jobId, ...prev.filter((x: string) => x !== jobId)].slice(0, 50);
+          const prev = Array.isArray(arr)
+            ? arr.map((x: any) => String(x || "").trim()).filter(Boolean)
+            : [];
+          const next = [
+            jobId,
+            ...prev.filter((x: string) => x !== jobId)
+          ].slice(0, 50);
           localStorage.setItem(batchRecentJobIdsKey, JSON.stringify(next));
         }
-      } catch {
-      }
+      } catch {}
 
       setExcludedKeys((prev) => {
         const next = { ...(prev || {}) };
@@ -655,7 +768,9 @@ export default function CropPage() {
         return next;
       });
 
-      messageApi.success(`已创建重新生成任务: ${String(data.jobId || "") || "-"}`);
+      messageApi.success(
+        `已创建重新生成任务: ${String(data.jobId || "") || "-"}`
+      );
       fetchRecords();
     } catch (e) {
       messageApi.error(e instanceof Error ? e.message : String(e));
@@ -673,37 +788,57 @@ export default function CropPage() {
     });
   }, []);
 
-  const buildRowPreviewItems = useCallback((row: CutRecordItem) => {
-    const outs = row.outputs && typeof row.outputs === "object" ? row.outputs : undefined;
-    if (!outs) return [];
-    const rowK = getUiRowKey(row);
-    const ratioOrder: Record<string, number> = { "1:1": 1, "4:5": 2, "16:9": 3, "9:16": 4 };
-    const ratios = Object.keys(outs).sort((a, b) => (ratioOrder[a] ?? 999) - (ratioOrder[b] ?? 999) || a.localeCompare(b));
-    const items: { k: string; url: string }[] = [];
-    for (const ratio of ratios) {
-      const byTpl = outs[ratio];
-      if (!byTpl || typeof byTpl !== "object") continue;
-      const tplNames = Object.keys(byTpl);
-      const orderedTpls = getOrderedTemplates(ratio, tplNames);
-      for (const tpl of orderedTpls) {
-        const it = (byTpl as any)[tpl] as CutRecordOutputItem | undefined;
-        const url = it?.outputUrl ? String(it.outputUrl) : "";
-        if (!url) continue;
-        items.push({ k: `${rowK}|${ratio}|${tpl}`, url });
+  const buildRowPreviewItems = useCallback(
+    (row: CutRecordItem) => {
+      const outs =
+        row.outputs && typeof row.outputs === "object"
+          ? row.outputs
+          : undefined;
+      if (!outs) return [];
+      const rowK = getUiRowKey(row);
+      const ratioOrder: Record<string, number> = {
+        "1:1": 1,
+        "4:5": 2,
+        "16:9": 3,
+        "9:16": 4
+      };
+      const ratios = Object.keys(outs).sort(
+        (a, b) =>
+          (ratioOrder[a] ?? 999) - (ratioOrder[b] ?? 999) || a.localeCompare(b)
+      );
+      const items: { k: string; url: string }[] = [];
+      for (const ratio of ratios) {
+        const byTpl = outs[ratio];
+        if (!byTpl || typeof byTpl !== "object") continue;
+        const tplNames = Object.keys(byTpl);
+        const orderedTpls = getOrderedTemplates(ratio, tplNames);
+        for (const tpl of orderedTpls) {
+          const it = (byTpl as any)[tpl] as CutRecordOutputItem | undefined;
+          const url = it?.outputUrl ? String(it.outputUrl) : "";
+          if (!url) continue;
+          items.push({ k: `${rowK}|${ratio}|${tpl}`, url });
+        }
       }
-    }
-    return items;
-  }, [getOrderedTemplates, getUiRowKey]);
+      return items;
+    },
+    [getOrderedTemplates, getUiRowKey]
+  );
 
-  const openRowPreview = useCallback((row: CutRecordItem, k: string) => {
-    const items = buildRowPreviewItems(row);
-    if (!items.length) return;
-    const idx = Math.max(0, items.findIndex((x) => x.k === k));
-    setPreviewItems(items);
-    setPreviewIndex(idx);
-    setActivePreviewKey(items[idx]?.k || null);
-    setPreviewOpen(true);
-  }, [buildRowPreviewItems]);
+  const openRowPreview = useCallback(
+    (row: CutRecordItem, k: string) => {
+      const items = buildRowPreviewItems(row);
+      if (!items.length) return;
+      const idx = Math.max(
+        0,
+        items.findIndex((x) => x.k === k)
+      );
+      setPreviewItems(items);
+      setPreviewIndex(idx);
+      setActivePreviewKey(items[idx]?.k || null);
+      setPreviewOpen(true);
+    },
+    [buildRowPreviewItems]
+  );
 
   useEffect(() => {
     fetchRecords();
@@ -716,7 +851,9 @@ export default function CropPage() {
         const data = await res.json();
         if (!res.ok || !data?.ok) return;
         const arr = Array.isArray(data.items) ? data.items : [];
-        setAppNameOptions(arr.map((x: string) => ({ label: String(x), value: String(x) })));
+        setAppNameOptions(
+          arr.map((x: string) => ({ label: String(x), value: String(x) }))
+        );
       } catch {
         //
       }
@@ -740,19 +877,33 @@ export default function CropPage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activePreviewKey, previewOpen, previewIndex, previewItems, toggleExclude]);
+  }, [
+    activePreviewKey,
+    previewOpen,
+    previewIndex,
+    previewItems,
+    toggleExclude
+  ]);
 
   const ratioKeys = useMemo(() => {
     const set = new Set<string>();
     for (const r of records) {
-      const outs = r.outputs && typeof r.outputs === "object" ? r.outputs : undefined;
+      const outs =
+        r.outputs && typeof r.outputs === "object" ? r.outputs : undefined;
       if (!outs) continue;
       for (const k of Object.keys(outs)) set.add(k);
     }
     const arr = [...set];
     if (!arr.length) return ["1:1", "4:5"];
-    const order: Record<string, number> = { "1:1": 1, "4:5": 2, "16:9": 3, "9:16": 4 };
-    return arr.sort((a, b) => (order[a] ?? 999) - (order[b] ?? 999) || a.localeCompare(b));
+    const order: Record<string, number> = {
+      "1:1": 1,
+      "4:5": 2,
+      "16:9": 3,
+      "9:16": 4
+    };
+    return arr.sort(
+      (a, b) => (order[a] ?? 999) - (order[b] ?? 999) || a.localeCompare(b)
+    );
   }, [records]);
 
   const columns = useMemo(() => {
@@ -764,22 +915,34 @@ export default function CropPage() {
         width: 132,
         align: "center",
         render: (v: any, row: CutRecordItem) => {
-          const s = (v || row.createdAt) ? String(v || row.createdAt) : "";
+          const s = v || row.createdAt ? String(v || row.createdAt) : "";
           if (!s) return <Typography.Text type="secondary">-</Typography.Text>;
           const d = new Date(s);
-          if (Number.isNaN(d.getTime())) return <Typography.Text>{s}</Typography.Text>;
+          if (Number.isNaN(d.getTime()))
+            return <Typography.Text>{s}</Typography.Text>;
           return (
             <div style={{ lineHeight: 1.15 }}>
-              <Typography.Text style={{ whiteSpace: "nowrap" }}>{d.toLocaleDateString()}</Typography.Text>
+              <Typography.Text style={{ whiteSpace: "nowrap" }}>
+                {d.toLocaleDateString()}
+              </Typography.Text>
               <br />
-              <Typography.Text type="secondary" style={{ whiteSpace: "nowrap" }}>
+              <Typography.Text
+                type="secondary"
+                style={{ whiteSpace: "nowrap" }}
+              >
                 {d.toLocaleTimeString()}
               </Typography.Text>
             </div>
           );
-        },
+        }
       },
-      { title: "状态", dataIndex: "status", key: "status", width: 60, align: "center" },
+      {
+        title: "状态",
+        dataIndex: "status",
+        key: "status",
+        width: 60,
+        align: "center"
+      },
       {
         title: "原图",
         dataIndex: "sourceUrl",
@@ -798,8 +961,8 @@ export default function CropPage() {
           ) : (
             <Typography.Text type="secondary">-</Typography.Text>
           );
-        },
-      },
+        }
+      }
     ];
 
     const ratioCols = ratioKeys.map((ratio) => ({
@@ -810,19 +973,25 @@ export default function CropPage() {
       align: "center",
       render: (_v: any, row: CutRecordItem) => {
         const calcThumbHeight = (ratioStr: string, w: number) => {
-          const m = String(ratioStr || "").trim().match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+          const m = String(ratioStr || "")
+            .trim()
+            .match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
           const a = m?.[1] ? Number(m[1]) : NaN;
           const b = m?.[2] ? Number(m[2]) : NaN;
-          if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) return Math.max(56, Math.floor(w * 0.75));
+          if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0)
+            return Math.max(56, Math.floor(w * 0.75));
           return Math.max(56, Math.round((w * b) / a));
         };
         const thumbH = calcThumbHeight(ratio, outputThumbSize);
 
-        const byTpl = row.outputs && row.outputs[ratio] ? row.outputs[ratio] : undefined;
-        if (!byTpl || typeof byTpl !== "object") return <Typography.Text type="secondary">-</Typography.Text>;
+        const byTpl =
+          row.outputs && row.outputs[ratio] ? row.outputs[ratio] : undefined;
+        if (!byTpl || typeof byTpl !== "object")
+          return <Typography.Text type="secondary">-</Typography.Text>;
         const tplNames = Object.keys(byTpl);
         const orderedTpls = getOrderedTemplates(ratio, tplNames);
-        if (!orderedTpls.length) return <Typography.Text type="secondary">-</Typography.Text>;
+        if (!orderedTpls.length)
+          return <Typography.Text type="secondary">-</Typography.Text>;
         const items = orderedTpls.map((tpl) => {
           const it = (byTpl as any)[tpl] as CutRecordOutputItem | undefined;
           const url = it?.outputUrl ? String(it.outputUrl) : "";
@@ -840,12 +1009,14 @@ export default function CropPage() {
               gap: 4,
               overflowX: "auto",
               overflowY: "hidden",
-              justifyContent: "center",
+              justifyContent: "center"
             }}
           >
             {items.map((it) => {
               const disabled = !it.url;
-              const title = `${it.tpl}${it.st ? ` (${it.st})` : ""}${it.err ? `: ${it.err}` : ""}`;
+              const title = `${it.tpl}${it.st ? ` (${it.st})` : ""}${
+                it.err ? `: ${it.err}` : ""
+              }`;
               return (
                 <div
                   key={it.k}
@@ -853,8 +1024,10 @@ export default function CropPage() {
                   style={{
                     width: outputThumbSize,
                     lineHeight: 0,
-                    filter: excludedKeys[it.k] ? "grayscale(1) opacity(0.35)" : undefined,
-                    cursor: disabled ? "default" : "pointer",
+                    filter: excludedKeys[it.k]
+                      ? "grayscale(1) opacity(0.35)"
+                      : undefined,
+                    cursor: disabled ? "default" : "pointer"
                   }}
                   onContextMenu={(e) => {
                     e.preventDefault();
@@ -884,10 +1057,13 @@ export default function CropPage() {
                         border: "1px solid rgba(0,0,0,0.06)",
                         borderRadius: 6,
                         padding: 6,
-                        boxSizing: "border-box",
+                        boxSizing: "border-box"
                       }}
                     >
-                      <Typography.Text type="secondary" style={{ fontSize: 11, lineHeight: 1.1 }}>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: 11, lineHeight: 1.1 }}
+                      >
                         {it.st || "-"}
                       </Typography.Text>
                     </div>
@@ -897,7 +1073,7 @@ export default function CropPage() {
             })}
           </div>
         );
-      },
+      }
     }));
 
     base.push(...ratioCols);
@@ -918,7 +1094,7 @@ export default function CropPage() {
                 maxWidth: "100%",
                 whiteSpace: "normal",
                 wordBreak: "break-word",
-                lineHeight: 1.15,
+                lineHeight: 1.15
               }}
             >
               {s}
@@ -926,7 +1102,7 @@ export default function CropPage() {
           ) : (
             <Typography.Text type="secondary">-</Typography.Text>
           );
-        },
+        }
       },
       {
         title: "lang",
@@ -936,9 +1112,13 @@ export default function CropPage() {
         align: "center",
         render: (v: any) => {
           const s = v ? String(v) : "";
-          return s ? <Typography.Text>{s}</Typography.Text> : <Typography.Text type="secondary">-</Typography.Text>;
-        },
-      },
+          return s ? (
+            <Typography.Text>{s}</Typography.Text>
+          ) : (
+            <Typography.Text type="secondary">-</Typography.Text>
+          );
+        }
+      }
     );
     base.push({
       title: "job",
@@ -956,7 +1136,7 @@ export default function CropPage() {
             style={{
               display: "inline-block",
               maxWidth: "100%",
-              whiteSpace: "nowrap",
+              whiteSpace: "nowrap"
             }}
           >
             跳转
@@ -964,11 +1144,21 @@ export default function CropPage() {
         ) : (
           <Typography.Text type="secondary">-</Typography.Text>
         );
-      },
+      }
     });
 
     return base;
-  }, [excludedKeys, getOrderedTemplates, getUiRowKey, isWideScreen, openRowPreview, outputThumbSize, ratioKeys, sourceThumbSize, toggleExclude]);
+  }, [
+    excludedKeys,
+    getOrderedTemplates,
+    getUiRowKey,
+    isWideScreen,
+    openRowPreview,
+    outputThumbSize,
+    ratioKeys,
+    sourceThumbSize,
+    toggleExclude
+  ]);
 
   return (
     <AdminShell defaultSelectedKey="/crop" headerTitle="裁图展示">
@@ -1028,7 +1218,7 @@ export default function CropPage() {
             onChange: (current: number) => {
               setPreviewIndex(current);
               setActivePreviewKey(previewItems[current]?.k || null);
-            },
+            }
           }}
         />
         <Space wrap style={{ marginBottom: 8 }} size={8}>
@@ -1040,8 +1230,12 @@ export default function CropPage() {
             style={{ width: 180 }}
             value={appName || undefined}
             options={appNameOptions}
-            showSearch={{filterOption: (input, option) =>
-              (option?.label ?? "").toString().toLowerCase().includes((input || "").toLowerCase())
+            showSearch={{
+              filterOption: (input, option) =>
+                (option?.label ?? "")
+                  .toString()
+                  .toLowerCase()
+                  .includes((input || "").toLowerCase())
             }}
             onChange={(v) => {
               setAppName(String(v ?? ""));
@@ -1056,27 +1250,58 @@ export default function CropPage() {
             style={{ width: 120 }}
             value={lang || undefined}
             options={SUPPORTED_LANGUAGES.map((x) => ({ label: x, value: x }))}
-            showSearch={{filterOption: (input, option) =>
-              (option?.label ?? "").toString().toLowerCase().includes((input || "").toLowerCase())
+            showSearch={{
+              filterOption: (input, option) =>
+                (option?.label ?? "")
+                  .toString()
+                  .toLowerCase()
+                  .includes((input || "").toLowerCase())
             }}
             onChange={(v) => {
               setLang(String(v ?? ""));
               setCropPage(1);
             }}
           />
-          <Button size="small" icon={<ReloadOutlined />} onClick={fetchRecords} loading={recordsLoading}>
+          <Button
+            size="small"
+            icon={<ReloadOutlined />}
+            onClick={fetchRecords}
+            loading={recordsLoading}
+          >
             刷新
           </Button>
-          <Typography.Text type="secondary">{recordsLoading ? "加载中..." : `${recordsTotal} 条`}</Typography.Text>
+          <Typography.Text type="secondary">
+            {recordsLoading ? "加载中..." : `${recordsTotal} 条`}
+          </Typography.Text>
           <Space size={6}>
             <Typography.Text type="secondary">起始序号</Typography.Text>
-            <InputNumber size="small" min={1} value={downloadStartFolderIndex} onChange={(v) => setDownloadStartFolderIndex(Number(v || 1))} />
+            <InputNumber
+              size="small"
+              min={1}
+              value={downloadStartFolderIndex}
+              onChange={(v) => setDownloadStartFolderIndex(Number(v || 1))}
+            />
             <Typography.Text type="secondary">固定码</Typography.Text>
-            <Input size="small" style={{ width: 90 }} value={downloadFixedCode} onChange={(e) => setDownloadFixedCode(e.target.value)} />
-            <Button size="small" type="primary" disabled={!selectedRowKeys.length} loading={downloading} onClick={downloadSelected}>
+            <Input
+              size="small"
+              style={{ width: 90 }}
+              value={downloadFixedCode}
+              onChange={(e) => setDownloadFixedCode(e.target.value)}
+            />
+            <Button
+              size="small"
+              type="primary"
+              disabled={!selectedRowKeys.length}
+              loading={downloading}
+              onClick={downloadSelected}
+            >
               下载选中({selectedRowKeys.length})
             </Button>
-            <Button size="small" disabled={!selectedRowKeys.length} onClick={() => setSelectedRowKeys([])}>
+            <Button
+              size="small"
+              disabled={!selectedRowKeys.length}
+              onClick={() => setSelectedRowKeys([])}
+            >
               清空选择
             </Button>
             <Button
@@ -1097,7 +1322,10 @@ export default function CropPage() {
             </Button>
           </Space>
         </Space>
-        <div ref={tableWrapRef} style={{ paddingBottom: stickyHScroll.visible ? 14 : 0 }}>
+        <div
+          ref={tableWrapRef}
+          style={{ paddingBottom: stickyHScroll.visible ? 14 : 0 }}
+        >
           <Table
             className="cropTable"
             size="small"
@@ -1117,14 +1345,14 @@ export default function CropPage() {
                   setCropPageSize(pageSize);
                   setCropPage(1);
                 }
-              },
+              }
             }}
             columns={columns}
             // 不强制按内容撑开整张表，1920 下尽量不出现表格外层左右滚动条
             scroll={{ x: 1600 }}
             rowSelection={{
               selectedRowKeys,
-              onChange: (keys) => setSelectedRowKeys(keys as string[]),
+              onChange: (keys) => setSelectedRowKeys(keys as string[])
             }}
           />
         </div>
@@ -1138,7 +1366,7 @@ export default function CropPage() {
               left: stickyHScroll.left,
               bottom: 0,
               width: stickyHScroll.width,
-              zIndex: 999,
+              zIndex: 999
             }}
           >
             {/* 只用来撑出 scrollWidth，从而生成滚动条 */}
@@ -1149,4 +1377,3 @@ export default function CropPage() {
     </AdminShell>
   );
 }
-

@@ -170,7 +170,7 @@ export default function ReferenceGalleryPage() {
   const fetchAppNames = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/reference-images?names=1", {
+      const res = await fetch("/api/app-names", {
         method: "GET"
       });
       const data = await res.json().catch(() => null);
@@ -178,8 +178,8 @@ export default function ReferenceGalleryPage() {
         enqueueNotice("error", data?.error || "获取 appName 列表失败");
         return;
       }
-      const next = Array.isArray(data?.appNames)
-        ? data.appNames.map((x: any) => String(x || "").trim()).filter(Boolean)
+      const next = Array.isArray(data?.items)
+        ? data.items.map((x: any) => String(x || "").trim()).filter(Boolean)
         : [];
       setAppNames(next);
       setAppName((prev) => prev || next[0] || "");

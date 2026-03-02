@@ -3,6 +3,7 @@ import { join, normalize } from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { startCutJob } from "@/lib/server/batchJobRunner";
+import { getCutTemplatesForAppRatio } from "@/lib/server/utils";
 import { requireApiAccess, resolveGalleryOwnerUserId } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
@@ -120,10 +121,7 @@ export async function POST(req: Request) {
   const concurrencyRaw = Math.max(1, Number((body as any).concurrency ?? 8) || 8);
   const concurrency = guard.authz.isSuperAdmin ? concurrencyRaw : Math.min(concurrencyRaw, nonAdminMax);
 
-  const templateNames = ["getCutLogoFinalPrompt", "getCutOtherFinalPrompt", "getCutScaleFinalPrompt"];
   const ratios = ["1:1", "4:5"];
-  const stitchTemplateName = "stitchLongImage1024";
-  const verticalCollageTemplateName = "getCutVerticalCollagePrompt";
 
   const now = new Date();
   const requestId = new ObjectId();
@@ -189,10 +187,9 @@ export async function POST(req: Request) {
       if (!(await fs.pathExists(abs))) return Response.json({ ok: false, error: `图片不存在: ${url}` }, { status: 400 });
 
       for (const ratio of ratios) {
+        const templateNames = getCutTemplatesForAppRatio(appName, ratio);
         for (const templateName of templateNames) desired.push({ url, abs, appName, lang, ratio, templateName });
-        if (ratio === "4:5") desired.push({ url, abs, appName, lang, ratio, templateName: verticalCollageTemplateName });
       }
-      desired.push({ url, abs, appName, lang, ratio: "1:1", templateName: stitchTemplateName });
     }
   } else {
     for (const it of items) {

@@ -64,7 +64,18 @@ export type GlobalPromptContext = {
  * 这里放“跨模板的硬性约束”，避免在每个模板里重复写。
  */
 export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
-  void ctx;
+  const appName = String(ctx?.appName || "").trim();
+  const isBuzz = !!appName && appName.toLowerCase() === "buzz";
+
+  if (isBuzz) {
+    return `
+## 最高优先级｜绝对禁止事项
+> 与其他任何指令冲突时，以本段为准。
+## 时代背景（仅供参考）
+- **当前年份**：${new Date().getFullYear()}年
+  `;
+  }
+
   return `
 ## 最高优先级｜绝对禁止事项
 > 与其他任何指令冲突时，以本段为准。

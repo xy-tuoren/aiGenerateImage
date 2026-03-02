@@ -261,7 +261,7 @@ export function getBackgroundPrompt({ appName, lang, prompt, aspectRatio }: { ap
   return `生成一张新图更换背景其他不变`;
 }
 
-export function getAppAdsDesignerGemini3Prompt({
+export function getBuzzDefaultPrompt({
   appName,
   lang,
   prompt,
@@ -273,30 +273,13 @@ export function getAppAdsDesignerGemini3Prompt({
   aspectRatio?: string;
   [key: string]: any
 }) {
-  return `你是一名专业的广告设计师，为"${appName}"应用创作高质量的${lang}推广广告。
+  return `你是一名专业的广告设计师，这是你过去制作的广告图片，为了进一步推广产品，你需要制作更多的广告图片，你应该使用相同风格制作新的广告，但请注意新的广告与现有广告不应过度相似。图片文字语言要为${lang}。`
+}
 
-# 核心创意要求
-根据以下概念创作："${prompt}"
+export function getBuzzCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
+  return `生成一张${getRatioDesc(aspectRatio)}，需要重新调整构图以及元素适应新尺寸`;
+}
 
-参考图仅用于获取灵感：
-- 可以借鉴：色彩风格、设计美学、光影氛围
-- 必须原创：构图布局、视角、元素摆放、整体结构
-- 自由发挥你的创意，不要复制参考图的构图
-
-# 必须遵守的限制
-1. **语言要求**：所有可见文字必须100%使用${lang}语言，包括标题、UI文字、背景文字等
-2. **禁止日期**：不要出现具体月份/日期（如"12/1"、"1月31日"），可以用"限定"、"新登場"、"今すぐ"等无时效性词语
-3. **品牌识别必须强**（重要）：
-   - "${appName}"的App图标/Logo必须是画面最醒目的主视觉元素（建议占画面面积的15%-25%），不要做成角落小图标
-   - "${appName}"应用名必须作为主标题或核心文案，字号足够大，缩略图/远看也能一眼读清
-   - 通过对比色、留白、光影或背景虚化确保Logo与应用名清晰突出，避免被复杂背景淹没
-   - 画面中不要出现其他品牌Logo/水印/平台标识（如YouTube等），避免让人误判广告主体
-
-# 创作建议
-- 追求专业的商业广告质量
-- 保持画面简洁有力，文字不超过3条且每条不超过8个字符
-- 让创意自然流动，根据概念自由选择表现手法（可以包含设备、抽象元素、场景等任何合适的方式）
-- 避免过度科幻或赛博朋克风格，除非概念明确需要
-
-现在请根据"${prompt}"创作一张高质量的广告图片。`;
+export function getBuzzCutChangeFinalPrompt({ appName, lang, prompt, aspectRatio }: { appName?: string; lang?: string; prompt?: string; aspectRatio?: string;[key: string]: any }) {
+  return `生成一张${getRatioDesc(aspectRatio)}，需要重新调整构图以及元素适应新尺寸并且需要适当变化图中文字、元素的内容但是总体含义不变，要跟参考图有关联性`;
 }
