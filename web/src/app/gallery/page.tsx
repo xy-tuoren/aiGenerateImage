@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Space,
-  message
-} from "antd";
+import { Space, message } from "antd";
 import AdminShell from "@/app/_components/AdminShell";
 
 import type { GridImage, HistoryItem } from "./_lib/types";
@@ -35,7 +32,9 @@ export default function GalleryPage() {
   const [lang, setLang] = useState<string>("");
   const [aspectRatio, setAspectRatio] = useState<string>("16:9");
   const [cutFilter, setCutFilter] = useState<"cut" | "uncut">("uncut");
-  const [downloadedFilter, setDownloadedFilter] = useState<"downloaded" | "undownloaded">("undownloaded");
+  const [downloadedFilter, setDownloadedFilter] = useState<
+    "downloaded" | "undownloaded"
+  >("undownloaded");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
@@ -172,7 +171,9 @@ export default function GalleryPage() {
         for (let ci = 0; ci < chunks.length; ci++) {
           messageApi.open({
             type: "loading",
-            content: `正在上传到图片广场（${ci + 1}/${chunks.length}，${chunks[ci].length}）...`,
+            content: `正在上传到图片广场（${ci + 1}/${chunks.length}，${
+              chunks[ci].length
+            }）...`,
             duration: 0,
             key: "uploadLongFolder"
           });
@@ -414,20 +415,22 @@ export default function GalleryPage() {
         it.prompt != null
           ? String(it.prompt)
           : it?.configMeta?.prompt != null
-            ? String(it.configMeta.prompt)
-            : "";
+          ? String(it.configMeta.prompt)
+          : "";
       const prompt = promptRaw.trim();
       const referenceImagesRaw = Array.isArray(it.referenceImages)
         ? it.referenceImages
         : Array.isArray(it?.configMeta?.referenceImages)
-          ? it.configMeta!.referenceImages!
-          : [];
+        ? it.configMeta!.referenceImages!
+        : [];
       const referenceImages = referenceImagesRaw
         .map((x) => String(x || "").trim())
         .filter(Boolean);
       const url = normalizeMaterialUrl(String(it.url));
       g.imgs.push({
-        key: `${recId || `${gk}|${configId}|${index}|${createdAt || ""}`}|${it.url}`,
+        key: `${recId || `${gk}|${configId}|${index}|${createdAt || ""}`}|${
+          it.url
+        }`,
         url,
         jobId,
         configId: groupConfigId,
@@ -464,7 +467,10 @@ export default function GalleryPage() {
   const hiddenKeySet = useMemo(() => new Set(hiddenKeys), [hiddenKeys]);
   const selectedKeySet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
   const cutUrlSet = useMemo(() => new Set(cutUrls), [cutUrls]);
-  const downloadedUrlSet = useMemo(() => new Set(downloadedUrls), [downloadedUrls]);
+  const downloadedUrlSet = useMemo(
+    () => new Set(downloadedUrls),
+    [downloadedUrls]
+  );
   const fireplayUploadedUrlSet = useMemo(
     () => new Set(fireplayUploadedUrls),
     [fireplayUploadedUrls]
@@ -482,10 +488,19 @@ export default function GalleryPage() {
       cutFilter === "cut" ? cutUrlSet.has(img.url) : !cutUrlSet.has(img.url)
     );
     arr = arr.filter((img) =>
-      downloadedFilter === "downloaded" ? downloadedUrlSet.has(img.url) : !downloadedUrlSet.has(img.url)
+      downloadedFilter === "downloaded"
+        ? downloadedUrlSet.has(img.url)
+        : !downloadedUrlSet.has(img.url)
     );
     return arr;
-  }, [visibleGridImages, cutFilter, cutUrlSet, downloadedFilter, downloadedUrlSet, fireplayUploadedUrlSet]);
+  }, [
+    visibleGridImages,
+    cutFilter,
+    cutUrlSet,
+    downloadedFilter,
+    downloadedUrlSet,
+    fireplayUploadedUrlSet
+  ]);
 
   const paginatedGridImages: GridImage[] = useMemo(() => {
     return filteredGridImages.slice(0, galleryPage * galleryPageSize);
@@ -542,15 +557,18 @@ export default function GalleryPage() {
     });
   }, []);
 
-  const onOpenPreviewAt = useCallback((idx: number) => {
-    if (suppressClickRef.current) {
-      suppressClickRef.current = false;
-      return;
-    }
-    setPreviewIndex(idx);
-    setPreviewOpen(true);
-    blurActiveElement();
-  }, [blurActiveElement]);
+  const onOpenPreviewAt = useCallback(
+    (idx: number) => {
+      if (suppressClickRef.current) {
+        suppressClickRef.current = false;
+        return;
+      }
+      setPreviewIndex(idx);
+      setPreviewOpen(true);
+      blurActiveElement();
+    },
+    [blurActiveElement]
+  );
 
   const onPreviewOpenChange = useCallback((open: boolean) => {
     setPreviewOpen(Boolean(open));
@@ -932,7 +950,11 @@ export default function GalleryPage() {
         return m?.[1] ? String(m[1]).trim() : "";
       };
 
-      const filenamePrefix = `gallery-${String(appName || "all").trim() || "all"}-${String(lang || "all").trim() || "all"}-${String(aspectRatio || "").trim() || "ratio"}`;
+      const filenamePrefix = `gallery-${
+        String(appName || "all").trim() || "all"
+      }-${String(lang || "all").trim() || "all"}-${
+        String(aspectRatio || "").trim() || "ratio"
+      }`;
       const res = await fetch("/api/cut-records/download", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -957,7 +979,7 @@ export default function GalleryPage() {
       document.body.appendChild(a);
       a.click();
       a.remove();
-    
+
       window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
       messageApi.success("已开始下载");
       try {
@@ -969,10 +991,12 @@ export default function GalleryPage() {
         const markData = await markRes.json().catch(() => null);
         if (markRes.ok && markData?.ok) {
           const urlsToAdd = picked.map((p) => p.url).filter(Boolean);
-          if (urlsToAdd.length) setDownloadedUrls((prev) => Array.from(new Set([...prev, ...urlsToAdd])));
+          if (urlsToAdd.length)
+            setDownloadedUrls((prev) =>
+              Array.from(new Set([...prev, ...urlsToAdd]))
+            );
         }
-      } catch {
-      }
+      } catch {}
       setSelectedKeys([]);
       setSelectMode(false);
     } catch (e: any) {

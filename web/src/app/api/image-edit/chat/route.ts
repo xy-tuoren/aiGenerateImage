@@ -25,6 +25,14 @@ type ImageEditConversationDoc = {
   userId: string;
   title: string;
   lastMessage?: string;
+  generationSettings?: {
+    enableImageSettings: boolean;
+    outputCount: number;
+    thinkingLevel: "high" | "minimal";
+    temperature: 0.5 | 1 | 1.5 | 2;
+    aspectRatio?: string;
+    imageSize?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 };
@@ -35,9 +43,22 @@ type ImageEditMessageDoc = {
   userId: string;
   role: "user" | "assistant";
   text?: string;
-  thoughtProcess?: string;
+  loading?: boolean;
   imageBase64?: string;
   imageMimeType?: string;
+  thoughtSignature?: string;
+  modelParts?: any[];
+  createdAt: Date;
+};
+
+type ImageEditMessageImageDoc = {
+  _id?: ObjectId;
+  conversationId: ObjectId;
+  messageId: ObjectId;
+  userId: string;
+  index: number;
+  imageBase64: string;
+  imageMimeType: string;
   thoughtSignature?: string;
   modelParts?: any[];
   createdAt: Date;
@@ -170,8 +191,20 @@ function buildContentsFromHistory(args: {
   history: HistoryMessage[];
   currentPrompt: string;
   referenceImages: InlineRefImage[];
+  seedModelParts?: any[];
+  seedImageBase64?: string;
+  seedImageMimeType?: string;
+  seedThoughtSignature?: string;
 }) {
-  const { history, currentPrompt, referenceImages } = args;
+  const {
+    history,
+    currentPrompt,
+    referenceImages,
+    seedModelParts,
+    seedImageBase64,
+    seedImageMimeType,
+    seedThoughtSignature
+  } = args;
 
   // Keep it small: last 20 messages, and prefer the latest assistant model parts(signature chain)
   const tail = history.slice(Math.max(0, history.length - 20));
@@ -209,7 +242,19 @@ function buildContentsFromHistory(args: {
     contents.push({ role: "user", parts: [{ text: t }] });
   }
 
-  if (lastAssistantWithModelParts?.modelParts?.length) {
+  if (Array.isArray(seedModelParts) && seedModelParts.length > 0) {
+    contents.push({ role: "model", parts: seedModelParts });
+  } else if (seedImageBase64) {
+    const mimeType = seedImageMimeType || "image/png";
+    const part: any = {
+      inlineData: {
+        mimeType,
+        data: seedImageBase64
+      }
+    };
+    if (seedThoughtSignature) part.thoughtSignature = seedThoughtSignature;
+    contents.push({ role: "model", parts: [part] });
+  } else if (lastAssistantWithModelParts?.modelParts?.length) {
     contents.push({
       role: "model",
       parts: lastAssistantWithModelParts.modelParts
@@ -281,6 +326,7 @@ export async function GET(req: NextRequest) {
   const db = await getMongoDb();
   const conversationsCol = db.collection<ImageEditConversationDoc>("image_edit_conversations");
   const messagesCol = db.collection<ImageEditMessageDoc>("image_edit_messages");
+  const messageImagesCol = db.collection<ImageEditMessageImageDoc>("image_edit_message_images");
 
   if (conversationId) {
     if (!ObjectId.isValid(conversationId)) {
@@ -298,12 +344,42 @@ export async function GET(req: NextRequest) {
         { sort: { createdAt: 1 }, limit: 200 } as any
       )
       .toArray();
+
+    const msgObjectIds = messages
+      .map((m) => m?._id)
+      .filter(Boolean) as ObjectId[];
+    const imageRows = msgObjectIds.length
+      ? await messageImagesCol
+        .find(
+          {
+            conversationId: convObjectId,
+            userId: user.userId,
+            messageId: { $in: msgObjectIds }
+          } as any,
+          { sort: { messageId: 1, index: 1 } } as any
+        )
+        .toArray()
+      : [];
+    const msgIdToImages = new Map<
+      string,
+      Array<{ imageBase64: string; imageMimeType: string }>
+    >();
+    for (const row of imageRows) {
+      const k = String(row.messageId);
+      const arr = msgIdToImages.get(k) || [];
+      arr.push({
+        imageBase64: String(row.imageBase64 || ""),
+        imageMimeType: String(row.imageMimeType || "image/png") || "image/png"
+      });
+      msgIdToImages.set(k, arr);
+    }
     return Response.json({
       ok: true,
       conversation: {
         id: String(conv._id),
         title: conv.title || "新对话",
         lastMessage: conv.lastMessage || "",
+        generationSettings: conv.generationSettings || null,
         createdAt: conv.createdAt,
         updatedAt: conv.updatedAt
       },
@@ -311,9 +387,10 @@ export async function GET(req: NextRequest) {
         id: String(m._id),
         role: m.role,
         text: m.text || "",
-        thoughtProcess: m.thoughtProcess || "",
+        loading: Boolean((m as any).loading),
         imageBase64: m.imageBase64,
         imageMimeType: m.imageMimeType,
+        generatedImages: msgIdToImages.get(String(m._id)) || undefined,
         thoughtSignature: m.thoughtSignature,
         modelParts: Array.isArray(m.modelParts) ? m.modelParts : undefined,
         createdAt: m.createdAt
@@ -330,6 +407,7 @@ export async function GET(req: NextRequest) {
       id: String(x._id),
       title: x.title || "新对话",
       lastMessage: x.lastMessage || "",
+      generationSettings: x.generationSettings || null,
       createdAt: x.createdAt,
       updatedAt: x.updatedAt
     }))
@@ -354,10 +432,12 @@ export async function POST(req: NextRequest) {
   const db = await getMongoDb();
   const conversationsCol = db.collection<ImageEditConversationDoc>("image_edit_conversations");
   const messagesCol = db.collection<ImageEditMessageDoc>("image_edit_messages");
+  const messageImagesCol = db.collection<ImageEditMessageImageDoc>("image_edit_message_images");
   const aspectRatio = String((body as any).aspectRatio || "").trim();
   const rawImageSize = String((body as any).imageSize || "").trim();
   const rawThinkingLevel = String((body as any).thinkingLevel || "").trim().toLowerCase();
-  const thinkingLevel = rawThinkingLevel === "minimal" ? "minimal" : "high";
+  const thinkingLevel: "high" | "minimal" =
+    rawThinkingLevel === "high" ? "high" : "minimal";
   const rawTemperature = Number((body as any).temperature);
   const allowedTemperatures = new Set([0.5, 1, 1.5, 2]);
   const finalTemperature = allowedTemperatures.has(rawTemperature)
@@ -384,6 +464,19 @@ export async function POST(req: NextRequest) {
     ? aspectRatio
     : "";
   const finalImageSize = allowedImageSizes.has(rawImageSize) ? rawImageSize : "";
+  const rawEnableImageSettings = Boolean((body as any).enableImageSettings);
+  const rawOutputCount = Number((body as any).outputCount);
+  const finalOutputCount = Number.isFinite(rawOutputCount)
+    ? Math.max(1, Math.min(4, Math.floor(rawOutputCount)))
+    : 1;
+  const generationSettings = {
+    enableImageSettings: rawEnableImageSettings,
+    outputCount: finalOutputCount,
+    thinkingLevel,
+    temperature: finalTemperature as 0.5 | 1 | 1.5 | 2,
+    ...(finalAspectRatio ? { aspectRatio: finalAspectRatio } : {}),
+    ...(finalImageSize ? { imageSize: finalImageSize } : {})
+  };
   const imageConfig =
     finalAspectRatio || finalImageSize
       ? {
@@ -412,6 +505,7 @@ export async function POST(req: NextRequest) {
       userId: user.userId,
       title: buildConversationTitle(prompt),
       lastMessage: prompt,
+      generationSettings,
       createdAt: now,
       updatedAt: now
     });
@@ -428,14 +522,89 @@ export async function POST(req: NextRequest) {
   const requestHistory = normalizeHistory((body as any).history);
   const history = dbHistory.length > 0 ? dbHistory : requestHistory;
   const useStream = Boolean((body as any).stream);
+  const targetMessageIdRaw = String((body as any).targetMessageId || "").trim();
+  const targetImageIndicesRaw = Array.isArray((body as any).targetImageIndices)
+    ? ((body as any).targetImageIndices as any[])
+    : [];
+  const targetImageIndices = Array.from(
+    new Set(
+      targetImageIndicesRaw
+        .map((x) => Number(x))
+        .filter((n) => Number.isFinite(n) && n >= 0)
+        .map((n) => Math.floor(n))
+    )
+  ).sort((a, b) => a - b);
 
   try {
     const client = new GeminiClient({});
-    const contents = buildContentsFromHistory({
-      history,
-      currentPrompt: prompt,
-      referenceImages,
-    });
+    const resolvedSeedMessageId = await (async () => {
+      if (targetMessageIdRaw && ObjectId.isValid(targetMessageIdRaw)) {
+        const id = new ObjectId(targetMessageIdRaw);
+        const ok = await messagesCol.findOne({
+          _id: id,
+          conversationId,
+          userId: user.userId,
+          role: "assistant"
+        } as any);
+        if (ok) return id;
+      }
+      const latestAssistantRows = await messagesCol
+        .find(
+          { conversationId, userId: user.userId, role: "assistant" } as any,
+          { sort: { createdAt: -1 }, limit: 1 } as any
+        )
+        .toArray();
+      return (latestAssistantRows?.[0]?._id as ObjectId | undefined) || undefined;
+    })();
+
+    const latestSeeds = resolvedSeedMessageId
+      ? await messageImagesCol
+        .find(
+          {
+            conversationId,
+            userId: user.userId,
+            messageId: resolvedSeedMessageId
+          } as any,
+          { sort: { index: 1 } } as any
+        )
+        .toArray()
+      : [];
+    const selectionMode = latestSeeds.length > 0 && targetImageIndices.length > 0;
+    const baseCount =
+      latestSeeds.length > 0
+        ? selectionMode
+          ? latestSeeds.length
+          : Math.min(finalOutputCount, latestSeeds.length)
+        : finalOutputCount;
+    const indicesToModify = (() => {
+      if (latestSeeds.length === 0) {
+        return Array.from({ length: baseCount }, (_, i) => i);
+      }
+      if (selectionMode) {
+        const maxIdx = baseCount - 1;
+        return targetImageIndices.filter((i) => i <= maxIdx);
+      }
+      return Array.from({ length: baseCount }, (_, i) => i);
+    })();
+
+    const buildContentsForIndex = (i: number) => {
+      const seed = latestSeeds[i];
+      return buildContentsFromHistory({
+        history,
+        currentPrompt: prompt,
+        referenceImages,
+        seedModelParts: Array.isArray(seed?.modelParts)
+          ? (seed!.modelParts as any[])
+          : undefined,
+        seedImageBase64: seed?.imageBase64 ? String(seed.imageBase64) : undefined,
+        seedImageMimeType: seed?.imageMimeType
+          ? String(seed.imageMimeType)
+          : undefined,
+        seedThoughtSignature: seed?.thoughtSignature
+          ? String(seed.thoughtSignature)
+          : undefined
+      });
+    };
     if (useStream) {
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
@@ -447,31 +616,22 @@ export async function POST(req: NextRequest) {
           };
           (async () => {
             try {
-              let streamedThought = "";
-              const generated = await client.generateImageStream(
-                prompt,
+              const modifiedByIndex = new Map<
+                number,
                 {
-                  responseModalities: ["TEXT", "IMAGE"],
-                  ...(imageConfig ? { imageConfig } : {}),
-                  generationConfig: { temperature: finalTemperature },
-                  thinkingConfig: { thinkingLevel },
-                  contents,
-                },
-                { role: guard.authz?.role, isAdmin: guard.authz?.isSuperAdmin },
-                (deltaText) => {
-                  if (!deltaText) return;
-                  streamedThought += deltaText;
-                  push({ type: "thought", text: deltaText });
+                  data: string;
+                  mimeType: string;
+                  thoughtSignature?: string;
+                  modelPartsForNextTurn?: any[];
                 }
-              );
-
+              >();
+              const total = Math.max(1, indicesToModify.length);
               const now = new Date();
-              const finalThoughtProcess =
-                String(generated.thoughtText || "").trim() ||
-                String(streamedThought || "").trim() ||
-                undefined;
+              const userMsgId = new ObjectId();
+              const assistantMsgId = new ObjectId();
               await messagesCol.insertMany([
                 {
+                  _id: userMsgId,
                   conversationId,
                   userId: user.userId,
                   role: "user",
@@ -479,25 +639,130 @@ export async function POST(req: NextRequest) {
                   createdAt: now
                 },
                 {
+                  _id: assistantMsgId,
                   conversationId,
                   userId: user.userId,
                   role: "assistant",
-                  text: "",
-                  thoughtProcess: finalThoughtProcess,
-                  imageBase64: generated.data,
-                  imageMimeType: generated.mimeType || "image/png",
-                  thoughtSignature: generated.thoughtSignature || undefined,
-                  modelParts: Array.isArray(generated.modelPartsForNextTurn)
-                    ? generated.modelPartsForNextTurn
-                    : undefined,
+                  text: total > 1 ? `正在生成中... (0/${total})` : "正在生成中...",
+                  loading: true,
                   createdAt: now
                 }
               ] as any);
+
+              for (let j = 0; j < indicesToModify.length; j += 1) {
+                const i = indicesToModify[j];
+                push({ type: "progress", current: j + 1, total });
+                const contents = buildContentsForIndex(i);
+                const generated = await client.generateImageStream(
+                  prompt,
+                  {
+                    responseModalities: ["IMAGE"],
+                    ...(imageConfig ? { imageConfig } : {}),
+                    generationConfig: { temperature: finalTemperature },
+                    thinkingConfig: { thinkingLevel },
+                    contents,
+                  },
+                  { role: guard.authz?.role, isAdmin: guard.authz?.isSuperAdmin }
+                );
+                modifiedByIndex.set(i, generated as any);
+              }
+
+              const finalImages: Array<{
+                imageBase64: string;
+                imageMimeType: string;
+                thoughtSignature?: string;
+                modelParts?: any[];
+              }> = [];
+              for (let i = 0; i < baseCount; i += 1) {
+                const mod = modifiedByIndex.get(i);
+                if (mod?.data) {
+                  finalImages.push({
+                    imageBase64: String(mod.data || ""),
+                    imageMimeType:
+                      String(mod.mimeType || "image/png") || "image/png",
+                    thoughtSignature: mod.thoughtSignature || undefined,
+                    modelParts: Array.isArray(mod.modelPartsForNextTurn)
+                      ? mod.modelPartsForNextTurn
+                      : undefined
+                  });
+                  continue;
+                }
+                const seed = latestSeeds[i];
+                if (selectionMode && seed?.imageBase64) {
+                  finalImages.push({
+                    imageBase64: String(seed.imageBase64 || ""),
+                    imageMimeType:
+                      String(seed.imageMimeType || "image/png") || "image/png",
+                    thoughtSignature: seed.thoughtSignature
+                      ? String(seed.thoughtSignature)
+                      : undefined,
+                    modelParts: Array.isArray(seed.modelParts)
+                      ? seed.modelParts
+                      : undefined
+                  });
+                  continue;
+                }
+              }
+
+              const firstGenerated = finalImages[0];
+              const lastModified =
+                indicesToModify.length > 0
+                  ? modifiedByIndex.get(
+                    indicesToModify[indicesToModify.length - 1]
+                  )
+                  : null;
+              const generatedImagesForDb = finalImages
+                .map((x) => ({
+                  imageBase64: String(x.imageBase64 || ""),
+                  imageMimeType:
+                    String(x.imageMimeType || "image/png") || "image/png",
+                  thoughtSignature: x.thoughtSignature,
+                  modelParts: x.modelParts
+                }))
+                .filter((x) => x.imageBase64);
+              await messagesCol.updateOne(
+                {
+                  _id: assistantMsgId,
+                  conversationId,
+                  userId: user.userId,
+                  role: "assistant"
+                } as any,
+                {
+                  $set: {
+                    loading: false,
+                    text: "",
+                    imageBase64: firstGenerated?.imageBase64,
+                    imageMimeType: firstGenerated?.imageMimeType || "image/png",
+                    thoughtSignature: lastModified?.thoughtSignature || undefined,
+                    modelParts: Array.isArray(lastModified?.modelPartsForNextTurn)
+                      ? lastModified.modelPartsForNextTurn
+                      : undefined
+                  }
+                } as any
+              );
+              if (generatedImagesForDb.length) {
+                await messageImagesCol.insertMany(
+                  generatedImagesForDb.map((img, idx) => ({
+                    conversationId,
+                    messageId: assistantMsgId,
+                    userId: user.userId,
+                    index: idx,
+                    imageBase64: img.imageBase64,
+                    imageMimeType: img.imageMimeType,
+                    thoughtSignature: img.thoughtSignature || undefined,
+                    modelParts: Array.isArray(img.modelParts)
+                      ? img.modelParts
+                      : undefined,
+                    createdAt: now
+                  })) as any
+                );
+              }
               await conversationsCol.updateOne(
                 { _id: conversationId, userId: user.userId } as any,
                 {
                   $set: {
                     lastMessage: prompt,
+                    generationSettings,
                     updatedAt: now,
                     ...(rawConversationId ? {} : { title: buildConversationTitle(prompt) })
                   }
@@ -506,16 +771,30 @@ export async function POST(req: NextRequest) {
 
               push({
                 type: "done",
+                assistantMessageId: String(assistantMsgId),
                 conversationId: String(conversationId),
-                imageBase64: generated.data,
-                mimeType: generated.mimeType || "image/png",
-                thoughtSignature: generated.thoughtSignature || undefined,
-                thoughtProcess: finalThoughtProcess || "",
+                imageBase64: firstGenerated?.imageBase64,
+                mimeType: firstGenerated?.imageMimeType || "image/png",
+                generatedImages: generatedImagesForDb.length
+                  ? generatedImagesForDb
+                  : undefined,
+                thoughtSignature: lastModified?.thoughtSignature || undefined,
                 usedReferenceImages: referenceImages.length
               });
               controller.close();
             } catch (e: any) {
               const msg = e instanceof Error ? e.message : String(e);
+              try {
+                await messagesCol.updateOne(
+                  {
+                    conversationId,
+                    userId: user.userId,
+                    role: "assistant",
+                    loading: true
+                  } as any,
+                  { $set: { loading: false, text: `生成失败：${msg}` } } as any
+                );
+              } catch { }
               push({ type: "error", error: msg });
               controller.close();
             }
@@ -534,19 +813,93 @@ export async function POST(req: NextRequest) {
     const generated = await client.generateImage(
       prompt,
       {
-        responseModalities: ["TEXT", "IMAGE"],
+        responseModalities: ["IMAGE"],
         ...(imageConfig ? { imageConfig } : {}),
         generationConfig: { temperature: finalTemperature },
         thinkingConfig: { thinkingLevel },
         // Use multi-turn contents so Gemini can apply edits iteratively.
-        contents,
+        contents: buildContentsForIndex(indicesToModify[0] ?? 0),
       },
       { role: guard.authz?.role, isAdmin: guard.authz?.isSuperAdmin }
     );
 
+    const generatedAll: Array<{
+      mimeType: string;
+      data: string;
+      thoughtSignature?: string;
+      modelPartsForNextTurn?: any[];
+    }> = [generated as any];
+    for (let j = 1; j < indicesToModify.length; j += 1) {
+      const i = indicesToModify[j];
+      const next = await client.generateImage(
+        prompt,
+        {
+          responseModalities: ["IMAGE"],
+          ...(imageConfig ? { imageConfig } : {}),
+          generationConfig: { temperature: finalTemperature },
+          thinkingConfig: { thinkingLevel },
+          // Use multi-turn contents so Gemini can apply edits iteratively.
+          contents: buildContentsForIndex(i),
+        },
+        { role: guard.authz?.role, isAdmin: guard.authz?.isSuperAdmin }
+      );
+      generatedAll.push(next as any);
+    }
+    const modifiedByIndex = new Map<number, any>();
+    for (let j = 0; j < indicesToModify.length; j += 1) {
+      modifiedByIndex.set(indicesToModify[j], generatedAll[j]);
+    }
+    const finalImages: Array<{
+      imageBase64: string;
+      imageMimeType: string;
+      thoughtSignature?: string;
+      modelParts?: any[];
+    }> = [];
+    for (let i = 0; i < baseCount; i += 1) {
+      const mod = modifiedByIndex.get(i);
+      if (mod?.data) {
+        finalImages.push({
+          imageBase64: String(mod.data || ""),
+          imageMimeType: String(mod.mimeType || "image/png") || "image/png",
+          thoughtSignature: mod.thoughtSignature || undefined,
+          modelParts: Array.isArray(mod.modelPartsForNextTurn)
+            ? mod.modelPartsForNextTurn
+            : undefined
+        });
+        continue;
+      }
+      const seed = latestSeeds[i];
+      if (selectionMode && seed?.imageBase64) {
+        finalImages.push({
+          imageBase64: String(seed.imageBase64 || ""),
+          imageMimeType: String(seed.imageMimeType || "image/png") || "image/png",
+          thoughtSignature: seed.thoughtSignature
+            ? String(seed.thoughtSignature)
+            : undefined,
+          modelParts: Array.isArray(seed.modelParts) ? seed.modelParts : undefined
+        });
+        continue;
+      }
+    }
+    const firstGenerated = finalImages[0];
+    const lastModified =
+      indicesToModify.length > 0
+        ? modifiedByIndex.get(indicesToModify[indicesToModify.length - 1])
+        : null;
+    const generatedImagesForDb = finalImages
+      .map((x) => ({
+        imageBase64: String(x.imageBase64 || ""),
+        imageMimeType: String(x.imageMimeType || "image/png") || "image/png",
+        thoughtSignature: x.thoughtSignature,
+        modelParts: x.modelParts
+      }))
+      .filter((x) => x.imageBase64);
     const now = new Date();
+    const userMsgId = new ObjectId();
+    const assistantMsgId = new ObjectId();
     await messagesCol.insertMany([
       {
+        _id: userMsgId,
         conversationId,
         userId: user.userId,
         role: "user",
@@ -554,25 +907,41 @@ export async function POST(req: NextRequest) {
         createdAt: now
       },
       {
+        _id: assistantMsgId,
         conversationId,
         userId: user.userId,
         role: "assistant",
         text: "",
-        thoughtProcess: generated.thoughtText || undefined,
-        imageBase64: generated.data,
-        imageMimeType: generated.mimeType || "image/png",
-        thoughtSignature: generated.thoughtSignature || undefined,
-        modelParts: Array.isArray(generated.modelPartsForNextTurn)
-          ? generated.modelPartsForNextTurn
+        imageBase64: firstGenerated?.imageBase64,
+        imageMimeType: firstGenerated?.imageMimeType || "image/png",
+        thoughtSignature: lastModified?.thoughtSignature || undefined,
+        modelParts: Array.isArray(lastModified?.modelPartsForNextTurn)
+          ? lastModified.modelPartsForNextTurn
           : undefined,
         createdAt: now
       }
     ] as any);
+    if (generatedImagesForDb.length) {
+      await messageImagesCol.insertMany(
+        generatedImagesForDb.map((img, idx) => ({
+          conversationId,
+          messageId: assistantMsgId,
+          userId: user.userId,
+          index: idx,
+          imageBase64: img.imageBase64,
+          imageMimeType: img.imageMimeType,
+          thoughtSignature: img.thoughtSignature || undefined,
+          modelParts: Array.isArray(img.modelParts) ? img.modelParts : undefined,
+          createdAt: now
+        })) as any
+      );
+    }
     await conversationsCol.updateOne(
       { _id: conversationId, userId: user.userId } as any,
       {
         $set: {
           lastMessage: prompt,
+          generationSettings,
           updatedAt: now,
           ...(rawConversationId ? {} : { title: buildConversationTitle(prompt) })
         }
@@ -581,16 +950,64 @@ export async function POST(req: NextRequest) {
 
     return Response.json({
       ok: true,
+      assistantMessageId: String(assistantMsgId),
       conversationId: String(conversationId),
-      imageBase64: generated.data,
-      mimeType: generated.mimeType || "image/png",
-      thoughtSignature: generated.thoughtSignature || undefined,
-      thoughtProcess: generated.thoughtText || "",
+      imageBase64: firstGenerated?.imageBase64,
+      mimeType: firstGenerated?.imageMimeType || "image/png",
+      generatedImages: generatedImagesForDb.length
+        ? generatedImagesForDb
+        : undefined,
+      thoughtSignature: lastModified?.thoughtSignature || undefined,
       usedReferenceImages: referenceImages.length,
     });
   } catch (e: any) {
     const msg = e instanceof Error ? e.message : String(e);
     return Response.json({ ok: false, error: msg }, { status: 500 });
   }
+}
+
+export async function DELETE(req: NextRequest) {
+  const guard = requireApiAccess(req);
+  if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
+  const user = guard.user;
+  const { searchParams } = new URL(req.url);
+  const conversationId = String(searchParams.get("conversationId") || "").trim();
+  if (!conversationId) {
+    return Response.json({ ok: false, error: "conversationId 不能为空" }, { status: 400 });
+  }
+  if (!ObjectId.isValid(conversationId)) {
+    return Response.json({ ok: false, error: "conversationId 非法" }, { status: 400 });
+  }
+  const convObjectId = new ObjectId(conversationId);
+  const db = await getMongoDb();
+  const conversationsCol = db.collection<ImageEditConversationDoc>("image_edit_conversations");
+  const messagesCol = db.collection<ImageEditMessageDoc>("image_edit_messages");
+  const messageImagesCol = db.collection<ImageEditMessageImageDoc>("image_edit_message_images");
+
+  const exists = await conversationsCol.findOne({
+    _id: convObjectId,
+    userId: user.userId
+  } as any);
+  if (!exists) return Response.json({ ok: false, error: "会话不存在" }, { status: 404 });
+
+  const delConv = await conversationsCol.deleteOne({
+    _id: convObjectId,
+    userId: user.userId
+  } as any);
+  const delMsg = await messagesCol.deleteMany({
+    conversationId: convObjectId,
+    userId: user.userId
+  } as any);
+  const delImgs = await messageImagesCol.deleteMany({
+    conversationId: convObjectId,
+    userId: user.userId
+  } as any);
+
+  return Response.json({
+    ok: true,
+    deletedConversationCount: delConv?.deletedCount || 0,
+    deletedMessageCount: delMsg?.deletedCount || 0,
+    deletedImageCount: delImgs?.deletedCount || 0
+  });
 }
 

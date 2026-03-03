@@ -43,7 +43,6 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
   operator: {
     "ui:/gallery": true,
     "ui:/crop": true,
-    "ui:/make-image": true,
     "api:*": true,
   },
 };

@@ -71,7 +71,7 @@ export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
     return `
 ## 最高优先级｜绝对禁止事项
 > 与其他任何指令冲突时，以本段为准。
-## 时代背景（仅供参考）
+## 时代背景（仅供参考不强制执行）
 - **当前年份**：${new Date().getFullYear()}年
   `;
   }
@@ -86,7 +86,7 @@ export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
 - **冲突处理**：即使参考图或用户要求包含以上含义，也必须改写表达。
 - **允许方向**：文案内容只能跟下载/获取/立即下载/立即获取等相关。
 
-## 时代背景（仅供参考）
+## 时代背景（仅供参考不强制执行）
 - **当前年份**：${new Date().getFullYear()}年
   `;
 }

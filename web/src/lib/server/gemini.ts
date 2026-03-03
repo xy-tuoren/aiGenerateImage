@@ -120,7 +120,6 @@ export interface GeneratedImage {
   mimeType: string;
   data: string;
   thoughtSignature?: string;
-  thoughtText?: string;
   modelPartsForNextTurn?: any[];
 }
 
@@ -192,7 +191,7 @@ export class GeminiClient {
         responseModalities: body.responseModalities || ["IMAGE"],
         thinkingConfig: {
           thinkingLevel: options.thinkingConfig?.thinkingLevel ?? "high",
-          includeThoughts: options.thinkingConfig?.includeThoughts ?? true,
+          includeThoughts: options.thinkingConfig?.includeThoughts ?? false,
           ...(options.thinkingConfig ? options.thinkingConfig : {}),
         },
         ...(body.imageConfig ? { imageConfig: body.imageConfig } : {}),
@@ -224,19 +223,6 @@ export class GeminiClient {
         return out;
       })
       .filter(Boolean);
-
-    const thoughtText = contentParts
-      .filter((p: any) => p?.thought === true && typeof p?.text === "string")
-      .map((p: any) => String(p.text || "").trim())
-      .filter(Boolean)
-      .join("\n")
-      .trim();
-    const fallbackText = contentParts
-      .filter((p: any) => typeof p?.text === "string")
-      .map((p: any) => String(p.text || "").trim())
-      .filter(Boolean)
-      .join("\n")
-      .trim();
 
     const nonThoughtImagePart = [...contentParts]
       .reverse()
@@ -329,7 +315,6 @@ export class GeminiClient {
         mimeType: "image/jpeg",
         data: imageData,
         thoughtSignature,
-        thoughtText: thoughtText || fallbackText || undefined,
         modelPartsForNextTurn,
       };
     } catch (e) {
@@ -380,40 +365,18 @@ export class GeminiClient {
   async generateImageStream(
     prompt: string,
     options: GenerateImageOptions = {},
-    ctx?: GeminiQueueContext,
-    onThought?: (deltaText: string) => void
+    ctx?: GeminiQueueContext
   ): Promise<GeneratedImage> {
     const req: any = this.buildGenerateRequest(prompt, options);
     return withGeminiLimit(async () => {
       const stream = await this.genAI.models.generateContentStream(req);
       const collectedParts: any[] = [];
-      let thoughtBuffer = "";
-      let seenFinalImage = false;
 
       for await (const chunk of stream as any) {
         const parts = chunk?.candidates?.[0]?.content?.parts;
         if (!Array.isArray(parts) || parts.length === 0) continue;
         for (const p of parts) {
           collectedParts.push(p);
-          if (p?.inlineData?.data && p?.thought !== true) {
-            seenFinalImage = true;
-          }
-          if (
-            typeof p?.text === "string" &&
-            (p?.thought === true || !seenFinalImage)
-          ) {
-            const next = String(p.text || "");
-            if (!next.trim()) continue;
-            let delta = "";
-            if (next.startsWith(thoughtBuffer)) {
-              delta = next.slice(thoughtBuffer.length);
-              thoughtBuffer = next;
-            } else if (!thoughtBuffer.includes(next)) {
-              delta = thoughtBuffer ? `\n${next}` : next;
-              thoughtBuffer = `${thoughtBuffer}${delta}`;
-            }
-            if (delta) onThought?.(delta);
-          }
         }
       }
 
