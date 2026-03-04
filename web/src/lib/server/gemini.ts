@@ -200,7 +200,11 @@ export class GeminiClient {
     } as any;
   }
 
-  private async buildGeneratedImageFromParts(prompt: string, contentParts: any[]): Promise<GeneratedImage> {
+  private async buildGeneratedImageFromParts(
+    prompt: string,
+    contentParts: any[],
+    skipFormatConversion?: boolean
+  ): Promise<GeneratedImage> {
     if (!contentParts || !contentParts.length) {
       throw new Error("Gemini 返回结果中没有内容");
     }
@@ -255,6 +259,21 @@ export class GeminiClient {
     }
 
     const rawBase64 = imagePart.inlineData.data || "";
+    const thoughtSignature =
+      (imagePart as any)?.thoughtSignature ||
+      (imagePart as any)?.thought_signature ||
+      undefined;
+
+    if (skipFormatConversion) {
+      const mimeType = String(imagePart.inlineData.mimeType || "image/png").trim() || "image/png";
+      return {
+        mimeType,
+        data: rawBase64,
+        thoughtSignature,
+        modelPartsForNextTurn,
+      };
+    }
+
     const rawBuffer = Buffer.from(rawBase64, "base64");
     try {
       const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
@@ -307,10 +326,6 @@ export class GeminiClient {
         })()
         : Buffer.from(jpgBuffer).toString("base64");
 
-      const thoughtSignature =
-        (imagePart as any)?.thoughtSignature ||
-        (imagePart as any)?.thought_signature ||
-        undefined;
       return {
         mimeType: "image/jpeg",
         data: imageData,
@@ -383,7 +398,7 @@ export class GeminiClient {
       if (!collectedParts.length) {
         throw new Error("Gemini 流式返回中没有可用内容");
       }
-      return this.buildGeneratedImageFromParts(prompt, collectedParts);
+      return this.buildGeneratedImageFromParts(prompt, collectedParts, true);
     }, ctx);
   }
 }
