@@ -272,6 +272,14 @@ export const CUT_TEMPLATES_BY_APP_RATIO: Record<string, Partial<Record<string, s
     "1:1": ["getBuzzCutScaleFinalPrompt", "getBuzzCutChangeFinalPrompt"],
     "4:5": ["getBuzzCutScaleFinalPrompt", "getBuzzCutChangeFinalPrompt"],
   },
+  kids: {
+    "1:1": ["getKidsCutScaleFinalPrompt", "getKidsCutChangeFinalPrompt", "stitchLongImage1024"],
+    "4:5": ["getKidsCutScaleFinalPrompt", "getKidsCutChangeFinalPrompt", "getCutVerticalCollagePrompt"],
+  },
+  kids18: {
+    "1:1": ["getKidsCutScaleFinalPrompt", "getKidsCutChangeFinalPrompt", "stitchLongImage1024"],
+    "4:5": ["getKidsCutScaleFinalPrompt", "getKidsCutChangeFinalPrompt", "getCutVerticalCollagePrompt"],
+  },
 };
 
 const uniqTrim = (arr: unknown): string[] => {
@@ -313,6 +321,8 @@ export const CUT_TEMPLATE_TEMPERATURE: Record<string, number> = {
   getCutVerticalCollagePrompt: 1,
   getBuzzCutScaleFinalPrompt: 1,
   getBuzzCutChangeFinalPrompt: 1,
+  getKidsCutScaleFinalPrompt: 1,
+  getKidsCutChangeFinalPrompt: 1,
   // stitchLongImage1024 不走 Gemini 生图，这里无需配置
 };
 
@@ -323,6 +333,8 @@ export const CUT_TEMPLATE_THINKING_LEVEL: Record<string, string> = {
   getCutVerticalCollagePrompt: "minimal",
   getBuzzCutScaleFinalPrompt: "High",
   getBuzzCutChangeFinalPrompt: "High",
+  getKidsCutScaleFinalPrompt: "minimal",
+  getKidsCutChangeFinalPrompt: "High",
   // stitchLongImage1024 不走 Gemini 生图，这里无需配置
 };
 

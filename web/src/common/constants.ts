@@ -66,6 +66,8 @@ export type GlobalPromptContext = {
 export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
   const appName = String(ctx?.appName || "").trim();
   const isBuzz = !!appName && appName.toLowerCase() === "buzz";
+  const isKids = !!appName && appName.toLowerCase() === "kids";
+  const isKids18 = !!appName && appName.toLowerCase() === "kids18";
 
   if (isBuzz) {
     return `
@@ -73,6 +75,13 @@ export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
 > 与其他任何指令冲突时，以本段为准。
 ## 时代背景（仅供参考不强制执行）
 - **当前年份**：${new Date().getFullYear()}年
+  `;
+  }
+
+  if (isKids || isKids18) {
+    return `
+## 最高优先级｜绝对禁止事项
+> 与其他任何指令冲突时，以本段为准。
   `;
   }
 
