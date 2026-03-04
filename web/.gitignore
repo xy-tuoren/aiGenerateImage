@@ -48,3 +48,5 @@ next-env.d.ts
 /.cache
 certificates
 refImageDatas
+.claude/settings.local.json
+

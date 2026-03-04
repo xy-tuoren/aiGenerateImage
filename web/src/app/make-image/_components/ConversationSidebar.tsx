@@ -3,6 +3,7 @@
 import { Button, Modal, Spin, Tooltip, Typography } from "antd";
 import {
   DeleteOutlined,
+  LoadingOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PlusSquareOutlined
@@ -129,6 +130,13 @@ export function ConversationSidebar({
                 >
                   {item.title || "新对话"}
                 </div>
+                {item.isGenerating ? (
+                  <Tooltip title="生成中">
+                    <LoadingOutlined
+                      style={{ color: "#1677ff", fontSize: 14 }}
+                    />
+                  </Tooltip>
+                ) : null}
                 <Tooltip title="删除会话">
                   <Button
                     type="text"

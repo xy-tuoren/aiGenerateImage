@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Avatar,
   Button,
@@ -49,6 +50,10 @@ export function MessagePanel({
   setConversationPreviewVisible,
   messagesEndRef
 }: MessagePanelProps) {
+  const [hoveredGenMessageId, setHoveredGenMessageId] = useState<string | null>(
+    null
+  );
+
   return (
     <div
       className="make-image-scroll-area"
@@ -147,7 +152,11 @@ export function MessagePanel({
                 <div
                   style={{
                     backgroundColor:
-                      msg.role === "user" ? "#e6f4ff" : "#f5f5f5",
+                      msg.role === "user"
+                        ? "#e6f4ff"
+                        : hasGeneratedImages
+                        ? "transparent"
+                        : "#f5f5f5",
                     padding: "12px 16px",
                     borderRadius: 16,
                     borderTopRightRadius: msg.role === "user" ? 4 : 16,
@@ -181,12 +190,29 @@ export function MessagePanel({
                         </div>
                       )}
                       {hasGeneratedImages && (
-                        <div style={{ marginTop: 8 }}>
+                        <div
+                          style={{
+                            position: "relative",
+                            marginTop: 8,
+                            marginLeft: -16,
+                            marginRight: -16,
+                            marginBottom: -12,
+                            overflow: "hidden",
+                            padding: 5,
+                            lineHeight: 0,
+                            borderRadius:
+                              msg.role === "assistant"
+                                ? "0 0 16px 16px"
+                                : undefined
+                          }}
+                          onMouseEnter={() => setHoveredGenMessageId(msg.id)}
+                          onMouseLeave={() => setHoveredGenMessageId(null)}
+                        >
                           <div
                             style={{
                               display: "flex",
-                              gap: 10,
-                              flexWrap: "wrap"
+                              flexWrap: "wrap",
+                              gap: 5
                             }}
                           >
                             {generatedImages.map((img, idx) => (
@@ -199,30 +225,34 @@ export function MessagePanel({
                                 }}
                                 style={{
                                   position: "relative",
-                                  borderRadius: 10,
-                                  padding: 3,
+                                  width: 360,
+                                  height: 240,
+                                  boxSizing: "border-box",
+                                  overflow: "hidden",
+                                  borderRadius: 8,
                                   background:
                                     editTarget?.messageId === msg.id &&
                                     editTarget.indices.includes(idx)
                                       ? "rgba(22,119,255,0.18)"
                                       : "transparent",
-                                  border:
+                                  boxShadow:
                                     editTarget?.messageId === msg.id &&
                                     editTarget.indices.includes(idx)
-                                      ? "2px solid #1677ff"
-                                      : "2px solid transparent"
+                                      ? "inset 0 0 0 2px #1677ff"
+                                      : "none"
                                 }}
                                 title="右键选中：后续修改只作用于选中图片"
                               >
                                 <AntImage
                                   src={`data:${img.imageMimeType};base64,${img.imageBase64}`}
-                                  width={240}
-                                  height={160}
+                                  width={360}
+                                  height={240}
                                   style={{
-                                    borderRadius: 8,
+                                    borderRadius: 6,
                                     objectFit: "cover",
                                     maxWidth: "100%",
-                                    cursor: "pointer"
+                                    cursor: "pointer",
+                                    display: "block"
                                   }}
                                   preview={false}
                                   onClick={() => {
@@ -255,55 +285,78 @@ export function MessagePanel({
                                     已选
                                   </div>
                                 ) : null}
+                                {idx === generatedImages.length - 1 ? (
+                                  <div
+                                    style={{
+                                      position: "absolute",
+                                      right: 5,
+                                      bottom: 5,
+                                      display: "inline-flex",
+                                      gap: 6,
+                                      alignItems: "center",
+                                      padding: "4px 6px",
+                                      borderRadius: 8,
+                                      background: "rgba(0,0,0,0.5)",
+                                      opacity:
+                                        hoveredGenMessageId === msg.id ? 1 : 0,
+                                      pointerEvents:
+                                        hoveredGenMessageId === msg.id
+                                          ? "auto"
+                                          : "none",
+                                      transition: "opacity 0.2s"
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {isLastGeneratedImage ? (
+                                      <Tooltip title="重新生成">
+                                        <Button
+                                          type="text"
+                                          shape="circle"
+                                          size="small"
+                                          icon={<ReloadOutlined />}
+                                          onClick={() => onRegenerate(msg.id)}
+                                          disabled={
+                                            isGenerating || conversationLoading
+                                          }
+                                          style={{ color: "#fff" }}
+                                        />
+                                      </Tooltip>
+                                    ) : null}
+                                    <Tooltip title="下载">
+                                      <Button
+                                        type="text"
+                                        shape="circle"
+                                        size="small"
+                                        icon={<DownloadOutlined />}
+                                        onClick={() =>
+                                          onDownload(
+                                            msg,
+                                            selectedIndicesForThisMsg
+                                          )
+                                        }
+                                        style={{ color: "#fff" }}
+                                      />
+                                    </Tooltip>
+                                    <Tooltip title="入库图片广场">
+                                      <Button
+                                        type="text"
+                                        shape="circle"
+                                        size="small"
+                                        icon={<AppstoreAddOutlined />}
+                                        onClick={() =>
+                                          onOpenGallerySaveModal(
+                                            msg.id,
+                                            selectedIndicesForThisMsg
+                                          )
+                                        }
+                                        disabled={!hasGeneratedImages}
+                                        style={{ color: "#fff" }}
+                                      />
+                                    </Tooltip>
+                                  </div>
+                                ) : null}
                               </div>
                             ))}
-                          </div>
-                          <div
-                            style={{
-                              marginTop: 8,
-                              display: "flex",
-                              gap: 6,
-                              justifyContent: "flex-end"
-                            }}
-                          >
-                            {isLastGeneratedImage ? (
-                              <Tooltip title="重新生成">
-                                <Button
-                                  type="text"
-                                  shape="circle"
-                                  size="small"
-                                  icon={<ReloadOutlined />}
-                                  onClick={() => onRegenerate(msg.id)}
-                                  disabled={isGenerating || conversationLoading}
-                                />
-                              </Tooltip>
-                            ) : null}
-                            <Tooltip title="下载">
-                              <Button
-                                type="text"
-                                shape="circle"
-                                size="small"
-                                icon={<DownloadOutlined />}
-                                onClick={() =>
-                                  onDownload(msg, selectedIndicesForThisMsg)
-                                }
-                              />
-                            </Tooltip>
-                            <Tooltip title="入库图片广场">
-                              <Button
-                                type="text"
-                                shape="circle"
-                                size="small"
-                                icon={<AppstoreAddOutlined />}
-                                onClick={() =>
-                                  onOpenGallerySaveModal(
-                                    msg.id,
-                                    selectedIndicesForThisMsg
-                                  )
-                                }
-                                disabled={!hasGeneratedImages}
-                              />
-                            </Tooltip>
                           </div>
                         </div>
                       )}

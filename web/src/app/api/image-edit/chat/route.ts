@@ -401,12 +401,33 @@ export async function GET(req: NextRequest) {
   const list = await conversationsCol
     .find({ userId: user.userId } as any, { sort: { updatedAt: -1 }, limit: 100 } as any)
     .toArray();
+  const listConversationIds = list
+    .map((x) => x?._id)
+    .filter(Boolean) as ObjectId[];
+  const loadingRows = listConversationIds.length
+    ? await messagesCol
+      .aggregate([
+        {
+          $match: {
+            userId: user.userId,
+            loading: true,
+            conversationId: { $in: listConversationIds }
+          }
+        },
+        { $group: { _id: "$conversationId", count: { $sum: 1 } } }
+      ] as any)
+      .toArray()
+    : [];
+  const generatingConversationIdSet = new Set(
+    loadingRows.map((x: any) => String(x?._id || ""))
+  );
   return Response.json({
     ok: true,
     items: list.map((x) => ({
       id: String(x._id),
       title: x.title || "新对话",
       lastMessage: x.lastMessage || "",
+      isGenerating: generatingConversationIdSet.has(String(x._id)),
       generationSettings: x.generationSettings || null,
       createdAt: x.createdAt,
       updatedAt: x.updatedAt
@@ -607,13 +628,34 @@ export async function POST(req: NextRequest) {
     };
     if (useStream) {
       const encoder = new TextEncoder();
+      let closed = false;
+      let clientGone = false;
+      let controllerRef: any = null;
+      const safeClose = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          controllerRef?.close?.();
+        } catch { }
+      };
+      const safePush = (payload: any) => {
+        if (closed || clientGone) return;
+        try {
+          controllerRef?.enqueue?.(encoder.encode(`${JSON.stringify(payload)}\n`));
+        } catch {
+          closed = true;
+        }
+      };
       const stream = new ReadableStream({
         start(controller) {
-          const push = (payload: any) => {
-            controller.enqueue(
-              encoder.encode(`${JSON.stringify(payload)}\n`)
-            );
-          };
+          controllerRef = controller;
+
+          try {
+            (req as any)?.signal?.addEventListener?.("abort", () => {
+              clientGone = true;
+            });
+          } catch { }
+
           (async () => {
             try {
               const modifiedByIndex = new Map<
@@ -649,9 +691,34 @@ export async function POST(req: NextRequest) {
                 }
               ] as any);
 
+              safePush({
+                type: "meta",
+                conversationId: String(conversationId),
+                assistantMessageId: String(assistantMsgId),
+                total
+              });
+
               for (let j = 0; j < indicesToModify.length; j += 1) {
                 const i = indicesToModify[j];
-                push({ type: "progress", current: j + 1, total });
+                safePush({ type: "progress", current: j + 1, total });
+                try {
+                  await messagesCol.updateOne(
+                    {
+                      _id: assistantMsgId,
+                      conversationId,
+                      userId: user.userId,
+                      role: "assistant"
+                    } as any,
+                    {
+                      $set: {
+                        text:
+                          total > 1
+                            ? `正在生成中... (${j + 1}/${total})`
+                            : "正在生成中..."
+                      }
+                    } as any
+                  );
+                } catch { }
                 const contents = buildContentsForIndex(i);
                 const generated = await client.generateImageStream(
                   prompt,
@@ -665,6 +732,14 @@ export async function POST(req: NextRequest) {
                   { role: guard.authz?.role, isAdmin: guard.authz?.isSuperAdmin }
                 );
                 modifiedByIndex.set(i, generated as any);
+                safePush({
+                  type: "partial",
+                  current: j + 1,
+                  total,
+                  index: i,
+                  imageBase64: String((generated as any)?.data || ""),
+                  mimeType: String((generated as any)?.mimeType || "image/png") || "image/png"
+                });
               }
 
               const finalImages: Array<{
@@ -769,7 +844,7 @@ export async function POST(req: NextRequest) {
                 } as any
               );
 
-              push({
+              safePush({
                 type: "done",
                 assistantMessageId: String(assistantMsgId),
                 conversationId: String(conversationId),
@@ -781,7 +856,7 @@ export async function POST(req: NextRequest) {
                 thoughtSignature: lastModified?.thoughtSignature || undefined,
                 usedReferenceImages: referenceImages.length
               });
-              controller.close();
+              safeClose();
             } catch (e: any) {
               const msg = e instanceof Error ? e.message : String(e);
               try {
@@ -795,10 +870,13 @@ export async function POST(req: NextRequest) {
                   { $set: { loading: false, text: `生成失败：${msg}` } } as any
                 );
               } catch { }
-              push({ type: "error", error: msg });
-              controller.close();
+              safePush({ type: "error", error: msg });
+              safeClose();
             }
           })();
+        },
+        cancel() {
+          clientGone = true;
         }
       });
       return new Response(stream, {

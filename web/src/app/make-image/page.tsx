@@ -61,6 +61,13 @@ export default function MakeImagePage() {
     indices: number[];
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const generationAbortRef = useRef<AbortController | null>(null);
+  const leftWhileGeneratingRef = useRef(false);
+  const didAutoOpenFirstConversationRef = useRef(false);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const conversationListPollTimerRef = useRef<ReturnType<
+    typeof setInterval
+  > | null>(null);
   const conversationSettingsMapRef = useRef<
     Record<string, ImageGenerationSettings>
   >({});
@@ -161,6 +168,85 @@ export default function MakeImagePage() {
     conversationSettingsMapRef.current = conversationSettingsMap;
   }, [conversationSettingsMap]);
 
+  const hasLoadingMessage = messages.some((m) => Boolean(m.loading));
+  useEffect(() => {
+    if (!currentConversationId) return;
+    if (!hasLoadingMessage) return;
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    const cid = currentConversationId;
+    pollTimerRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/image-edit/chat?conversationId=${encodeURIComponent(cid)}`,
+          { method: "GET", cache: "no-store" }
+        );
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) return;
+        const apiMessages = Array.isArray(data.messages) ? data.messages : [];
+        const mappedMessages: Message[] = apiMessages.map(
+          (m: any, i: number) => ({
+            id: String(m.id || `${cid}-${i}`),
+            role: m.role === "user" ? "user" : "assistant",
+            content: String(m.text || ""),
+            loading: Boolean(m.loading),
+            imageBase64: m.imageBase64 ? String(m.imageBase64) : undefined,
+            imageMimeType: m.imageMimeType
+              ? String(m.imageMimeType)
+              : undefined,
+            generatedImages: Array.isArray(m.generatedImages)
+              ? m.generatedImages
+                  .map((x: any) => ({
+                    imageBase64: String(x?.imageBase64 || ""),
+                    imageMimeType: String(x?.imageMimeType || "image/jpeg")
+                  }))
+                  .filter((x: any) => x.imageBase64)
+              : undefined
+          })
+        );
+        setMessages(
+          mappedMessages.length > 0 ? mappedMessages : [buildWelcomeMessage()]
+        );
+        const stillLoading = mappedMessages.some((x) => Boolean(x.loading));
+        if (!stillLoading && pollTimerRef.current) {
+          clearInterval(pollTimerRef.current);
+          pollTimerRef.current = null;
+        }
+      } catch {}
+    }, 1200);
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+  }, [currentConversationId, hasLoadingMessage]);
+
+  const hasGeneratingConversation = conversationItems.some((x) =>
+    Boolean(x?.isGenerating)
+  );
+  useEffect(() => {
+    if (!hasGeneratingConversation) {
+      if (conversationListPollTimerRef.current) {
+        clearInterval(conversationListPollTimerRef.current);
+        conversationListPollTimerRef.current = null;
+      }
+      return;
+    }
+    if (conversationListPollTimerRef.current) {
+      clearInterval(conversationListPollTimerRef.current);
+    }
+    conversationListPollTimerRef.current = setInterval(() => {
+      void refreshConversationList();
+    }, 1200);
+    return () => {
+      if (conversationListPollTimerRef.current) {
+        clearInterval(conversationListPollTimerRef.current);
+        conversationListPollTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasGeneratingConversation]);
+
   const refreshConversationList = async (preferConversationId?: string) => {
     setConversationListLoading(true);
     try {
@@ -194,7 +280,13 @@ export default function MakeImagePage() {
             DEFAULT_IMAGE_GENERATION_SETTINGS
         );
         setCurrentConversationId(preferConversationId);
-      } else if (!currentConversationId && items.length > 0) {
+        didAutoOpenFirstConversationRef.current = true;
+      } else if (
+        !currentConversationId &&
+        items.length > 0 &&
+        !didAutoOpenFirstConversationRef.current
+      ) {
+        didAutoOpenFirstConversationRef.current = true;
         await openConversation(items[0].id);
       }
     } catch (e: any) {
@@ -208,6 +300,7 @@ export default function MakeImagePage() {
     if (!conversationId) return;
     setConversationLoading(true);
     try {
+      if (isGenerating) leftWhileGeneratingRef.current = true;
       setEditTarget(null);
       const res = await fetch(
         `/api/image-edit/chat?conversationId=${encodeURIComponent(
@@ -361,6 +454,13 @@ export default function MakeImagePage() {
     setIsGenerating(true);
 
     try {
+      try {
+        generationAbortRef.current?.abort();
+      } catch {}
+      const abortController = new AbortController();
+      generationAbortRef.current = abortController;
+      leftWhileGeneratingRef.current = false;
+
       // Build history
       const history = messages
         .filter((m) => !m.loading && m.id !== "welcome")
@@ -393,6 +493,7 @@ export default function MakeImagePage() {
         headers: {
           "Content-Type": "application/json"
         },
+        signal: abortController.signal,
         body: JSON.stringify({
           prompt: userMessage.content || "请参考图片进行处理",
           referenceImageInline,
@@ -423,41 +524,120 @@ export default function MakeImagePage() {
         let doneEvent: any = null;
         let progressCur = 1;
 
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
 
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-            const evt = JSON.parse(trimmed);
-            if (evt?.type === "progress") {
-              const cur = Number(evt.current) || 1;
-              progressCur = Math.max(1, Math.min(safeOutputCount, cur));
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantMessageId
-                    ? {
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+              const evt = JSON.parse(trimmed);
+              if (evt?.type === "meta") {
+                const cid = String(evt.conversationId || "").trim();
+                if (cid) {
+                  latestConversationId = cid;
+                  bindSettingsToConversation(cid);
+                  void refreshConversationList();
+                  if (
+                    !leftWhileGeneratingRef.current &&
+                    !currentConversationId
+                  ) {
+                    setCurrentConversationId(cid);
+                  }
+                }
+                continue;
+              }
+              if (evt?.type === "progress") {
+                const cur = Number(evt.current) || 1;
+                progressCur = Math.max(1, Math.min(safeOutputCount, cur));
+                if (!leftWhileGeneratingRef.current) {
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantMessageId
+                        ? {
+                            ...msg,
+                            content:
+                              safeOutputCount > 1
+                                ? `正在思考与生成中... (${progressCur}/${safeOutputCount})`
+                                : "正在思考与生成中..."
+                          }
+                        : msg
+                    )
+                  );
+                }
+              } else if (evt?.type === "partial") {
+                const partialBase64 = String(evt.imageBase64 || "").trim();
+                if (!partialBase64) continue;
+                const partialMimeType =
+                  String(evt.mimeType || "image/jpeg") || "image/jpeg";
+                const partialCurrent = Number(evt.current) || progressCur;
+                progressCur = Math.max(
+                  1,
+                  Math.min(safeOutputCount, partialCurrent)
+                );
+                if (!leftWhileGeneratingRef.current) {
+                  setMessages((prev) =>
+                    prev.map((msg) => {
+                      if (msg.id !== assistantMessageId) return msg;
+                      const existing =
+                        msg.generatedImages && msg.generatedImages.length > 0
+                          ? msg.generatedImages
+                          : msg.imageBase64
+                          ? [
+                              {
+                                imageBase64: msg.imageBase64,
+                                imageMimeType: msg.imageMimeType || "image/jpeg"
+                              }
+                            ]
+                          : [];
+                      const merged = existing.some(
+                        (x) => x.imageBase64 === partialBase64
+                      )
+                        ? existing
+                        : [
+                            ...existing,
+                            {
+                              imageBase64: partialBase64,
+                              imageMimeType: partialMimeType
+                            }
+                          ];
+                      return {
                         ...msg,
                         content:
                           safeOutputCount > 1
                             ? `正在思考与生成中... (${progressCur}/${safeOutputCount})`
-                            : "正在思考与生成中..."
-                      }
-                    : msg
-                )
-              );
-            } else if (evt?.type === "thought") {
-              continue;
-            } else if (evt?.type === "done") {
-              doneEvent = evt;
-            } else if (evt?.type === "error") {
-              throw new Error(String(evt.error || "生成失败"));
+                            : "正在思考与生成中...",
+                        imageBase64: merged[0]?.imageBase64,
+                        imageMimeType: merged[0]?.imageMimeType || "image/jpeg",
+                        generatedImages: merged
+                      };
+                    })
+                  );
+                }
+              } else if (evt?.type === "thought") {
+                continue;
+              } else if (evt?.type === "done") {
+                doneEvent = evt;
+              } else if (evt?.type === "error") {
+                throw new Error(String(evt.error || "生成失败"));
+              }
             }
           }
+        } catch (e: any) {
+          if (e?.name === "AbortError") throw e;
+          if (
+            typeof e?.message === "string" &&
+            e.message.toLowerCase().includes("aborted")
+          ) {
+            const err: any = new Error(e.message);
+            err.name = "AbortError";
+            throw err;
+          }
+          throw e;
         }
 
         if (!doneEvent) {
@@ -480,8 +660,10 @@ export default function MakeImagePage() {
         }
         if (doneEvent.conversationId) {
           latestConversationId = String(doneEvent.conversationId);
-          setCurrentConversationId(String(doneEvent.conversationId));
           bindSettingsToConversation(String(doneEvent.conversationId));
+          if (!leftWhileGeneratingRef.current) {
+            setCurrentConversationId(String(doneEvent.conversationId));
+          }
         }
         assistantMessageIdFromServer = String(
           doneEvent.assistantMessageId || ""
@@ -526,33 +708,39 @@ export default function MakeImagePage() {
         }
       }
 
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantMessageId
-            ? {
-                ...msg,
-                ...(assistantMessageIdFromServer
-                  ? { id: assistantMessageIdFromServer }
-                  : {}),
-                loading: false,
-                content:
-                  generatedImages.length > 0
-                    ? ""
-                    : "抱歉，生成失败：未成功生成图片",
-                imageBase64: generatedImages[0]?.imageBase64,
-                imageMimeType:
-                  generatedImages[0]?.imageMimeType || "image/jpeg",
-                generatedImages
-              }
-            : msg
-        )
-      );
+      if (!leftWhileGeneratingRef.current) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? {
+                  ...msg,
+                  ...(assistantMessageIdFromServer
+                    ? { id: assistantMessageIdFromServer }
+                    : {}),
+                  loading: false,
+                  content:
+                    generatedImages.length > 0
+                      ? ""
+                      : "抱歉，生成失败：未成功生成图片",
+                  imageBase64: generatedImages[0]?.imageBase64,
+                  imageMimeType:
+                    generatedImages[0]?.imageMimeType || "image/jpeg",
+                  generatedImages
+                }
+              : msg
+          )
+        );
+      }
 
-      await refreshConversationList(latestConversationId);
+      await refreshConversationList(
+        leftWhileGeneratingRef.current ? undefined : latestConversationId
+      );
     } catch (error: any) {
+      if (error?.name === "AbortError") return;
       message.error(error.message || "生成图片时发生错误");
     } finally {
       setIsGenerating(false);
+      generationAbortRef.current = null;
     }
   };
 
@@ -725,6 +913,7 @@ export default function MakeImagePage() {
   };
 
   const startNewConversation = () => {
+    if (isGenerating) leftWhileGeneratingRef.current = true;
     const lastSettings = (() => {
       const map = conversationSettingsMapRef.current || {};
       if (currentConversationId && map[currentConversationId]) {

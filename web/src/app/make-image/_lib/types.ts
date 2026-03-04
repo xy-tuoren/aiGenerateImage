@@ -27,6 +27,7 @@ export type ConversationItem = {
   id: string;
   title: string;
   lastMessage?: string;
+  isGenerating?: boolean;
   generationSettings?: Partial<ImageGenerationSettings> | null;
   createdAt?: string;
   updatedAt?: string;
