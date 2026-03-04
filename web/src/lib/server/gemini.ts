@@ -3,6 +3,13 @@ import { GoogleGenAI } from "@google/genai";
 import sharp from "sharp";
 
 const GEMINI_CONCURRENCY = 64;
+
+function getCurrentDateTime(): { date: string; year: number } {
+  const now = new Date();
+  const year = now.getFullYear();
+  const date = now.toISOString().slice(0, 10);
+  return { date, year };
+}
 const NON_ADMIN_CONCURRENCY_MAX = (() => {
   const raw = String(process.env.NON_ADMIN_CONCURRENCY_MAX ?? "").trim();
   const n = raw ? Number(raw) : NaN;
@@ -158,7 +165,9 @@ export class GeminiClient {
         };
       }
 
-      const parts: any[] = [{ text: prompt }];
+      const { date, year } = getCurrentDateTime();
+      const dateContext = `[1.Context: Current date is ${date}, year ${year}. Use this when generating time-sensitive content.]\n\n[2.Generate an image]\`n\n`;
+      const parts: any[] = [{ text: dateContext + prompt }];
       if (options.referenceImages && options.referenceImages.length > 0) {
         for (const refImage of options.referenceImages) {
           parts.push({
@@ -183,11 +192,15 @@ export class GeminiClient {
       };
     })();
 
+    const { date, year } = getCurrentDateTime();
+    const systemInstruction = `For time-sensitive user queries that require up-to-date information, you MUST follow the provided current time (date and year) when formulating search queries in tool calls. Current date: ${date}. Remember it is ${year} this year.`;
+
     return {
       model: this.model,
       contents: body.contents,
       ...(body.tools ? { tools: body.tools } : {}),
       config: {
+        systemInstruction,
         responseModalities: body.responseModalities || ["IMAGE"],
         thinkingConfig: {
           thinkingLevel: options.thinkingConfig?.thinkingLevel ?? "high",
