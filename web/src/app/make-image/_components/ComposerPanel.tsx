@@ -26,6 +26,7 @@ type ComposerPanelProps = {
   setInputValue: (value: string) => void;
   handleSend: () => void;
   onPasteImageFiles: (files: File[]) => Promise<void>;
+  onDropImageUrls: (urls: string[]) => Promise<void>;
   isGenerating: boolean;
   conversationLoading: boolean;
   enableImageSettings: boolean;
@@ -50,6 +51,7 @@ export function ComposerPanel({
   setInputValue,
   handleSend,
   onPasteImageFiles,
+  onDropImageUrls,
   isGenerating,
   conversationLoading,
   enableImageSettings,
@@ -65,8 +67,61 @@ export function ComposerPanel({
   imageSize,
   setImageSize
 }: ComposerPanelProps) {
+  const extractUrlsFromDataTransfer = (dt: DataTransfer): string[] => {
+    const out: string[] = [];
+    const custom = dt.getData("application/x-make-image-ref");
+    if (custom) {
+      try {
+        const parsed = JSON.parse(custom);
+        const list = Array.isArray(parsed) ? parsed : [parsed];
+        for (const item of list) {
+          const url = String(item?.url || item || "").trim();
+          if (url) out.push(url);
+        }
+      } catch {
+        const url = String(custom || "").trim();
+        if (url) out.push(url);
+      }
+    }
+    const uriList = String(dt.getData("text/uri-list") || "").trim();
+    if (uriList) {
+      for (const line of uriList.split("\n")) {
+        const s = line.trim();
+        if (!s || s.startsWith("#")) continue;
+        out.push(s);
+      }
+    }
+    const plain = String(dt.getData("text/plain") || "").trim();
+    if (plain) out.push(plain);
+    return Array.from(new Set(out));
+  };
+
   return (
-    <div style={{ padding: "0 24px 24px" }}>
+    <div
+      style={{ padding: "0 24px 24px" }}
+      onDragOver={(e) => {
+        if (isGenerating || conversationLoading) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+      }}
+      onDrop={async (e) => {
+        if (isGenerating || conversationLoading) return;
+        e.preventDefault();
+        try {
+          const files = Array.from(e.dataTransfer?.files || []).filter((f) =>
+            String(f?.type || "").startsWith("image/")
+          );
+          if (files.length > 0) {
+            for (const f of files) handleUpload(f);
+            return;
+          }
+          const urls = extractUrlsFromDataTransfer(e.dataTransfer);
+          if (urls.length > 0) await onDropImageUrls(urls);
+        } catch {
+          message.error("拖拽图片失败");
+        }
+      }}
+    >
       <div
         style={{
           backgroundColor: "#f0f4f9",
@@ -98,8 +153,8 @@ export function ComposerPanel({
                   <AntImage
                     src={img.url}
                     alt="upload preview"
-                    width={64}
-                    height={64}
+                    width={92}
+                    height={92}
                     style={{
                       objectFit: "cover",
                       borderRadius: 8,

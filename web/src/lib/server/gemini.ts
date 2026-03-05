@@ -10,6 +10,13 @@ function getCurrentDateTime(): { date: string; year: number } {
   const date = now.toISOString().slice(0, 10);
   return { date, year };
 }
+
+function buildRequestContext(date: string, year: number): string {
+  return `
+        [1.Context: Current date is ${date}, year ${year}. Use this when generating time-sensitive content.]
+        [2.Generate an image]
+      `;
+}
 const NON_ADMIN_CONCURRENCY_MAX = (() => {
   const raw = String(process.env.NON_ADMIN_CONCURRENCY_MAX ?? "").trim();
   const n = raw ? Number(raw) : NaN;
@@ -126,6 +133,8 @@ export interface GenerateImageOptions {
 export interface GeneratedImage {
   mimeType: string;
   data: string;
+  /** Optional: model returned user-facing text. */
+  text?: string;
   thoughtSignature?: string;
   modelPartsForNextTurn?: any[];
 }
@@ -153,11 +162,16 @@ export class GeminiClient {
     if (mergedImageConfig && !mergedImageConfig.imageSize) {
       mergedImageConfig.imageSize = defaultImageSize;
     }
+    const { date, year } = getCurrentDateTime();
+    const context = buildRequestContext(date, year);
 
     const body: any = (() => {
       if (Array.isArray(options.contents) && options.contents.length > 0) {
         return {
-          contents: options.contents,
+          contents: [
+            { role: "user", parts: [{ text: context }] },
+            ...options.contents,
+          ],
           responseModalities: options.responseModalities || ["IMAGE"],
           ...(mergedImageConfig ? { imageConfig: mergedImageConfig } : {}),
           ...(options.generationConfig ? { generationConfig: options.generationConfig } : {}),
@@ -165,9 +179,7 @@ export class GeminiClient {
         };
       }
 
-      const { date, year } = getCurrentDateTime();
-      const dateContext = `[1.Context: Current date is ${date}, year ${year}. Use this when generating time-sensitive content.]\n\n[2.Generate an image]\`n\n`;
-      const parts: any[] = [{ text: dateContext + prompt }];
+      const parts: any[] = [{ text: context + prompt }];
       if (options.referenceImages && options.referenceImages.length > 0) {
         for (const refImage of options.referenceImages) {
           parts.push({
@@ -188,11 +200,17 @@ export class GeminiClient {
         responseModalities: options.responseModalities || ["IMAGE"],
         ...(mergedImageConfig ? { imageConfig: mergedImageConfig } : {}),
         ...(options.generationConfig ? { generationConfig: options.generationConfig } : {}),
-        tools: [{ google_search: {} }],
+        tools: [{
+          google_search: {
+            searchTypes: {
+              webSearch: {},
+              imageSearch: {}
+            }
+          }
+        }],
       };
     })();
 
-    const { date, year } = getCurrentDateTime();
     const systemInstruction = `For time-sensitive user queries that require up-to-date information, you MUST follow the provided current time (date and year) when formulating search queries in tool calls. Current date: ${date}. Remember it is ${year} this year.`;
 
     return {
@@ -214,13 +232,22 @@ export class GeminiClient {
   }
 
   private async buildGeneratedImageFromParts(
-    prompt: string,
     contentParts: any[],
     skipFormatConversion?: boolean
   ): Promise<GeneratedImage> {
     if (!contentParts || !contentParts.length) {
       throw new Error("Gemini 返回结果中没有内容");
     }
+
+    const extractedText = (() => {
+      const texts = contentParts
+        .filter((p: any) => p?.thought !== true)
+        .map((p: any) => (typeof p?.text === "string" ? p.text.trim() : ""))
+        .filter(Boolean);
+      if (!texts.length) return "";
+      // Prefer the last non-empty text (often the final instruction / caption).
+      return texts[texts.length - 1];
+    })();
 
     const modelPartsForNextTurn = contentParts
       .map((p: any) => {
@@ -252,25 +279,6 @@ export class GeminiClient {
       throw new Error("Gemini 返回结果中没有图片数据 inlineData");
     }
 
-    const debugSize = String(process.env.DEBUG_GEMINI_IMAGE_SIZE || "").toLowerCase();
-    if (debugSize === "1" || debugSize === "true" || debugSize === "yes") {
-      try {
-        const buf = Buffer.from(imagePart.inlineData.data || "", "base64");
-        const meta = await sharp(buf).metadata();
-        console.log("[gemini:image]", {
-          model: this.model,
-          mimeType: imagePart.inlineData.mimeType || "",
-          format: meta.format,
-          width: meta.width,
-          height: meta.height,
-          sizeBytes: buf.length,
-          promptChars: String(prompt || "").length,
-        });
-      } catch (e) {
-        console.log("[gemini:image] metadata failed:", e instanceof Error ? e.message : String(e));
-      }
-    }
-
     const rawBase64 = imagePart.inlineData.data || "";
     const thoughtSignature =
       (imagePart as any)?.thoughtSignature ||
@@ -282,6 +290,7 @@ export class GeminiClient {
       return {
         mimeType,
         data: rawBase64,
+        text: extractedText || undefined,
         thoughtSignature,
         modelPartsForNextTurn,
       };
@@ -300,8 +309,6 @@ export class GeminiClient {
       const isAlreadyJpeg = String(meta?.format || "").toLowerCase() === "jpeg";
       const hasAlpha = meta?.hasAlpha === true;
       const forceReencode = ["1", "true", "yes"].includes(String(process.env.GEMINI_FORCE_REENCODE_JPEG || "").toLowerCase());
-      const enableSharpen = ["1", "true", "yes"].includes(String(process.env.GEMINI_JPEG_SHARPEN || "").toLowerCase());
-
       const qRaw = Number(String(process.env.GEMINI_JPEG_QUALITY || "").trim() || "100");
       const quality = Number.isFinite(qRaw) ? Math.max(1, Math.min(100, Math.floor(qRaw))) : 100;
 
@@ -310,7 +317,7 @@ export class GeminiClient {
         : await (async () => {
           let img = sharp(rawBuffer, { failOnError: false });
           if (hasAlpha) img = img.flatten({ background: { r: 255, g: 255, b: 255 } });
-          if (enableSharpen) img = img.sharpen();
+          img = img.sharpen();
           return await img
             .jpeg({
               quality,
@@ -342,6 +349,7 @@ export class GeminiClient {
       return {
         mimeType: "image/jpeg",
         data: imageData,
+        text: extractedText || undefined,
         thoughtSignature,
         modelPartsForNextTurn,
       };
@@ -352,68 +360,68 @@ export class GeminiClient {
 
   async generateImage(prompt: string, options: GenerateImageOptions = {}, ctx?: GeminiQueueContext): Promise<GeneratedImage> {
     const req: any = this.buildGenerateRequest(prompt, options);
-
-    const debugReq = String(process.env.DEBUG_GEMINI_REQUEST || "").toLowerCase();
-    if (debugReq === "1" || debugReq === "true" || debugReq === "yes") {
-      try {
-        const masked = JSON.parse(
-          JSON.stringify(req, (_k, v) => {
-            if (v && typeof v === "object" && typeof (v as any).inlineData?.data === "string") {
-              const data = (v as any).inlineData.data as string;
-              return {
-                ...v,
-                inlineData: {
-                  ...(v as any).inlineData,
-                  data: `[base64:${data.length}]`,
-                },
-              };
-            }
-            return v;
-          })
-        );
-        console.log("[gemini:request]", masked);
-      } catch (e) {
-        console.log("[gemini:request] dump failed:", e instanceof Error ? e.message : String(e));
-      }
-    }
-
     return withGeminiLimit(async () => {
       const data = await this.genAI.models.generateContent(req);
 
       const candidates = data.candidates;
       if (!candidates || !candidates.length) {
-        throw new Error("Gemini 返回结果中没有 candidates");
+        const blockReason = String((data as any)?.promptFeedback?.blockReason || "").trim();
+        throw new Error(
+          blockReason
+            ? `Gemini 未返回候选结果（blockReason=${blockReason}）`
+            : "Gemini 返回结果中没有 candidates"
+        );
       }
 
-      const contentParts = candidates[0].content?.parts || [];
-      return this.buildGeneratedImageFromParts(prompt, contentParts);
-    }, ctx);
-  }
-
-  async generateImageStream(
-    prompt: string,
-    options: GenerateImageOptions = {},
-    ctx?: GeminiQueueContext
-  ): Promise<GeneratedImage> {
-    const req: any = this.buildGenerateRequest(prompt, options);
-    return withGeminiLimit(async () => {
-      const stream = await this.genAI.models.generateContentStream(req);
-      const collectedParts: any[] = [];
-
-      for await (const chunk of stream as any) {
-        const parts = chunk?.candidates?.[0]?.content?.parts;
-        if (!Array.isArray(parts) || parts.length === 0) continue;
-        for (const p of parts) {
-          collectedParts.push(p);
+      const selectedCandidate =
+        candidates.find((c: any) =>
+          Array.isArray(c?.content?.parts) &&
+          c.content.parts.some((p: any) => Boolean(p?.inlineData?.data))
+        ) ||
+        candidates.find(
+          (c: any) => Array.isArray(c?.content?.parts) && c.content.parts.length > 0
+        ) ||
+        null;
+      const contentParts = selectedCandidate?.content?.parts || [];
+      if (!contentParts.length) {
+        const blockReason = String(
+          (data as any)?.promptFeedback?.blockReason || ""
+        ).trim();
+        const finishReasons = candidates
+          .map((c: any) => String(c?.finishReason || "").trim())
+          .filter(Boolean);
+        const detailList: string[] = [];
+        if (blockReason) detailList.push(`blockReason=${blockReason}`);
+        if (finishReasons.length > 0) {
+          detailList.push(
+            `finishReason=${Array.from(new Set(finishReasons)).join(",")}`
+          );
         }
+        throw new Error(
+          detailList.length > 0
+            ? `Gemini 返回结果中没有内容（${detailList.join("; ")}）`
+            : "Gemini 返回结果中没有内容"
+        );
       }
-
-      if (!collectedParts.length) {
-        throw new Error("Gemini 流式返回中没有可用内容");
+      const hasInlineImage = contentParts.some((p: any) => Boolean(p?.inlineData?.data));
+      if (!hasInlineImage) {
+        const finishReason = String(selectedCandidate?.finishReason || "").trim();
+        const refusalText = contentParts
+          .map((p: any) => (typeof p?.text === "string" ? p.text.trim() : ""))
+          .find(Boolean);
+        const detailList: string[] = [];
+        if (finishReason) detailList.push(`finishReason=${finishReason}`);
+        if (refusalText) detailList.push(`text=${refusalText.slice(0, 120)}`);
+        throw new Error(
+          detailList.length > 0
+            ? `Gemini 返回结果中没有图片数据 inlineData（${detailList.join("; ")}）`
+            : "Gemini 返回结果中没有图片数据 inlineData"
+        );
       }
-      return this.buildGeneratedImageFromParts(prompt, collectedParts, true);
+      return this.buildGeneratedImageFromParts(contentParts);
     }, ctx);
   }
+
 }
 
 

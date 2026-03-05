@@ -20,6 +20,7 @@ type ConversationSidebarProps = {
   startNewConversation: () => void;
   conversationListLoading: boolean;
   isGenerating: boolean;
+  activeGeneratingConversationId: string | null;
   conversationLoading: boolean;
 };
 
@@ -33,6 +34,7 @@ export function ConversationSidebar({
   startNewConversation,
   conversationListLoading,
   isGenerating,
+  activeGeneratingConversationId,
   conversationLoading
 }: ConversationSidebarProps) {
   return (
@@ -86,7 +88,7 @@ export function ConversationSidebar({
               shape="circle"
               icon={<PlusSquareOutlined />}
               onClick={startNewConversation}
-              disabled={isGenerating || conversationLoading}
+              disabled={conversationLoading}
               aria-label="新增对话"
               style={{ width: 36, height: 36, fontSize: 20 }}
             />
@@ -145,7 +147,8 @@ export function ConversationSidebar({
                     icon={<DeleteOutlined />}
                     disabled={
                       conversationListLoading ||
-                      isGenerating ||
+                      (isGenerating &&
+                        activeGeneratingConversationId === item.id) ||
                       conversationLoading
                     }
                     onClick={(e) => {

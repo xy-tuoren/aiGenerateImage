@@ -18,10 +18,13 @@ import { ComposerPanel } from "./_components/ComposerPanel";
 import { GallerySaveModal } from "./_components/GallerySaveModal";
 
 export default function MakeImagePage() {
+  const MAKE_IMAGE_PAGE_CACHE_KEY = "make-image-page-cache-v1";
   const [messages, setMessages] = useState<Message[]>([buildWelcomeMessage()]);
   const [inputValue, setInputValue] = useState("");
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [activeGeneratingConversationId, setActiveGeneratingConversationId] =
+    useState<string | null>(null);
   const [enableImageSettings, setEnableImageSettings] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<string | undefined>(undefined);
   const [imageSize, setImageSize] = useState<string | undefined>(undefined);
@@ -64,13 +67,60 @@ export default function MakeImagePage() {
   const generationAbortRef = useRef<AbortController | null>(null);
   const leftWhileGeneratingRef = useRef(false);
   const didAutoOpenFirstConversationRef = useRef(false);
+  const shouldAutoOpenLatestOnMountRef = useRef(true);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const conversationListPollTimerRef = useRef<ReturnType<
     typeof setInterval
   > | null>(null);
+  const isGeneratingRef = useRef(false);
+  const [storageReady, setStorageReady] = useState(false);
   const conversationSettingsMapRef = useRef<
     Record<string, ImageGenerationSettings>
   >({});
+  const normalizePendingImages = (items: any): PendingImage[] => {
+    if (!Array.isArray(items)) return [];
+    return items
+      .map((item: any) => {
+        const mimeType =
+          String(item?.mimeType || "image/png").trim() || "image/png";
+        const base64 = String(item?.base64 || "").trim();
+        if (!base64) return null;
+        const rawUrl = String(item?.url || "").trim();
+        const url =
+          rawUrl || `data:${mimeType};base64,${base64.split(",")[1] || base64}`;
+        return {
+          url,
+          base64,
+          mimeType
+        } as PendingImage;
+      })
+      .filter((x: PendingImage | null): x is PendingImage => Boolean(x));
+  };
+  const normalizeMessages = (items: any): Message[] => {
+    if (!Array.isArray(items)) return [];
+    return items.map(
+      (item: any, index: number): Message => ({
+        id: String(item?.id || `restored-${index}`),
+        role:
+          item?.role === "user" ? ("user" as const) : ("assistant" as const),
+        content: item?.content ? String(item.content) : "",
+        imageBase64: item?.imageBase64 ? String(item.imageBase64) : undefined,
+        imageMimeType: item?.imageMimeType
+          ? String(item.imageMimeType)
+          : undefined,
+        loading: Boolean(item?.loading),
+        generatedImages: Array.isArray(item?.generatedImages)
+          ? item.generatedImages
+              .map((x: any) => ({
+                imageBase64: String(x?.imageBase64 || ""),
+                imageMimeType: String(x?.imageMimeType || "image/jpeg")
+              }))
+              .filter((x: any) => x.imageBase64)
+          : undefined,
+        referenceImages: normalizePendingImages(item?.referenceImages)
+      })
+    );
+  };
   const normalizeServerGenerationSettings = (
     input: any
   ): ImageGenerationSettings | undefined => {
@@ -114,6 +164,23 @@ export default function MakeImagePage() {
     setTemperature(resolved.temperature);
     setOutputCount(resolved.outputCount);
   };
+  const mapReferenceImagesFromApi = (m: any): PendingImage[] | undefined => {
+    if (!Array.isArray(m?.referenceImages)) return undefined;
+    const refs = m.referenceImages
+      .map((x: any) => {
+        const mimeType = String(x?.imageMimeType || "image/png") || "image/png";
+        const pureBase64 = String(x?.imageBase64 || "").trim();
+        if (!pureBase64) return null;
+        const dataUrl = `data:${mimeType};base64,${pureBase64}`;
+        return {
+          url: dataUrl,
+          base64: dataUrl,
+          mimeType
+        } as PendingImage;
+      })
+      .filter((x: PendingImage | null): x is PendingImage => Boolean(x));
+    return refs.length > 0 ? refs : undefined;
+  };
   const bindSettingsToConversation = (conversationId: string) => {
     if (!conversationId) return;
     setConversationSettingsMap((prev) => {
@@ -132,6 +199,10 @@ export default function MakeImagePage() {
       };
     });
   };
+  const currentConversationKey =
+    currentConversationId || NEW_CONVERSATION_SETTINGS_KEY;
+  const isCurrentConversationGenerating =
+    isGenerating && activeGeneratingConversationId === currentConversationKey;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -167,11 +238,117 @@ export default function MakeImagePage() {
   useEffect(() => {
     conversationSettingsMapRef.current = conversationSettingsMap;
   }, [conversationSettingsMap]);
+  useEffect(() => {
+    isGeneratingRef.current = isGenerating;
+  }, [isGenerating]);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(MAKE_IMAGE_PAGE_CACHE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw || "{}");
+      const restoredMessages = normalizeMessages(parsed?.messages);
+      const restoredPendingImages = normalizePendingImages(
+        parsed?.pendingImages
+      );
+      const restoredInput = String(parsed?.inputValue || "");
+      const restoredConversationId = parsed?.currentConversationId
+        ? String(parsed.currentConversationId)
+        : null;
+      if (restoredMessages.length > 0) setMessages(restoredMessages);
+      if (restoredPendingImages.length > 0)
+        setPendingImages(restoredPendingImages);
+      if (restoredInput) setInputValue(restoredInput);
+      if (restoredConversationId)
+        setCurrentConversationId(restoredConversationId);
+      if (typeof parsed?.conversationListCollapsed === "boolean") {
+        setConversationListCollapsed(Boolean(parsed.conversationListCollapsed));
+      }
+      if (
+        parsed?.generationSettings &&
+        typeof parsed.generationSettings === "object"
+      ) {
+        const restoredSettings = normalizeServerGenerationSettings(
+          parsed.generationSettings
+        );
+        if (restoredSettings) {
+          applyGenerationSettings(restoredSettings);
+        }
+      }
+      if (
+        parsed?.conversationSettingsMap &&
+        typeof parsed.conversationSettingsMap === "object"
+      ) {
+        setConversationSettingsMap(parsed.conversationSettingsMap);
+      }
+    } catch {
+    } finally {
+      setStorageReady(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!storageReady) return;
+    try {
+      const payload = {
+        messages: messages.map((msg) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content || "",
+          loading: Boolean(msg.loading),
+          imageBase64: msg.imageBase64,
+          imageMimeType: msg.imageMimeType,
+          generatedImages: msg.generatedImages,
+          referenceImages: (msg.referenceImages || []).map((img) => ({
+            url: img.url,
+            base64: img.base64,
+            mimeType: img.mimeType
+          }))
+        })),
+        inputValue,
+        pendingImages: pendingImages.map((img) => ({
+          url: img.url,
+          base64: img.base64,
+          mimeType: img.mimeType
+        })),
+        currentConversationId,
+        conversationListCollapsed,
+        generationSettings: {
+          enableImageSettings,
+          aspectRatio,
+          imageSize,
+          thinkingLevel,
+          temperature,
+          outputCount
+        },
+        conversationSettingsMap
+      };
+      sessionStorage.setItem(
+        MAKE_IMAGE_PAGE_CACHE_KEY,
+        JSON.stringify(payload)
+      );
+    } catch {}
+  }, [
+    storageReady,
+    messages,
+    inputValue,
+    pendingImages,
+    currentConversationId,
+    conversationListCollapsed,
+    enableImageSettings,
+    aspectRatio,
+    imageSize,
+    thinkingLevel,
+    temperature,
+    outputCount,
+    conversationSettingsMap
+  ]);
 
   const hasLoadingMessage = messages.some((m) => Boolean(m.loading));
   useEffect(() => {
     if (!currentConversationId) return;
     if (!hasLoadingMessage) return;
+    // While local streaming is active, NDJSON events already drive message updates.
+    if (isGeneratingRef.current) return;
     if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     const cid = currentConversationId;
     pollTimerRef.current = setInterval(async () => {
@@ -193,6 +370,7 @@ export default function MakeImagePage() {
             imageMimeType: m.imageMimeType
               ? String(m.imageMimeType)
               : undefined,
+            referenceImages: mapReferenceImagesFromApi(m),
             generatedImages: Array.isArray(m.generatedImages)
               ? m.generatedImages
                   .map((x: any) => ({
@@ -212,14 +390,14 @@ export default function MakeImagePage() {
           pollTimerRef.current = null;
         }
       } catch {}
-    }, 1200);
+    }, 3000);
     return () => {
       if (pollTimerRef.current) {
         clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;
       }
     };
-  }, [currentConversationId, hasLoadingMessage]);
+  }, [currentConversationId, hasLoadingMessage, isGenerating]);
 
   const hasGeneratingConversation = conversationItems.some((x) =>
     Boolean(x?.isGenerating)
@@ -232,12 +410,13 @@ export default function MakeImagePage() {
       }
       return;
     }
+    if (isGenerating) return;
     if (conversationListPollTimerRef.current) {
       clearInterval(conversationListPollTimerRef.current);
     }
     conversationListPollTimerRef.current = setInterval(() => {
       void refreshConversationList();
-    }, 1200);
+    }, 5000);
     return () => {
       if (conversationListPollTimerRef.current) {
         clearInterval(conversationListPollTimerRef.current);
@@ -273,6 +452,16 @@ export default function MakeImagePage() {
           }
           return next;
         });
+      }
+      if (
+        !preferConversationId &&
+        shouldAutoOpenLatestOnMountRef.current &&
+        items.length > 0
+      ) {
+        shouldAutoOpenLatestOnMountRef.current = false;
+        didAutoOpenFirstConversationRef.current = true;
+        await openConversation(items[0].id);
+        return;
       }
       if (preferConversationId) {
         applyGenerationSettings(
@@ -324,6 +513,7 @@ export default function MakeImagePage() {
           loading: Boolean(m.loading),
           imageBase64: m.imageBase64 ? String(m.imageBase64) : undefined,
           imageMimeType: m.imageMimeType ? String(m.imageMimeType) : undefined,
+          referenceImages: mapReferenceImagesFromApi(m),
           generatedImages: Array.isArray(m.generatedImages)
             ? m.generatedImages
                 .map((x: any) => ({
@@ -362,9 +552,10 @@ export default function MakeImagePage() {
   };
 
   useEffect(() => {
+    if (!storageReady) return;
     refreshConversationList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [storageReady]);
 
   useEffect(() => {
     const loadAppNames = async () => {
@@ -398,6 +589,57 @@ export default function MakeImagePage() {
       reader.readAsDataURL(file);
     });
 
+  const urlToPendingImage = async (url: string): Promise<PendingImage> => {
+    const u = String(url || "").trim();
+    if (!u) throw new Error("empty url");
+    if (u.startsWith("data:")) {
+      const m = u.match(/^data:([^;]+);base64,/i);
+      const mimeType = String(m?.[1] || "image/png").trim() || "image/png";
+      return { url: u, base64: u, mimeType };
+    }
+    const res = await fetch(u, { method: "GET", cache: "no-store" });
+    if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+    const blob = await res.blob();
+    const mimeType = String(blob.type || "").trim() || "image/png";
+    const base64Data: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(String(e.target?.result || ""));
+      reader.onerror = () => reject(new Error("read blob failed"));
+      reader.readAsDataURL(blob);
+    });
+    return {
+      url: u,
+      base64: base64Data,
+      mimeType
+    };
+  };
+
+  const addReferenceImagesFromUrls = async (urls: string[]) => {
+    const list = Array.isArray(urls) ? urls : [];
+    const cleaned = list.map((x) => String(x || "").trim()).filter(Boolean);
+    if (!cleaned.length) return;
+    const pending = await Promise.all(
+      cleaned.map((u) => urlToPendingImage(u).catch(() => null))
+    );
+    const imgs = pending.filter((x: PendingImage | null): x is PendingImage =>
+      Boolean(x)
+    );
+    if (!imgs.length) {
+      message.error("未识别到可用的图片拖拽内容");
+      return;
+    }
+    setPendingImages((prev) => {
+      const existing = new Set(prev.map((p) => p.base64));
+      const next = [...prev];
+      for (const img of imgs) {
+        if (existing.has(img.base64)) continue;
+        existing.add(img.base64);
+        next.push(img);
+      }
+      return next;
+    });
+  };
+
   const handleUpload = (file: File) => {
     fileToPendingImage(file)
       .then((img) => {
@@ -424,10 +666,14 @@ export default function MakeImagePage() {
   ) => {
     if (
       (!prompt.trim() && referenceImages.length === 0) ||
-      isGenerating ||
+      isCurrentConversationGenerating ||
       conversationLoading
     )
       return;
+    if (isGenerating && !isCurrentConversationGenerating) {
+      message.warning("当前有其他会话正在生成，请稍候再发送");
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -438,6 +684,8 @@ export default function MakeImagePage() {
 
     const safeOutputCount = Math.max(1, Math.min(4, Number(outputCount) || 1));
     const assistantMessageId = `${Date.now()}-assistant`;
+    const activeEditTarget =
+      editTarget?.messageId && editTarget.indices.length ? editTarget : null;
     const assistantMessage: Message = {
       id: assistantMessageId,
       role: "assistant",
@@ -451,6 +699,7 @@ export default function MakeImagePage() {
     setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setInputValue("");
     setPendingImages([]);
+    setActiveGeneratingConversationId(currentConversationKey);
     setIsGenerating(true);
 
     try {
@@ -502,211 +751,46 @@ export default function MakeImagePage() {
           temperature,
           enableImageSettings,
           outputCount: safeOutputCount,
-          stream: true,
           ...(enableImageSettings && aspectRatio ? { aspectRatio } : {}),
           ...(enableImageSettings && imageSize ? { imageSize } : {}),
           conversationId: latestConversationId,
-          ...(editTarget?.messageId && editTarget.indices.length
+          ...(activeEditTarget
             ? {
-                targetMessageId: editTarget.messageId,
-                targetImageIndices: editTarget.indices
+                targetMessageId: activeEditTarget.messageId,
+                targetImageIndices: activeEditTarget.indices
               }
             : {})
         })
       });
-      const contentType = String(res.headers.get("content-type") || "");
       let assistantMessageIdFromServer = "";
-
-      if (contentType.includes("application/x-ndjson") && res.body) {
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let doneEvent: any = null;
-        let progressCur = 1;
-
-        try {
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed) continue;
-              const evt = JSON.parse(trimmed);
-              if (evt?.type === "meta") {
-                const cid = String(evt.conversationId || "").trim();
-                if (cid) {
-                  latestConversationId = cid;
-                  bindSettingsToConversation(cid);
-                  void refreshConversationList();
-                  if (
-                    !leftWhileGeneratingRef.current &&
-                    !currentConversationId
-                  ) {
-                    setCurrentConversationId(cid);
-                  }
-                }
-                continue;
-              }
-              if (evt?.type === "progress") {
-                const cur = Number(evt.current) || 1;
-                progressCur = Math.max(1, Math.min(safeOutputCount, cur));
-                if (!leftWhileGeneratingRef.current) {
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === assistantMessageId
-                        ? {
-                            ...msg,
-                            content:
-                              safeOutputCount > 1
-                                ? `正在思考与生成中... (${progressCur}/${safeOutputCount})`
-                                : "正在思考与生成中..."
-                          }
-                        : msg
-                    )
-                  );
-                }
-              } else if (evt?.type === "partial") {
-                const partialBase64 = String(evt.imageBase64 || "").trim();
-                if (!partialBase64) continue;
-                const partialMimeType =
-                  String(evt.mimeType || "image/jpeg") || "image/jpeg";
-                const partialCurrent = Number(evt.current) || progressCur;
-                progressCur = Math.max(
-                  1,
-                  Math.min(safeOutputCount, partialCurrent)
-                );
-                if (!leftWhileGeneratingRef.current) {
-                  setMessages((prev) =>
-                    prev.map((msg) => {
-                      if (msg.id !== assistantMessageId) return msg;
-                      const existing =
-                        msg.generatedImages && msg.generatedImages.length > 0
-                          ? msg.generatedImages
-                          : msg.imageBase64
-                          ? [
-                              {
-                                imageBase64: msg.imageBase64,
-                                imageMimeType: msg.imageMimeType || "image/jpeg"
-                              }
-                            ]
-                          : [];
-                      const merged = existing.some(
-                        (x) => x.imageBase64 === partialBase64
-                      )
-                        ? existing
-                        : [
-                            ...existing,
-                            {
-                              imageBase64: partialBase64,
-                              imageMimeType: partialMimeType
-                            }
-                          ];
-                      return {
-                        ...msg,
-                        content:
-                          safeOutputCount > 1
-                            ? `正在思考与生成中... (${progressCur}/${safeOutputCount})`
-                            : "正在思考与生成中...",
-                        imageBase64: merged[0]?.imageBase64,
-                        imageMimeType: merged[0]?.imageMimeType || "image/jpeg",
-                        generatedImages: merged
-                      };
-                    })
-                  );
-                }
-              } else if (evt?.type === "thought") {
-                continue;
-              } else if (evt?.type === "done") {
-                doneEvent = evt;
-              } else if (evt?.type === "error") {
-                throw new Error(String(evt.error || "生成失败"));
-              }
-            }
-          }
-        } catch (e: any) {
-          if (e?.name === "AbortError") throw e;
-          if (
-            typeof e?.message === "string" &&
-            e.message.toLowerCase().includes("aborted")
-          ) {
-            const err: any = new Error(e.message);
-            err.name = "AbortError";
-            throw err;
-          }
-          throw e;
-        }
-
-        if (!doneEvent) {
-          throw new Error("流式生成中断，请重试");
-        }
-        if (Array.isArray(doneEvent.generatedImages)) {
-          generatedImages.push(
-            ...doneEvent.generatedImages
-              .map((x: any) => ({
-                imageBase64: String(x?.imageBase64 || ""),
-                imageMimeType: String(x?.imageMimeType || "image/jpeg")
-              }))
-              .filter((x: any) => x.imageBase64)
-          );
-        } else if (doneEvent.imageBase64) {
-          generatedImages.push({
-            imageBase64: String(doneEvent.imageBase64),
-            imageMimeType: String(doneEvent.mimeType || "image/jpeg")
-          });
-        }
-        if (doneEvent.conversationId) {
-          latestConversationId = String(doneEvent.conversationId);
-          bindSettingsToConversation(String(doneEvent.conversationId));
-          if (!leftWhileGeneratingRef.current) {
-            setCurrentConversationId(String(doneEvent.conversationId));
-          }
-        }
-        assistantMessageIdFromServer = String(
-          doneEvent.assistantMessageId || ""
-        ).trim();
-        if (assistantMessageIdFromServer && editTarget) {
-          setEditTarget((prev) =>
-            prev ? { ...prev, messageId: assistantMessageIdFromServer } : prev
-          );
-        }
-      } else {
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          throw new Error(data.error || "请求失败");
-        }
-        if (Array.isArray(data.generatedImages)) {
-          generatedImages.push(
-            ...data.generatedImages
-              .map((x: any) => ({
-                imageBase64: String(x?.imageBase64 || ""),
-                imageMimeType: String(x?.imageMimeType || "image/jpeg")
-              }))
-              .filter((x: any) => x.imageBase64)
-          );
-        } else if (data.imageBase64) {
-          generatedImages.push({
-            imageBase64: String(data.imageBase64),
-            imageMimeType: String(data.mimeType || "image/jpeg")
-          });
-        }
-        if (data.conversationId) {
-          latestConversationId = String(data.conversationId);
-          setCurrentConversationId(String(data.conversationId));
-          bindSettingsToConversation(String(data.conversationId));
-        }
-        assistantMessageIdFromServer = String(
-          data.assistantMessageId || ""
-        ).trim();
-        if (assistantMessageIdFromServer && editTarget) {
-          setEditTarget((prev) =>
-            prev ? { ...prev, messageId: assistantMessageIdFromServer } : prev
-          );
-        }
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "请求失败");
       }
+      if (Array.isArray(data.generatedImages)) {
+        generatedImages.push(
+          ...data.generatedImages
+            .map((x: any) => ({
+              imageBase64: String(x?.imageBase64 || ""),
+              imageMimeType: String(x?.imageMimeType || "image/jpeg")
+            }))
+            .filter((x: any) => x.imageBase64)
+        );
+      } else if (data.imageBase64) {
+        generatedImages.push({
+          imageBase64: String(data.imageBase64),
+          imageMimeType: String(data.mimeType || "image/jpeg")
+        });
+      }
+      if (data.conversationId) {
+        latestConversationId = String(data.conversationId);
+        setCurrentConversationId(String(data.conversationId));
+        bindSettingsToConversation(String(data.conversationId));
+        setActiveGeneratingConversationId(String(data.conversationId));
+      }
+      assistantMessageIdFromServer = String(
+        data.assistantMessageId || ""
+      ).trim();
 
       if (!leftWhileGeneratingRef.current) {
         setMessages((prev) =>
@@ -720,7 +804,7 @@ export default function MakeImagePage() {
                   loading: false,
                   content:
                     generatedImages.length > 0
-                      ? ""
+                      ? String(data?.assistantText || "").trim() || ""
                       : "抱歉，生成失败：未成功生成图片",
                   imageBase64: generatedImages[0]?.imageBase64,
                   imageMimeType:
@@ -737,8 +821,24 @@ export default function MakeImagePage() {
       );
     } catch (error: any) {
       if (error?.name === "AbortError") return;
-      message.error(error.message || "生成图片时发生错误");
+      const errText = String(error?.message || "生成图片时发生错误");
+      if (!leftWhileGeneratingRef.current) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? {
+                  ...msg,
+                  loading: false,
+                  content: `抱歉，生成失败：${errText}`
+                }
+              : msg
+          )
+        );
+      }
+      message.error(errText);
     } finally {
+      setEditTarget(null);
+      setActiveGeneratingConversationId(null);
       setIsGenerating(false);
       generationAbortRef.current = null;
     }
@@ -1019,6 +1119,7 @@ export default function MakeImagePage() {
           startNewConversation={startNewConversation}
           conversationListLoading={conversationListLoading}
           isGenerating={isGenerating}
+          activeGeneratingConversationId={activeGeneratingConversationId}
           conversationLoading={conversationLoading}
         />
 
@@ -1028,7 +1129,7 @@ export default function MakeImagePage() {
             messages={messages}
             editTarget={editTarget}
             onToggleEditTarget={onToggleEditTarget}
-            isGenerating={isGenerating}
+            isGenerating={isCurrentConversationGenerating}
             onRegenerate={handleRegenerate}
             onDownload={handleDownload}
             onOpenGallerySaveModal={openGallerySaveModal}
@@ -1053,7 +1154,10 @@ export default function MakeImagePage() {
               );
               setPendingImages((prev) => [...prev, ...pastedImages]);
             }}
-            isGenerating={isGenerating}
+            onDropImageUrls={async (urls) => {
+              await addReferenceImagesFromUrls(urls);
+            }}
+            isGenerating={isCurrentConversationGenerating}
             conversationLoading={conversationLoading}
             enableImageSettings={enableImageSettings}
             setEnableImageSettings={setEnableImageSettings}

@@ -2,7 +2,7 @@
 
 export type PendingImage = {
   url: string;
-  file: File;
+  file?: File;
   base64: string;
   mimeType: string;
 };

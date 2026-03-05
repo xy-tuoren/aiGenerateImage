@@ -274,9 +274,11 @@ export function getBackgroundPrompt({ appName, lang, prompt, aspectRatio }: Prom
 //-----------------------Buzz-----------------------------
 
 export function getBuzzDefaultPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
-  return `1、你是一名专业的buzz广告设计师，参考图 **仅作为风格参考**；你需要通过调整构图、修改元素与背景等方式，避免生成图与参考图过于相似。图片中文字语言必须为${lang}。
-  2、文案可以参考图中的文案，文字不要太多不要太复杂，但是相似度不能太高，并且文案的逻辑要有合理性。
-  3、${prompt}`
+  return `1、你是一名专业的buzz广告设计师，参考图 **仅作为风格参考**；你需要通过调整构图、修改元素与背景等方式，避免生成图与参考图过于相似。
+  2、参考图中的文字设计风格，不要太多不要太复杂，但是相似度不能太高，并且文案的逻辑要有合理性。
+  3、图中的文字语言必须100%为${lang}。
+  4、不要携带具体的月份日期信息。
+  5、${prompt}`
 }
 
 export function getBuzzCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {

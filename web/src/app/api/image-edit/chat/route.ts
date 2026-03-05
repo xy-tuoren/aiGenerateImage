@@ -59,6 +59,7 @@ type ImageEditMessageImageDoc = {
   index: number;
   imageBase64: string;
   imageMimeType: string;
+  kind?: "generated" | "reference";
   thoughtSignature?: string;
   modelParts?: any[];
   createdAt: Date;
@@ -360,18 +361,29 @@ export async function GET(req: NextRequest) {
         )
         .toArray()
       : [];
-    const msgIdToImages = new Map<
+    const msgIdToGeneratedImages = new Map<
+      string,
+      Array<{ imageBase64: string; imageMimeType: string }>
+    >();
+    const msgIdToReferenceImages = new Map<
       string,
       Array<{ imageBase64: string; imageMimeType: string }>
     >();
     for (const row of imageRows) {
       const k = String(row.messageId);
-      const arr = msgIdToImages.get(k) || [];
-      arr.push({
+      const item = {
         imageBase64: String(row.imageBase64 || ""),
         imageMimeType: String(row.imageMimeType || "image/png") || "image/png"
-      });
-      msgIdToImages.set(k, arr);
+      };
+      if ((row as any)?.kind === "reference") {
+        const arr = msgIdToReferenceImages.get(k) || [];
+        arr.push(item);
+        msgIdToReferenceImages.set(k, arr);
+        continue;
+      }
+      const arr = msgIdToGeneratedImages.get(k) || [];
+      arr.push(item);
+      msgIdToGeneratedImages.set(k, arr);
     }
     return Response.json({
       ok: true,
@@ -390,7 +402,8 @@ export async function GET(req: NextRequest) {
         loading: Boolean((m as any).loading),
         imageBase64: m.imageBase64,
         imageMimeType: m.imageMimeType,
-        generatedImages: msgIdToImages.get(String(m._id)) || undefined,
+        generatedImages: msgIdToGeneratedImages.get(String(m._id)) || undefined,
+        referenceImages: msgIdToReferenceImages.get(String(m._id)) || undefined,
         thoughtSignature: m.thoughtSignature,
         modelParts: Array.isArray(m.modelParts) ? m.modelParts : undefined,
         createdAt: m.createdAt
@@ -542,7 +555,6 @@ export async function POST(req: NextRequest) {
   });
   const requestHistory = normalizeHistory((body as any).history);
   const history = dbHistory.length > 0 ? dbHistory : requestHistory;
-  const useStream = Boolean((body as any).stream);
   const targetMessageIdRaw = String((body as any).targetMessageId || "").trim();
   const targetImageIndicesRaw = Array.isArray((body as any).targetImageIndices)
     ? ((body as any).targetImageIndices as any[])
@@ -555,6 +567,8 @@ export async function POST(req: NextRequest) {
         .map((n) => Math.floor(n))
     )
   ).sort((a, b) => a - b);
+  let hasPersistedMessages = false;
+  let hasPersistedConversationMeta = false;
 
   try {
     const client = new GeminiClient({});
@@ -626,268 +640,6 @@ export async function POST(req: NextRequest) {
           : undefined
       });
     };
-    if (useStream) {
-      const encoder = new TextEncoder();
-      let closed = false;
-      let clientGone = false;
-      let controllerRef: any = null;
-      const safeClose = () => {
-        if (closed) return;
-        closed = true;
-        try {
-          controllerRef?.close?.();
-        } catch { }
-      };
-      const safePush = (payload: any) => {
-        if (closed || clientGone) return;
-        try {
-          controllerRef?.enqueue?.(encoder.encode(`${JSON.stringify(payload)}\n`));
-        } catch {
-          closed = true;
-        }
-      };
-      const stream = new ReadableStream({
-        start(controller) {
-          controllerRef = controller;
-
-          try {
-            (req as any)?.signal?.addEventListener?.("abort", () => {
-              clientGone = true;
-            });
-          } catch { }
-
-          (async () => {
-            try {
-              const modifiedByIndex = new Map<
-                number,
-                {
-                  data: string;
-                  mimeType: string;
-                  thoughtSignature?: string;
-                  modelPartsForNextTurn?: any[];
-                }
-              >();
-              const total = Math.max(1, indicesToModify.length);
-              const now = new Date();
-              const userMsgId = new ObjectId();
-              const assistantMsgId = new ObjectId();
-              await messagesCol.insertMany([
-                {
-                  _id: userMsgId,
-                  conversationId,
-                  userId: user.userId,
-                  role: "user",
-                  text: prompt,
-                  createdAt: now
-                },
-                {
-                  _id: assistantMsgId,
-                  conversationId,
-                  userId: user.userId,
-                  role: "assistant",
-                  text: total > 1 ? `正在生成中... (0/${total})` : "正在生成中...",
-                  loading: true,
-                  createdAt: now
-                }
-              ] as any);
-
-              safePush({
-                type: "meta",
-                conversationId: String(conversationId),
-                assistantMessageId: String(assistantMsgId),
-                total
-              });
-
-              for (let j = 0; j < indicesToModify.length; j += 1) {
-                const i = indicesToModify[j];
-                safePush({ type: "progress", current: j + 1, total });
-                try {
-                  await messagesCol.updateOne(
-                    {
-                      _id: assistantMsgId,
-                      conversationId,
-                      userId: user.userId,
-                      role: "assistant"
-                    } as any,
-                    {
-                      $set: {
-                        text:
-                          total > 1
-                            ? `正在生成中... (${j + 1}/${total})`
-                            : "正在生成中..."
-                      }
-                    } as any
-                  );
-                } catch { }
-                const contents = buildContentsForIndex(i);
-                const generated = await client.generateImageStream(
-                  prompt,
-                  {
-                    responseModalities: ["IMAGE"],
-                    ...(imageConfig ? { imageConfig } : {}),
-                    generationConfig: { temperature: finalTemperature },
-                    thinkingConfig: { thinkingLevel },
-                    contents,
-                  },
-                  { role: guard.authz?.role, isAdmin: guard.authz?.isSuperAdmin }
-                );
-                modifiedByIndex.set(i, generated as any);
-                safePush({
-                  type: "partial",
-                  current: j + 1,
-                  total,
-                  index: i,
-                  imageBase64: String((generated as any)?.data || ""),
-                  mimeType: String((generated as any)?.mimeType || "image/png") || "image/png"
-                });
-              }
-
-              const finalImages: Array<{
-                imageBase64: string;
-                imageMimeType: string;
-                thoughtSignature?: string;
-                modelParts?: any[];
-              }> = [];
-              for (let i = 0; i < baseCount; i += 1) {
-                const mod = modifiedByIndex.get(i);
-                if (mod?.data) {
-                  finalImages.push({
-                    imageBase64: String(mod.data || ""),
-                    imageMimeType:
-                      String(mod.mimeType || "image/png") || "image/png",
-                    thoughtSignature: mod.thoughtSignature || undefined,
-                    modelParts: Array.isArray(mod.modelPartsForNextTurn)
-                      ? mod.modelPartsForNextTurn
-                      : undefined
-                  });
-                  continue;
-                }
-                const seed = latestSeeds[i];
-                if (selectionMode && seed?.imageBase64) {
-                  finalImages.push({
-                    imageBase64: String(seed.imageBase64 || ""),
-                    imageMimeType:
-                      String(seed.imageMimeType || "image/png") || "image/png",
-                    thoughtSignature: seed.thoughtSignature
-                      ? String(seed.thoughtSignature)
-                      : undefined,
-                    modelParts: Array.isArray(seed.modelParts)
-                      ? seed.modelParts
-                      : undefined
-                  });
-                  continue;
-                }
-              }
-
-              const firstGenerated = finalImages[0];
-              const lastModified =
-                indicesToModify.length > 0
-                  ? modifiedByIndex.get(
-                    indicesToModify[indicesToModify.length - 1]
-                  )
-                  : null;
-              const generatedImagesForDb = finalImages
-                .map((x) => ({
-                  imageBase64: String(x.imageBase64 || ""),
-                  imageMimeType:
-                    String(x.imageMimeType || "image/png") || "image/png",
-                  thoughtSignature: x.thoughtSignature,
-                  modelParts: x.modelParts
-                }))
-                .filter((x) => x.imageBase64);
-              await messagesCol.updateOne(
-                {
-                  _id: assistantMsgId,
-                  conversationId,
-                  userId: user.userId,
-                  role: "assistant"
-                } as any,
-                {
-                  $set: {
-                    loading: false,
-                    text: "",
-                    imageBase64: firstGenerated?.imageBase64,
-                    imageMimeType: firstGenerated?.imageMimeType || "image/png",
-                    thoughtSignature: lastModified?.thoughtSignature || undefined,
-                    modelParts: Array.isArray(lastModified?.modelPartsForNextTurn)
-                      ? lastModified.modelPartsForNextTurn
-                      : undefined
-                  }
-                } as any
-              );
-              if (generatedImagesForDb.length) {
-                await messageImagesCol.insertMany(
-                  generatedImagesForDb.map((img, idx) => ({
-                    conversationId,
-                    messageId: assistantMsgId,
-                    userId: user.userId,
-                    index: idx,
-                    imageBase64: img.imageBase64,
-                    imageMimeType: img.imageMimeType,
-                    thoughtSignature: img.thoughtSignature || undefined,
-                    modelParts: Array.isArray(img.modelParts)
-                      ? img.modelParts
-                      : undefined,
-                    createdAt: now
-                  })) as any
-                );
-              }
-              await conversationsCol.updateOne(
-                { _id: conversationId, userId: user.userId } as any,
-                {
-                  $set: {
-                    lastMessage: prompt,
-                    generationSettings,
-                    updatedAt: now,
-                    ...(rawConversationId ? {} : { title: buildConversationTitle(prompt) })
-                  }
-                } as any
-              );
-
-              safePush({
-                type: "done",
-                assistantMessageId: String(assistantMsgId),
-                conversationId: String(conversationId),
-                imageBase64: firstGenerated?.imageBase64,
-                mimeType: firstGenerated?.imageMimeType || "image/png",
-                generatedImages: generatedImagesForDb.length
-                  ? generatedImagesForDb
-                  : undefined,
-                thoughtSignature: lastModified?.thoughtSignature || undefined,
-                usedReferenceImages: referenceImages.length
-              });
-              safeClose();
-            } catch (e: any) {
-              const msg = e instanceof Error ? e.message : String(e);
-              try {
-                await messagesCol.updateOne(
-                  {
-                    conversationId,
-                    userId: user.userId,
-                    role: "assistant",
-                    loading: true
-                  } as any,
-                  { $set: { loading: false, text: `生成失败：${msg}` } } as any
-                );
-              } catch { }
-              safePush({ type: "error", error: msg });
-              safeClose();
-            }
-          })();
-        },
-        cancel() {
-          clientGone = true;
-        }
-      });
-      return new Response(stream, {
-        headers: {
-          "Content-Type": "application/x-ndjson; charset=utf-8",
-          "Cache-Control": "no-cache, no-transform",
-          Connection: "keep-alive"
-        }
-      });
-    }
-
     const generated = await client.generateImage(
       prompt,
       {
@@ -904,6 +656,7 @@ export async function POST(req: NextRequest) {
     const generatedAll: Array<{
       mimeType: string;
       data: string;
+      text?: string;
       thoughtSignature?: string;
       modelPartsForNextTurn?: any[];
     }> = [generated as any];
@@ -964,6 +717,12 @@ export async function POST(req: NextRequest) {
       indicesToModify.length > 0
         ? modifiedByIndex.get(indicesToModify[indicesToModify.length - 1])
         : null;
+    const assistantText = (() => {
+      const texts = generatedAll
+        .map((x: any) => (typeof x?.text === "string" ? x.text.trim() : ""))
+        .filter(Boolean);
+      return texts.length ? texts[texts.length - 1] : "";
+    })();
     const generatedImagesForDb = finalImages
       .map((x) => ({
         imageBase64: String(x.imageBase64 || ""),
@@ -989,7 +748,7 @@ export async function POST(req: NextRequest) {
         conversationId,
         userId: user.userId,
         role: "assistant",
-        text: "",
+        text: assistantText,
         imageBase64: firstGenerated?.imageBase64,
         imageMimeType: firstGenerated?.imageMimeType || "image/png",
         thoughtSignature: lastModified?.thoughtSignature || undefined,
@@ -999,6 +758,21 @@ export async function POST(req: NextRequest) {
         createdAt: now
       }
     ] as any);
+    hasPersistedMessages = true;
+    if (referenceImages.length > 0) {
+      await messageImagesCol.insertMany(
+        referenceImages.map((img, idx) => ({
+          conversationId,
+          messageId: userMsgId,
+          userId: user.userId,
+          index: idx,
+          imageBase64: String(img.data || ""),
+          imageMimeType: String(img.mimeType || "image/png") || "image/png",
+          kind: "reference" as const,
+          createdAt: now
+        })) as any
+      );
+    }
     if (generatedImagesForDb.length) {
       await messageImagesCol.insertMany(
         generatedImagesForDb.map((img, idx) => ({
@@ -1008,6 +782,7 @@ export async function POST(req: NextRequest) {
           index: idx,
           imageBase64: img.imageBase64,
           imageMimeType: img.imageMimeType,
+          kind: "generated" as const,
           thoughtSignature: img.thoughtSignature || undefined,
           modelParts: Array.isArray(img.modelParts) ? img.modelParts : undefined,
           createdAt: now
@@ -1025,11 +800,13 @@ export async function POST(req: NextRequest) {
         }
       } as any
     );
+    hasPersistedConversationMeta = true;
 
     return Response.json({
       ok: true,
       assistantMessageId: String(assistantMsgId),
       conversationId: String(conversationId),
+      assistantText: assistantText || undefined,
       imageBase64: firstGenerated?.imageBase64,
       mimeType: firstGenerated?.imageMimeType || "image/png",
       generatedImages: generatedImagesForDb.length
@@ -1040,6 +817,61 @@ export async function POST(req: NextRequest) {
     });
   } catch (e: any) {
     const msg = e instanceof Error ? e.message : String(e);
+    if (!hasPersistedMessages) {
+      const now = new Date();
+      const userMsgId = new ObjectId();
+      const assistantMsgId = new ObjectId();
+      try {
+        await messagesCol.insertMany([
+          {
+            _id: userMsgId,
+            conversationId,
+            userId: user.userId,
+            role: "user",
+            text: prompt,
+            createdAt: now
+          },
+          {
+            _id: assistantMsgId,
+            conversationId,
+            userId: user.userId,
+            role: "assistant",
+            text: `生成失败：${msg}`,
+            createdAt: now
+          }
+        ] as any);
+        if (referenceImages.length > 0) {
+          await messageImagesCol.insertMany(
+            referenceImages.map((img, idx) => ({
+              conversationId,
+              messageId: userMsgId,
+              userId: user.userId,
+              index: idx,
+              imageBase64: String(img.data || ""),
+              imageMimeType: String(img.mimeType || "image/png") || "image/png",
+              kind: "reference" as const,
+              createdAt: now
+            })) as any
+          );
+        }
+        hasPersistedMessages = true;
+      } catch { }
+    }
+    if (!hasPersistedConversationMeta) {
+      try {
+        await conversationsCol.updateOne(
+          { _id: conversationId, userId: user.userId } as any,
+          {
+            $set: {
+              lastMessage: prompt,
+              generationSettings,
+              updatedAt: new Date(),
+              ...(rawConversationId ? {} : { title: buildConversationTitle(prompt) })
+            }
+          } as any
+        );
+      } catch { }
+    }
     return Response.json({ ok: false, error: msg }, { status: 500 });
   }
 }
