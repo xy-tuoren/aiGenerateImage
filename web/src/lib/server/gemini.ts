@@ -112,6 +112,7 @@ export interface GeminiConfig {
 export interface GenerateImageOptions {
   responseModalities?: string[];
   imageConfig?: any;
+  skipFormatConversion?: boolean;
   generationConfig?: {
     temperature?: number;
     topP?: number;
@@ -418,7 +419,10 @@ export class GeminiClient {
             : "Gemini 返回结果中没有图片数据 inlineData"
         );
       }
-      return this.buildGeneratedImageFromParts(contentParts);
+      return this.buildGeneratedImageFromParts(
+        contentParts,
+        options?.skipFormatConversion === true
+      );
     }, ctx);
   }
 

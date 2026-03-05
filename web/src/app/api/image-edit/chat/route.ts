@@ -644,6 +644,7 @@ export async function POST(req: NextRequest) {
       prompt,
       {
         responseModalities: ["IMAGE"],
+        skipFormatConversion: true,
         ...(imageConfig ? { imageConfig } : {}),
         generationConfig: { temperature: finalTemperature },
         thinkingConfig: { thinkingLevel },
@@ -666,6 +667,7 @@ export async function POST(req: NextRequest) {
         prompt,
         {
           responseModalities: ["IMAGE"],
+          skipFormatConversion: true,
           ...(imageConfig ? { imageConfig } : {}),
           generationConfig: { temperature: finalTemperature },
           thinkingConfig: { thinkingLevel },
