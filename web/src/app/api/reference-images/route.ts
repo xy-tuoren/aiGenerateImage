@@ -397,11 +397,13 @@ export async function POST(req: Request) {
     if (!guard.ok) return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
     const body = await req.json().catch(() => ({}));
     const downloadFiles = body?.downloadFiles !== false;
+    const refreshDdAppDataCache = body?.refreshDdAppDataCache === true;
     console.log(
-      `[reference-images] sync start forceRefresh=${body?.forceRefresh === true ? "1" : "0"} downloadFiles=${downloadFiles ? "1" : "0"}`
+      `[reference-images] sync start forceRefresh=${body?.forceRefresh === true ? "1" : "0"} downloadFiles=${downloadFiles ? "1" : "0"} refreshDdAppDataCache=${refreshDdAppDataCache ? "1" : "0"}`
     );
     const result = await fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMaterial({
       forceRefresh: body?.forceRefresh === true,
+      forceRefreshPackageMap: refreshDdAppDataCache,
       downloadFiles,
     });
     const appNames = Object.keys(result || {});

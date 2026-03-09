@@ -380,6 +380,10 @@ function resolveApiPermissionKey(pathname: string, method: string): string | nul
       if (m === "POST") return "api:reference-images:sync";
       return null;
     }
+    if (parts.length === 3 && parts[2] === "vectorize") {
+      if (m === "POST") return "api:reference-images:vectorize";
+      return null;
+    }
     if (parts.length === 3 && parts[2] === "upload") {
       if (m === "POST") return "api:reference-images:upload";
       return null;

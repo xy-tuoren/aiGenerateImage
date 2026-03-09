@@ -4,18 +4,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Image,
+  Input,
   Modal,
   Select,
   Space,
+  Switch,
   Tooltip,
   Typography,
+  Upload,
   message
 } from "antd";
 import {
   ReloadOutlined,
   CloudDownloadOutlined,
   CopyOutlined,
-  SortAscendingOutlined
+  SortAscendingOutlined,
+  ThunderboltOutlined,
+  SearchOutlined,
+  UploadOutlined
 } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
 
@@ -29,6 +35,20 @@ export default function ReferenceGalleryPage() {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [fetchingReferenceImages, setFetchingReferenceImages] = useState(false);
+  const [vectorizingReferenceImages, setVectorizingReferenceImages] =
+    useState(false);
+  const [fetchReferenceModalOpen, setFetchReferenceModalOpen] = useState(false);
+  const [vectorizeModalOpen, setVectorizeModalOpen] = useState(false);
+  const [vectorSearchModalOpen, setVectorSearchModalOpen] = useState(false);
+  const [refreshDdAppDataCache, setRefreshDdAppDataCache] = useState(false);
+  const [vectorSearching, setVectorSearching] = useState(false);
+  const [vectorSearchText, setVectorSearchText] = useState("");
+  const [vectorSearchImageUrl, setVectorSearchImageUrl] = useState("");
+  const [vectorSearchLocalImageDataUrl, setVectorSearchLocalImageDataUrl] =
+    useState("");
+  const [vectorSearchLocalImageName, setVectorSearchLocalImageName] =
+    useState("");
+  const [vectorSearchActive, setVectorSearchActive] = useState(false);
   const [appNames, setAppNames] = useState<string[]>([]);
   const [appName, setAppName] = useState<string>("");
   const [images, setImages] = useState<string[]>([]);
@@ -194,13 +214,18 @@ export default function ReferenceGalleryPage() {
     async (nextAppName: string, pageNum: number, append: boolean) => {
       const a = String(nextAppName || "").trim();
       if (!a) {
+        setVectorSearchActive(false);
         setImages([]);
         setTotal(0);
         setLoadedPageCount(0);
         return;
       }
       if (append) setLoadingMore(true);
-      else setLoading(true);
+      else {
+        // 普通列表请求会覆盖向量搜图结果，先重置展示状态。
+        setVectorSearchActive(false);
+        setLoading(true);
+      }
       try {
         const qs = new URLSearchParams();
         qs.set("appName", a);
@@ -253,7 +278,10 @@ export default function ReferenceGalleryPage() {
         const res = await fetch("/api/reference-images", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ downloadFiles })
+          body: JSON.stringify({
+            downloadFiles,
+            refreshDdAppDataCache
+          })
         });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
@@ -280,27 +308,189 @@ export default function ReferenceGalleryPage() {
         setFetchingReferenceImages(false);
       }
     },
-    [appName, enqueueNotice, fetchAppNames, fetchImages, messageApi]
+    [
+      appName,
+      enqueueNotice,
+      fetchAppNames,
+      fetchImages,
+      messageApi,
+      refreshDdAppDataCache
+    ]
   );
 
   const handleFetchReferenceImages = useCallback(() => {
-    Modal.confirm({
-      title: "获取参考图",
-      content:
-        "请选择本次操作：下载到本地文件夹，或仅保存图片网络地址映射文件。",
-      okText: "下载文件并保存映射",
-      cancelText: "仅保存网络映射",
-      centered: true,
-      maskClosable: false,
-      closable: false,
-      onOk: async () => {
-        await doFetchReferenceImages(true);
-      },
-      onCancel: async () => {
-        await doFetchReferenceImages(false);
+    setFetchReferenceModalOpen(true);
+  }, []);
+
+  const handleOpenVectorizeModal = useCallback(() => {
+    setVectorizeModalOpen(true);
+  }, []);
+
+  const handleOpenVectorSearchModal = useCallback(() => {
+    if (!String(appName || "").trim()) {
+      enqueueNotice("error", "请先选择 appName");
+      return;
+    }
+    setVectorSearchModalOpen(true);
+  }, [appName, enqueueNotice]);
+
+  const doVectorizeReferenceImages = useCallback(
+    async (onlyCurrentAppName: boolean) => {
+      const targetAppName = String(appName || "").trim();
+      if (onlyCurrentAppName && !targetAppName) {
+        enqueueNotice("error", "请先选择 appName");
+        return;
       }
+      setVectorizingReferenceImages(true);
+      const loadingKey = "reference-images-vectorize";
+      messageApi.open({
+        key: loadingKey,
+        type: "loading",
+        content: onlyCurrentAppName
+          ? `正在向量化当前 appName（${targetAppName}），并写入 Cloudflare...`
+          : "正在向量化并写入 Cloudflare（可能需要几分钟）...",
+        duration: 0
+      });
+      try {
+        const res = await fetch("/api/reference-images/vectorize", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(
+            onlyCurrentAppName ? { appName: targetAppName } : {}
+          )
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          enqueueNotice("error", data?.error || "向量化失败");
+          return;
+        }
+        enqueueNotice(
+          "success",
+          `${
+            onlyCurrentAppName ? `当前 appName（${targetAppName}）` : "全量"
+          }向量化完成：total=${data?.total || 0} existed=${
+            data?.existed || 0
+          } embedded=${data?.embedded || 0} saved=${data?.saved || 0} failed=${
+            data?.failedCount || 0
+          } tokens=${data?.totalTokens || 0}`
+        );
+      } catch (e) {
+        enqueueNotice("error", e instanceof Error ? e.message : String(e));
+      } finally {
+        messageApi.destroy(loadingKey);
+        setVectorizingReferenceImages(false);
+      }
+    },
+    [appName, enqueueNotice, messageApi]
+  );
+
+  const doVectorSearch = useCallback(async () => {
+    const targetAppName = String(appName || "").trim();
+    if (!targetAppName) {
+      enqueueNotice("error", "请先选择 appName");
+      return;
+    }
+    const text = String(vectorSearchText || "").trim();
+    const imageUrl = String(vectorSearchImageUrl || "").trim();
+    const localImageDataUrl = String(
+      vectorSearchLocalImageDataUrl || ""
+    ).trim();
+    const finalImageInput = localImageDataUrl || imageUrl;
+    if (!text && !finalImageInput) {
+      enqueueNotice(
+        "error",
+        "请输入搜图文本，或提供网络图片 URL / 本地上传图片"
+      );
+      return;
+    }
+
+    setVectorSearching(true);
+    const loadingKey = "reference-images-vector-search";
+    messageApi.open({
+      key: loadingKey,
+      type: "loading",
+      content: `正在向量搜图（appName=${targetAppName}）...`,
+      duration: 0
     });
-  }, [doFetchReferenceImages]);
+    try {
+      const res = await fetch("/api/reference-images/vector-search", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          appName: targetAppName,
+          text,
+          imageUrl: finalImageInput,
+          topK: 50
+        })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        enqueueNotice("error", data?.error || "向量搜图失败");
+        return;
+      }
+      const list = Array.isArray(data?.images)
+        ? data.images.map((x: any) => String(x || "").trim()).filter(Boolean)
+        : [];
+      setImages(uniqKeepOrder(list));
+      setTotal(typeof data?.total === "number" ? data.total : list.length);
+      setLoadedPageCount(1);
+      setSelectedKeys([]);
+      setVectorSearchActive(true);
+      setVectorSearchModalOpen(false);
+      enqueueNotice(
+        "success",
+        `向量搜图完成：app=${targetAppName} 命中=${list.length} tokens=${
+          data?.tokens || 0
+        }`
+      );
+    } catch (e) {
+      enqueueNotice("error", e instanceof Error ? e.message : String(e));
+    } finally {
+      messageApi.destroy(loadingKey);
+      setVectorSearching(false);
+    }
+  }, [
+    appName,
+    enqueueNotice,
+    messageApi,
+    uniqKeepOrder,
+    vectorSearchLocalImageDataUrl,
+    vectorSearchImageUrl,
+    vectorSearchText
+  ]);
+
+  const handleVectorSearchLocalImage = useCallback(
+    async (file: File) => {
+      const isImage = /^image\//i.test(String(file?.type || ""));
+      if (!isImage) {
+        enqueueNotice("error", "仅支持上传图片文件");
+        return;
+      }
+      const maxBytes = 10 * 1024 * 1024;
+      if (Number(file?.size || 0) > maxBytes) {
+        enqueueNotice("error", "图片过大，请上传不超过 10MB 的文件");
+        return;
+      }
+      try {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.onerror = () => reject(new Error("读取图片失败"));
+          reader.readAsDataURL(file);
+        });
+        if (!dataUrl) {
+          enqueueNotice("error", "读取图片失败");
+          return;
+        }
+        setVectorSearchLocalImageDataUrl(dataUrl);
+        setVectorSearchLocalImageName(String(file.name || "local-image"));
+        enqueueNotice("success", "本地图片已载入，可直接用于向量搜图");
+      } catch (e) {
+        enqueueNotice("error", e instanceof Error ? e.message : String(e));
+      }
+    },
+    [enqueueNotice]
+  );
 
   useEffect(() => {
     fetchAppNames();
@@ -308,6 +498,7 @@ export default function ReferenceGalleryPage() {
 
   useEffect(() => {
     if (!appName) return;
+    setVectorSearchActive(false);
     setImages([]);
     setTotal(0);
     setLoadedPageCount(0);
@@ -499,6 +690,196 @@ export default function ReferenceGalleryPage() {
   return (
     <AdminShell defaultSelectedKey="/reference" headerTitle="参考图广场">
       {contextHolder}
+      <Modal
+        title="获取参考图"
+        open={fetchReferenceModalOpen}
+        centered
+        maskClosable
+        closable
+        keyboard
+        onCancel={() => {
+          setFetchReferenceModalOpen(false);
+        }}
+        footer={[
+          <Button
+            key="download"
+            type="primary"
+            loading={fetchingReferenceImages}
+            onClick={async () => {
+              setFetchReferenceModalOpen(false);
+              await doFetchReferenceImages(true);
+            }}
+          >
+            下载文件并保存映射
+          </Button>,
+          <Button
+            key="remote-only"
+            loading={fetchingReferenceImages}
+            onClick={async () => {
+              setFetchReferenceModalOpen(false);
+              await doFetchReferenceImages(false);
+            }}
+          >
+            仅保存网络映射
+          </Button>,
+          <Button
+            key="close"
+            onClick={() => {
+              setFetchReferenceModalOpen(false);
+            }}
+          >
+            关闭
+          </Button>
+        ]}
+      >
+        <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+          <Typography.Text>
+            请选择本次操作：下载到本地文件夹，或仅保存图片网络地址映射文件。
+          </Typography.Text>
+          <Space size={6}>
+            <Typography.Text type="secondary">刷新 dd 缓存</Typography.Text>
+            <Switch
+              size="small"
+              checked={refreshDdAppDataCache}
+              disabled={fetchingReferenceImages}
+              onChange={setRefreshDdAppDataCache}
+            />
+          </Space>
+        </Space>
+      </Modal>
+      <Modal
+        title="向量搜图"
+        open={vectorSearchModalOpen}
+        centered
+        maskClosable
+        closable
+        keyboard
+        onCancel={() => {
+          setVectorSearchModalOpen(false);
+        }}
+        footer={[
+          <Button
+            key="search"
+            type="primary"
+            loading={vectorSearching}
+            onClick={doVectorSearch}
+          >
+            搜图
+          </Button>,
+          <Button
+            key="close"
+            onClick={() => {
+              setVectorSearchModalOpen(false);
+            }}
+          >
+            关闭
+          </Button>
+        ]}
+      >
+        <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+          <Typography.Text type="secondary">
+            仅在当前 appName（{appName || "-"}）范围内检索。
+          </Typography.Text>
+          <Input.TextArea
+            rows={3}
+            value={vectorSearchText}
+            onChange={(e) => setVectorSearchText(e.target.value)}
+            placeholder="输入搜图文本（可选）"
+            maxLength={800}
+          />
+          <Input
+            value={vectorSearchImageUrl}
+            onChange={(e) => setVectorSearchImageUrl(e.target.value)}
+            placeholder="输入参考图片 URL（可选）"
+            allowClear
+          />
+          <Space orientation="vertical" size={8} style={{ width: "100%" }}>
+            <Upload
+              accept="image/*"
+              showUploadList={false}
+              beforeUpload={(file) => {
+                void handleVectorSearchLocalImage(file as File);
+                return false;
+              }}
+            >
+              <Button icon={<UploadOutlined />}>上传本地参考图（可选）</Button>
+            </Upload>
+            {vectorSearchLocalImageDataUrl ? (
+              <Space size={8} align="center" wrap>
+                <Image
+                  src={vectorSearchLocalImageDataUrl}
+                  alt={vectorSearchLocalImageName || "local-search-image"}
+                  width={84}
+                  height={84}
+                  style={{ objectFit: "cover", borderRadius: 8 }}
+                  preview={false}
+                />
+                <Typography.Text type="secondary">
+                  已选择本地图片：{vectorSearchLocalImageName || "未命名"}
+                </Typography.Text>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setVectorSearchLocalImageDataUrl("");
+                    setVectorSearchLocalImageName("");
+                  }}
+                >
+                  清除本地图
+                </Button>
+              </Space>
+            ) : null}
+          </Space>
+          <Typography.Text type="secondary">
+            文本、网络图片 URL、本地上传图片至少填写一项；若同时提供本地图和
+            URL，将优先使用本地图。
+          </Typography.Text>
+        </Space>
+      </Modal>
+      <Modal
+        title="向量化参考图"
+        open={vectorizeModalOpen}
+        centered
+        maskClosable
+        closable
+        keyboard
+        onCancel={() => {
+          setVectorizeModalOpen(false);
+        }}
+        footer={[
+          <Button
+            key="all"
+            type="primary"
+            loading={vectorizingReferenceImages}
+            onClick={async () => {
+              setVectorizeModalOpen(false);
+              await doVectorizeReferenceImages(false);
+            }}
+          >
+            全量向量化
+          </Button>,
+          <Button
+            key="current"
+            loading={vectorizingReferenceImages}
+            disabled={!String(appName || "").trim()}
+            onClick={async () => {
+              setVectorizeModalOpen(false);
+              await doVectorizeReferenceImages(true);
+            }}
+          >
+            仅向量化当前 appName
+          </Button>,
+          <Button
+            key="close"
+            onClick={() => {
+              setVectorizeModalOpen(false);
+            }}
+          >
+            关闭
+          </Button>
+        ]}
+      >
+        请选择操作：全量向量化，或仅当前 appName 向量化。
+      </Modal>
       <Space orientation="vertical" size={12} style={{ width: "100%" }}>
         <Space wrap>
           <Typography.Text strong>appName：</Typography.Text>
@@ -534,10 +915,37 @@ export default function ReferenceGalleryPage() {
           <Button
             icon={<CloudDownloadOutlined />}
             loading={fetchingReferenceImages}
-            disabled={loading || loadingMore}
+            disabled={loading || loadingMore || vectorizingReferenceImages}
             onClick={handleFetchReferenceImages}
           >
             获取参考图
+          </Button>
+          <Button
+            icon={<SearchOutlined />}
+            loading={vectorSearching}
+            disabled={
+              loading ||
+              loadingMore ||
+              fetchingReferenceImages ||
+              vectorizingReferenceImages ||
+              !String(appName || "").trim()
+            }
+            onClick={handleOpenVectorSearchModal}
+          >
+            搜图
+          </Button>
+          <Button
+            icon={<ThunderboltOutlined />}
+            loading={vectorizingReferenceImages}
+            disabled={
+              loading ||
+              loadingMore ||
+              fetchingReferenceImages ||
+              vectorSearching
+            }
+            onClick={handleOpenVectorizeModal}
+          >
+            向量化
           </Button>
           <Button
             icon={<CopyOutlined />}
@@ -583,6 +991,8 @@ export default function ReferenceGalleryPage() {
           <Typography.Text type="secondary">
             {loading
               ? "加载中..."
+              : vectorSearchActive && appName
+              ? `${appName}：向量搜图结果 ${images.length} 张`
               : appName
               ? `${appName}：${total} 张`
               : `共 ${appNames.length} 个 app`}

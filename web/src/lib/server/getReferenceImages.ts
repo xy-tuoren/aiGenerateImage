@@ -20,8 +20,17 @@ function getAdminMongoDbName() {
 export async function getAdminMongoClient() {
   const uri = getAdminMongoUri();
   const client = new MongoClient(uri);
-  await client.connect();
-  return client;
+  const maskedUri = uri.replace(/\/\/([^@/]+)@/, "//***:***@");
+  console.log(`[reference-images] mongo connect start uri=${maskedUri}`);
+  try {
+    await client.connect();
+    console.log("[reference-images] mongo connect success");
+    return client;
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error(`[reference-images] mongo connect failed error=${message}`);
+    throw e;
+  }
 }
 
 export function getAdminMongoDb(client: MongoClient) {
@@ -44,6 +53,7 @@ type AdCostMonthApiItem = {
   assets?: string[];
   final_urls?: string;
   category?: string;
+  campaign_name?: string;
   cost?: number;
   [k: string]: unknown;
 };
@@ -60,9 +70,13 @@ export type AdCostMonthSimplifiedItem = {
   url: string;
   final_urls: string;
   category: string;
+  campaign_name: string;
   project: string;
   cost: number;
 };
+
+const KIDS_CATEGORY = "KIDS";
+const KIDS_APP_NAMES = ["Kids"] as const;
 
 export async function fetchAdCostMonthAll(params?: {
   start_date?: string;
@@ -115,6 +129,9 @@ export async function fetchAdCostMonthAll(params?: {
     const apiKey = process.env.X_API_KEY || "";
     if (apiKey) headers["X-API-KEY"] = apiKey;
 
+    console.log(
+      `[reference-images] query start endpoint=${endpoint} page=${page} category=${JSON.stringify(category)} start=${start_date} end=${end_date} offset=${offset}`
+    );
     const res = await axios.post<AdCostMonthApiResponse>(endpoint, body, {
       headers,
       validateStatus: () => true,
@@ -128,6 +145,9 @@ export async function fetchAdCostMonthAll(params?: {
 
     const pageTotal = typeof json.result?.total === "number" ? json.result?.total : 0;
     const data = Array.isArray(json.result?.data) ? json.result!.data! : [];
+    console.log(
+      `[reference-images] query end endpoint=${endpoint} page=${page} status=${res.status} pageData=${data.length} total=${pageTotal}`
+    );
 
     total = pageTotal;
 
@@ -138,6 +158,10 @@ export async function fetchAdCostMonthAll(params?: {
         url,
         final_urls: typeof item?.final_urls === "string" ? item.final_urls : "",
         category: typeof item?.category === "string" ? item.category : "",
+        campaign_name:
+          typeof item?.campaign_name === "string"
+            ? item.campaign_name
+            : "",
         project: typeof item?.project === "string" ? item.project : "",
         cost: typeof item?.cost === "number" ? item.cost : 0,
       });
@@ -150,34 +174,98 @@ export async function fetchAdCostMonthAll(params?: {
   return all;
 }
 
-export async function fetchPackageIdToAppNamesMap(params?: { site?: string[]; cacheMaxAgeMs?: number; forceRefresh?: boolean }) {
+export async function fetchPackageIdToAppNamesMap(params?: {
+  site?: string[];
+  packageIds?: string[];
+  cacheMaxAgeMs?: number;
+  forceRefresh?: boolean;
+}) {
+  const sitesRaw = Array.isArray(params?.site) ? params.site : [];
+  const sites = Array.from(new Set(sitesRaw.map((x) => String(x || "").trim()).filter(Boolean)));
+  const packageIdsRaw = Array.isArray(params?.packageIds) ? params.packageIds : [];
+  const packageIds = Array.from(new Set(packageIdsRaw.map((x) => String(x || "").trim()).filter(Boolean)));
+  if (!packageIds.length) {
+    console.log("[reference-images] mongo map skip: empty packageIds");
+    return {};
+  }
+
+  const forceRefresh = params?.forceRefresh === true;
+  const sitesKey = createHash("sha1").update(JSON.stringify(sites)).digest("hex");
+  const cacheDir = path.join(process.cwd(), ".cache");
+  const cacheFile = path.join(cacheDir, `packageIdToAppNamesMap.${sitesKey}.json`);
+  let cachedAll: Record<string, string[]> = {};
+  console.log(
+    `[reference-images] mongo map start db=appsite col=dd_app_data sites=${sites.length} packageIds=${packageIds.length} forceRefresh=${forceRefresh ? "1" : "0"}`
+  );
+  if (!forceRefresh) {
+    const cached = await readPackageIdToAppNamesMapCache(cacheFile, Number.POSITIVE_INFINITY);
+    if (cached && typeof cached === "object") {
+      cachedAll = cached;
+      const missingPkgIds = packageIds.filter((pkg) => !Object.prototype.hasOwnProperty.call(cachedAll, pkg));
+      console.log(
+        `[reference-images] mongo map cache hit file=${path.basename(cacheFile)} packageIds=${Object.keys(cachedAll).length} missing=${missingPkgIds.length}`
+      );
+      if (!missingPkgIds.length) {
+        const out: Record<string, string[]> = {};
+        for (const pkg of packageIds) {
+          out[pkg] = Array.isArray(cachedAll[pkg]) ? cachedAll[pkg] : [];
+        }
+        return out;
+      }
+    } else {
+      console.log(`[reference-images] mongo map cache miss file=${path.basename(cacheFile)}`);
+    }
+  }
+
+  const packageIdsToQuery = forceRefresh
+    ? packageIds
+    : packageIds.filter((pkg) => !Object.prototype.hasOwnProperty.call(cachedAll, pkg));
+  if (!packageIdsToQuery.length) {
+    const out: Record<string, string[]> = {};
+    for (const pkg of packageIds) {
+      out[pkg] = Array.isArray(cachedAll[pkg]) ? cachedAll[pkg] : [];
+    }
+    return out;
+  }
+
   const client = await getAdminMongoClient();
   try {
     const db = client.db("appsite");
     const col = db.collection<{ package_id?: string; app_name?: string; site?: string }>("dd_app_data");
-    const sites = Array.isArray(params?.site) && params!.site!.length ? params!.site! : null;
-    const cacheMaxAgeMs = typeof params?.cacheMaxAgeMs === "number" && Number.isFinite(params.cacheMaxAgeMs) && params.cacheMaxAgeMs >= 0 ? params.cacheMaxAgeMs : 24 * 60 * 60 * 1000;
-    const forceRefresh = params?.forceRefresh === true;
-    const sitesKey = createHash("sha1").update(JSON.stringify(sites || [])).digest("hex");
-    const cacheDir = path.join(process.cwd(), ".cache");
-    const cacheFile = path.join(cacheDir, `packageIdToAppNamesMap.${sitesKey}.json`);
+    const query: Record<string, unknown> = {
+      package_id: { $in: packageIdsToQuery },
+      app_name: { $type: "string", $ne: "" },
+    };
+    if (sites.length) query["site"] = { $in: sites };
+    console.log(`[reference-images] mongo query start filter=${JSON.stringify(query)}`);
+    const cursor = col.find(query, { projection: { _id: 0, package_id: 1, app_name: 1 } });
+    const map: Record<string, string[]> = forceRefresh ? {} : { ...cachedAll };
     if (!forceRefresh) {
-      const cached = await readPackageIdToAppNamesMapCache(cacheFile, cacheMaxAgeMs);
-      if (cached) return cached;
+      for (const pkg of packageIdsToQuery) {
+        if (!Object.prototype.hasOwnProperty.call(map, pkg)) map[pkg] = [];
+      }
     }
-    const query: Record<string, unknown> = { package_id: { $type: "string", $ne: "" }, app_name: { $type: "string", $ne: "" } };
-    if (sites) query["site"] = { $in: sites };
-    const cursor = col.find(query, { projection: { package_id: 1, app_name: 1 } });
-    const map: Record<string, string[]> = {};
+    let docCount = 0;
     for await (const doc of cursor) {
+      docCount += 1;
       const package_id = typeof doc?.package_id === "string" ? doc.package_id : "";
       const app_name = normalizeAppName(typeof doc?.app_name === "string" ? doc.app_name : "");
       if (!package_id || !app_name) continue;
       const arr = map[package_id] || (map[package_id] = []);
       if (!arr.includes(app_name)) arr.push(app_name);
     }
+    const packageCount = Object.keys(map).length;
+    const appNameCount = Object.values(map).reduce((n, arr) => n + arr.length, 0);
+    console.log(
+      `[reference-images] mongo query end docs=${docCount} queried=${packageIdsToQuery.length} packageIds=${packageCount} mappedAppNames=${appNameCount}`
+    );
     await writePackageIdToAppNamesMapCache(cacheDir, cacheFile, map);
-    return map;
+    console.log(`[reference-images] mongo map cache write file=${path.basename(cacheFile)} packageIds=${packageCount}`);
+    const out: Record<string, string[]> = {};
+    for (const pkg of packageIds) {
+      out[pkg] = Array.isArray(map[pkg]) ? map[pkg] : [];
+    }
+    return out;
   } finally {
     await client.close();
   }
@@ -200,6 +288,31 @@ async function writePackageIdToAppNamesMapCache(cacheDir: string, cacheFile: str
   await fs.ensureDir(cacheDir);
   const payload = JSON.stringify({ updatedAt: Date.now(), data });
   await fs.writeFile(cacheFile, payload, "utf8");
+  await keepLatestCacheFiles(cacheDir, "packageIdToAppNamesMap.", 1);
+}
+
+async function keepLatestCacheFiles(cacheDir: string, prefix: string, keep: number) {
+  try {
+    const names = await fs.readdir(cacheDir);
+    const targets = names
+      .map((x) => String(x || "").trim())
+      .filter((name) => name.startsWith(prefix) && name.endsWith(".json"));
+    if (targets.length <= keep) return;
+    const files: Array<{ name: string; mtimeMs: number }> = [];
+    for (const name of targets) {
+      const abs = path.join(cacheDir, name);
+      const st = await fs.stat(abs).catch(() => null);
+      if (!st || !st.isFile()) continue;
+      files.push({ name, mtimeMs: typeof st.mtimeMs === "number" ? st.mtimeMs : 0 });
+    }
+    files.sort((a, b) => (b.mtimeMs - a.mtimeMs) || b.name.localeCompare(a.name));
+    const toDelete = files.slice(Math.max(0, keep));
+    for (const f of toDelete) {
+      await fs.remove(path.join(cacheDir, f.name)).catch(() => undefined);
+    }
+  } catch {
+    // ignore cache prune failures
+  }
 }
 
 function normalizeAppName(input: string) {
@@ -281,6 +394,10 @@ async function writeJsonCache<T>(cacheDir: string, cacheFile: string, data: T) {
   await fs.ensureDir(cacheDir);
   const payload = JSON.stringify({ updatedAt: Date.now(), data });
   await fs.writeFile(cacheFile, payload, "utf8");
+  const name = path.basename(cacheFile);
+  if (name.startsWith("adCostMonth.byAppName.")) {
+    await keepLatestCacheFiles(cacheDir, "adCostMonth.byAppName.", 1);
+  }
 }
 
 export type AdCostMonthWithAppNamesItem = AdCostMonthSimplifiedItem & {
@@ -300,15 +417,23 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
   offset?: number;
   cacheMaxAgeMs?: number;
   forceRefresh?: boolean;
+  /** 仅强制刷新 packageIdToAppNamesMap（appsite.dd_app_data 映射缓存） */
+  forceRefreshPackageMap?: boolean;
   /** 是否下载图片到 public/material。false 时仅更新远端映射文件（remoteAppNames/remoteIndex） */
   downloadFiles?: boolean;
   downloadConcurrency?: number;
   downloadTimeoutMs?: number;
   progressEvery?: number;
 }) {
+  const requestedCategories = Array.isArray(params?.category)
+    ? params!.category!.map((x) => String(x || "").trim().toUpperCase()).filter(Boolean)
+    : [];
+  const includeKidsFromExtraFetch = requestedCategories.length === 0;
+
   const cacheMaxAgeMs =
     typeof params?.cacheMaxAgeMs === "number" && Number.isFinite(params.cacheMaxAgeMs) && params.cacheMaxAgeMs >= 0 ? params.cacheMaxAgeMs : 24 * 60 * 60 * 1000;
   const forceRefresh = params?.forceRefresh === true;
+  const forceRefreshPackageMap = params?.forceRefreshPackageMap === true;
   const downloadFiles = params?.downloadFiles !== false;
   const downloadConcurrency =
     typeof params?.downloadConcurrency === "number" && Number.isFinite(params.downloadConcurrency) && params.downloadConcurrency > 0 ? Math.floor(params.downloadConcurrency) : 64;
@@ -324,6 +449,7 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
         start_date: params?.start_date || null,
         end_date: params?.end_date || null,
         category: params?.category || null,
+        includeKidsFromExtraFetch,
         ad_type: params?.ad_type || null,
         sort_field: params?.sort_field || null,
         sort_type: params?.sort_type || null,
@@ -343,17 +469,42 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
 
   if (!byAppName) {
     const all = await fetchAdCostMonthAll(params);
-    const sites = Array.from(new Set(all.map((x) => (x?.project || "").trim()).filter(Boolean)));
-    const packageIdToAppNamesMap = await fetchPackageIdToAppNamesMap({ site: sites, forceRefresh });
+    console.log(`[reference-images] default query done items=${all.length}`);
+    if (includeKidsFromExtraFetch) {
+      console.log(`[reference-images] kids query start category=${KIDS_CATEGORY}`);
+      const kids = await fetchAdCostMonthAll({ ...params, category: [KIDS_CATEGORY] }); 
+      console.log(`[reference-images] kids query end category=${KIDS_CATEGORY} items=${kids.length}`);
+      all.push(...kids);
+    }
+
+    const appItems = all.filter((x) => String(x?.category || "").trim().toUpperCase() !== KIDS_CATEGORY);
+    const sites = Array.from(new Set(appItems.map((x) => (x?.project || "").trim()).filter(Boolean)));
+    const packageIds = Array.from(
+      new Set(
+        appItems
+          .map((x) => extractPackageIdFromFinalUrls(x.final_urls))
+          .map((x) => x.trim())
+          .filter(Boolean)
+      )
+    );
+    const packageIdToAppNamesMap = packageIds.length
+      ? await fetchPackageIdToAppNamesMap({
+        site: sites,
+        packageIds,
+        forceRefresh: forceRefresh || forceRefreshPackageMap,
+      })
+      : {};
 
     byAppName = {};
     for (const it of all) {
-      const package_id = extractPackageIdFromFinalUrls(it.final_urls);
-      const app_names = package_id ? packageIdToAppNamesMap[package_id] || [] : [];
+      const isKidsItem = String(it?.category || "").trim().toUpperCase() === KIDS_CATEGORY;
+      const package_id = isKidsItem ? "" : extractPackageIdFromFinalUrls(it.final_urls);
+      const app_names = isKidsItem ? [...KIDS_APP_NAMES] : package_id ? packageIdToAppNamesMap[package_id] || [] : [];
       const item: AdCostMonthWithAppNamesItem = {
         url: it.url,
         final_urls: it.final_urls,
         category: it.category,
+        campaign_name: it.campaign_name,
         project: it.project,
         cost: it.cost,
         package_id,
@@ -380,20 +531,42 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
 
   // 兼容旧缓存：items 中可能缺少 package_id / app_names，允许使用 final_urls 补齐
   try {
-    const sites = Array.from(
+    const nonKidsItems = Object.values(byAppName)
+      .flatMap((b) => (Array.isArray(b?.items) ? b.items : []))
+      .filter((it: any) => String(it?.category || "").trim().toUpperCase() !== KIDS_CATEGORY);
+    const sitesAll = Array.from(new Set(nonKidsItems.map((it: any) => (typeof it?.project === "string" ? it.project.trim() : "")).filter(Boolean)));
+    const packageIdsAll = Array.from(
       new Set(
-        Object.values(byAppName)
-          .flatMap((b) => (Array.isArray(b?.items) ? b.items : []))
-          .map((it: any) => (typeof it?.project === "string" ? it.project.trim() : ""))
+        nonKidsItems
+          .map((it: any) => {
+            const pkg = typeof it?.package_id === "string" ? it.package_id.trim() : "";
+            if (pkg) return pkg;
+            const finalUrls = typeof it?.final_urls === "string" ? it.final_urls : "";
+            return extractPackageIdFromFinalUrls(finalUrls).trim();
+          })
           .filter(Boolean)
       )
     );
-    const packageIdToAppNamesMap = await fetchPackageIdToAppNamesMap({ site: sites, forceRefresh: false });
+    const packageIdToAppNamesMap = packageIdsAll.length
+      ? await fetchPackageIdToAppNamesMap({
+        site: sitesAll,
+        packageIds: packageIdsAll,
+        forceRefresh: forceRefresh || forceRefreshPackageMap,
+      })
+      : {};
     for (const bucket of Object.values(byAppName)) {
       if (!bucket || typeof bucket !== "object") continue;
       const items = Array.isArray((bucket as any).items) ? ((bucket as any).items as any[]) : [];
       for (const it of items) {
         if (!it || typeof it !== "object") continue;
+        const isKidsItem = String(it?.category || "").trim().toUpperCase() === KIDS_CATEGORY;
+        if (isKidsItem) {
+          it.package_id = "";
+          if (!Array.isArray(it.app_names) || !it.app_names.length) {
+            it.app_names = [...KIDS_APP_NAMES];
+          }
+          continue;
+        }
         const hasPkg = typeof it.package_id === "string" && it.package_id.trim();
         const finalUrls = typeof it.final_urls === "string" ? it.final_urls : "";
         if (!hasPkg && finalUrls) {
@@ -402,6 +575,12 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
         if (!Array.isArray(it.app_names)) {
           const pkg = typeof it.package_id === "string" ? it.package_id.trim() : "";
           it.app_names = pkg ? packageIdToAppNamesMap[pkg] || [] : [];
+        }
+        if (typeof it.campaign_name !== "string") {
+          it.campaign_name = "";
+        }
+        if (typeof it.category !== "string") {
+          it.category = "";
         }
       }
     }
@@ -424,22 +603,24 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
     // ignore cache write failure
   }
 
-  // 为参考图广场远端 fallback 提供一个更小的索引：appName -> items:[{url,cost}]
+  // 为参考图广场远端 fallback 提供一个更小的索引：appName -> items:[{url,cost,campaign_name,category}]
   try {
-    const index: Record<string, Array<{ url: string; cost: number }>> = {};
+    const index: Record<string, Array<{ url: string; cost: number; campaign_name: string; category: string }>> = {};
     for (const bucket of Object.values(byAppName)) {
       const appName = String(bucket?.app_name || "").trim();
       if (!appName) continue;
       const itemsRaw = Array.isArray(bucket?.items) ? bucket.items : [];
       const seenUrl = new Set<string>();
-      const items: Array<{ url: string; cost: number }> = [];
+      const items: Array<{ url: string; cost: number; campaign_name: string; category: string }> = [];
       for (const it of itemsRaw as any[]) {
         const url = String(it?.url || "").trim();
         if (!url) continue;
         if (seenUrl.has(url)) continue;
         seenUrl.add(url);
         const cost = typeof it?.cost === "number" && Number.isFinite(it.cost) ? it.cost : 0;
-        items.push({ url, cost });
+        const campaign_name = typeof it?.campaign_name === "string" ? it.campaign_name : "";
+        const category = typeof it?.category === "string" ? it.category : "";
+        items.push({ url, cost, campaign_name, category });
       }
       index[appName] = items;
     }
