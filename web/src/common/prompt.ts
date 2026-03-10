@@ -267,6 +267,36 @@ ${prompt}
 `;
 }
 
+export function getCutAdCreativePrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
+  const langDesc = lang ? `${lang}语言` : "参考图同语言";
+  return `## 目标
+生成一张${getRatioDesc(aspectRatio)}。从广告截图中提取真正的图片素材（creative），去除广告壳层与投放平台UI，只保留可用于二次设计的核心画面。
+
+## 需要删除的广告壳层元素（必须删除）
+- 顶部/底部广告栏、下载引导条、CTA按钮（如 Open/Play/Install/Download）。
+- 广告网络标识、网站Logo、信息角标、关闭按钮、跳转箭头。
+- 平台UI残留（如边框、分割线、按钮底座、状态条、页面容器）。
+- 与素材无关的文字区域、贴边文案块、水印与噪点标记。
+
+## 需要保留的真实素材（必须保留）
+- 广告中间的主视觉内容（人物、场景、产品、主体动作）。
+- 与主视觉连贯的自然背景（保证画面完整，不要硬切边）。
+
+## 裁图与重构要求
+- 先识别“真实素材边界”再裁切，避免把平台UI一起带入。
+- 主体优先居中且完整，不得截断头部/四肢/关键物体。
+- 为适配目标比例，仅允许：等比缩放、智能补边、背景延展；禁止拉伸变形。
+- 生成结果应像原生素材图，而不是“从广告页截出来的图”。
+
+## 语言要求
+- 若保留可见文字，必须统一为${langDesc}。
+- 禁止出现多语言混杂。
+
+## 额外指令
+${prompt}
+`;
+}
+
 export function getBackgroundPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
   return `生成一张新图更换背景其他不变`;
 }

@@ -26,6 +26,7 @@ import {
 import AdminShell from "@/app/_components/AdminShell";
 
 const PAGE_SIZE = 100;
+const UPLOAD_APP_NAME = "reference-uploads";
 
 export default function ReferenceGalleryPage() {
   const [messageApi, contextHolder] = message.useMessage();
@@ -89,6 +90,13 @@ export default function ReferenceGalleryPage() {
   const appNameOptions = useMemo(
     () => appNames.map((x) => ({ label: x, value: x })),
     [appNames]
+  );
+  const isUploadApp = useMemo(
+    () =>
+      String(appName || "")
+        .trim()
+        .toLowerCase() === UPLOAD_APP_NAME,
+    [appName]
   );
   const hasMore = loadedPageCount * PAGE_SIZE < total;
   const selectedKeySet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
@@ -231,7 +239,9 @@ export default function ReferenceGalleryPage() {
         qs.set("appName", a);
         qs.set("page", String(pageNum || 1));
         qs.set("pageSize", String(PAGE_SIZE));
-        if (sortByCost !== "default") qs.set("sortByCost", sortByCost);
+        if (!isUploadApp && sortByCost !== "default") {
+          qs.set("sortByCost", sortByCost);
+        }
         const res = await fetch(`/api/reference-images?${qs.toString()}`, {
           method: "GET"
         });
@@ -259,7 +269,7 @@ export default function ReferenceGalleryPage() {
         else setLoading(false);
       }
     },
-    [enqueueNotice, uniqKeepOrder, sortByCost]
+    [enqueueNotice, uniqKeepOrder, isUploadApp, sortByCost]
   );
 
   const doFetchReferenceImages = useCallback(
@@ -503,7 +513,7 @@ export default function ReferenceGalleryPage() {
     setTotal(0);
     setLoadedPageCount(0);
     fetchImages(appName, 1, false);
-  }, [appName, sortByCost, fetchImages]);
+  }, [appName, fetchImages, sortByCost]);
 
   useEffect(() => {
     setSelectedKeys([]);
@@ -885,6 +895,7 @@ export default function ReferenceGalleryPage() {
           <Typography.Text strong>appName：</Typography.Text>
           <Select
             showSearch
+            virtual={false}
             style={{ width: 360 }}
             placeholder="输入搜索或选择 appName"
             value={appName || undefined}
@@ -955,7 +966,7 @@ export default function ReferenceGalleryPage() {
           >
             复制参考图路径
           </Button>
-          {appName ? (
+          {appName && !isUploadApp ? (
             <Tooltip
               title={
                 sortByCost === "default"
@@ -1189,7 +1200,7 @@ export default function ReferenceGalleryPage() {
                         alt={url}
                         loading="lazy"
                       />
-                      {cost ? (
+                      {!isUploadApp && cost ? (
                         <div
                           style={{
                             position: "absolute",

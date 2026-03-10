@@ -8,6 +8,7 @@ import { requireApiAccess } from "@/lib/server/auth";
 export const dynamic = "force-dynamic";
 
 const CACHE_TTL_MS = 60_000;
+const UPLOAD_APP_NAME = "reference-uploads";
 let cachedAppDirs: { at: number; appDirs: string[] } | null = null;
 const cachedFilesByApp = new Map<string, { at: number; files: string[] }>();
 let cachedRemoteAdCost: { at: number; appNames: string[]; byAppLower: Map<string, { appName: string; items: Array<{ url: string; cost?: number }> }> } | null = null;
@@ -308,11 +309,12 @@ export async function GET(req: Request) {
       }
 
       let all: string[] = [];
+      const absDir = path.join(publicMaterialDir, resolvedAppName);
+      const isUploadApp = resolvedAppName.toLowerCase() === UPLOAD_APP_NAME;
       const cached = cachedFilesByApp.get(resolvedAppName);
       if (cached && now - cached.at < CACHE_TTL_MS) {
         all = cached.files;
       } else {
-        const absDir = path.join(publicMaterialDir, resolvedAppName);
         const names = await fs.readdir(absDir).catch(() => []);
         // 注意：这里缓存“原始文件列表”，排序会受 sortByCost 影响（必须先排序再分页）
         all = names
@@ -338,8 +340,22 @@ export async function GET(req: Request) {
         return null;
       };
 
-      const sortedAll =
-        sortByCost === "default"
+      const sortedAll = isUploadApp
+        ? (
+          await Promise.all(
+            all.map(async (file) => {
+              const st2 = await fs.stat(path.join(absDir, file)).catch(() => null);
+              const mtimeMs = st2 && typeof st2.mtimeMs === "number" ? st2.mtimeMs : 0;
+              return { file, mtimeMs };
+            })
+          )
+        )
+          .sort((a, b) => {
+            if (a.mtimeMs !== b.mtimeMs) return b.mtimeMs - a.mtimeMs;
+            return a.file.localeCompare(b.file);
+          })
+          .map((x) => x.file)
+        : sortByCost === "default"
           ? [...all].sort((a, b) => a.localeCompare(b))
           : [...all].sort((a, b) => {
             const ca = extractCostFromFilename(a);
@@ -351,7 +367,7 @@ export async function GET(req: Request) {
             if (!aHas && bHas) return 1;
             if (!aHas && !bHas) return a.localeCompare(b);
             if (ca === cb) return a.localeCompare(b);
-            return sortByCost === "asc" ? (ca! - cb!) : (cb! - ca!);
+            return sortByCost === "asc" ? ca! - cb! : cb! - ca!;
           });
 
       const total = sortedAll.length;
