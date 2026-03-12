@@ -1,6 +1,6 @@
 "use client";
 
-import { ReloadOutlined } from "@ant-design/icons";
+import { CloseCircleFilled, ReloadOutlined } from "@ant-design/icons";
 import {
   AutoComplete,
   Button,
@@ -128,15 +128,31 @@ export function GalleryToolbar(props: {
         <Input allowClear placeholder="lang" />
       </AutoComplete>
 
-      <Space.Compact size="small">
-        <Input
-          style={{ width: 100 }}
-          placeholder="比例"
-          value={aspectRatio}
-          onChange={(e) => onAspectRatioChange(String(e.target.value || ""))}
-        />
-        <Button onClick={() => onAspectRatioChange("")}>清除</Button>
-      </Space.Compact>
+      <Input
+        style={{ width: 120 }}
+        placeholder="比例"
+        value={aspectRatio}
+        onChange={(e) => onAspectRatioChange(String(e.target.value || ""))}
+        suffix={
+          <span
+            style={{
+              display: "inline-flex",
+              width: 14,
+              justifyContent: "center"
+            }}
+          >
+            <CloseCircleFilled
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => onAspectRatioChange("")}
+              style={{
+                color: "#bfbfbf",
+                cursor: aspectRatio ? "pointer" : "default",
+                visibility: aspectRatio ? "visible" : "hidden"
+              }}
+            />
+          </span>
+        }
+      />
 
       <Select
         style={{ width: 100 }}

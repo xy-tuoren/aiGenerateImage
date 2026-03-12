@@ -70,6 +70,10 @@ export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
   const isKids18 = !!appName && appName.toLowerCase() === "kids18";
   const isCoupons = !!appName && appName.toLowerCase() === "Coupons";
 
+  if (!appName) {
+    return "";
+  }
+
   if (isBuzz) {
     return `
 ## 最高优先级｜绝对禁止事项

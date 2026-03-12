@@ -30,7 +30,7 @@ export default function GalleryPage() {
   >([]);
   const [appName, setAppName] = useState<string>("");
   const [lang, setLang] = useState<string>("");
-  const [aspectRatio, setAspectRatio] = useState<string>("16:9");
+  const [aspectRatio, setAspectRatio] = useState<string>("");
   const [cutFilter, setCutFilter] = useState<"cut" | "uncut">("uncut");
   const [downloadedFilter, setDownloadedFilter] = useState<
     "downloaded" | "undownloaded"
