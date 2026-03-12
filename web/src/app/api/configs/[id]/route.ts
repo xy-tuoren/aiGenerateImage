@@ -90,6 +90,11 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   const lang = langs.length ? langs[0] : (lang0 || undefined);
   const modelProviderRaw = String((body as any).modelProvider || "").trim().toLowerCase();
   const modelProvider = modelProviderRaw === "jimeng" ? "jimeng" : "gemini";
+  const imageConfigRaw = body.imageConfig && typeof body.imageConfig === "object" ? { ...(body.imageConfig as any) } : undefined;
+  if (imageConfigRaw && modelProvider === "gemini") {
+    delete (imageConfigRaw as any).aspectRatio;
+    delete (imageConfigRaw as any).imageSize;
+  }
 
   const now = new Date();
   const patch: Partial<ImageConfigDoc> = {
@@ -97,7 +102,7 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     prompt,
     referenceImages,
     generationConfig: normalizeGenerationConfig(body.generationConfig),
-    imageConfig: body.imageConfig && typeof body.imageConfig === "object" ? body.imageConfig : undefined,
+    imageConfig: imageConfigRaw,
     responseModalities: Array.isArray(body.responseModalities) ? body.responseModalities : undefined,
     count: typeof countNum === "number" && !Number.isNaN(countNum) ? countNum : undefined,
     nextPromptFun: Array.isArray(body.nextPromptFun) ? body.nextPromptFun : undefined,

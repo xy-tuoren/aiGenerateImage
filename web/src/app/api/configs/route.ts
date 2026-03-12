@@ -76,11 +76,14 @@ export async function POST(req: NextRequest) {
   const langs = Array.from(new Set((langs0.length ? langs0 : (lang0 ? [lang0] : [])).filter(Boolean)));
   const lang = langs.length ? langs[0] : (lang0 || undefined);
 
-  const inputImageConfig = body.imageConfig && typeof body.imageConfig === "object" ? body.imageConfig : undefined;
-  const aspectRatioRaw = inputImageConfig ? (inputImageConfig as any).aspectRatio : undefined;
-  const aspectRatio = (aspectRatioRaw ?? "").toString().trim() || "16:9";
+  const inputImageConfig = body.imageConfig && typeof body.imageConfig === "object" ? { ...(body.imageConfig as any) } : undefined;
   const modelProviderRaw = String((body as any).modelProvider || "").trim().toLowerCase();
   const modelProvider = modelProviderRaw === "jimeng" ? "jimeng" : "gemini";
+  const imageConfig = inputImageConfig ? { ...inputImageConfig } : undefined;
+  if (imageConfig && modelProvider === "gemini") {
+    delete (imageConfig as any).aspectRatio;
+    delete (imageConfig as any).imageSize;
+  }
 
   const now = new Date();
   const doc: ImageConfigDoc = {
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
     prompt,
     referenceImages,
     generationConfig: normalizeGenerationConfig(body.generationConfig),
-    imageConfig: inputImageConfig ? { ...(inputImageConfig as any), aspectRatio } : { aspectRatio },
+    imageConfig,
     responseModalities: Array.isArray(body.responseModalities) ? body.responseModalities : undefined,
     count: typeof countNum === "number" && !Number.isNaN(countNum) ? countNum : undefined,
     nextPromptFun: Array.isArray(body.nextPromptFun) ? body.nextPromptFun : undefined,

@@ -32,7 +32,6 @@ import { useRouter } from "next/navigation";
 import {
   ASPECT_RATIO_OPTIONS,
   BATCH_FUN_OPTIONS,
-  IMAGE_SIZE_OPTIONS,
   RESPONSE_MODALITIES_OPTIONS,
   SUPPORTED_LANGUAGES
 } from "@/common/constants";
@@ -120,6 +119,104 @@ function deriveJimengRatioFields(
   };
 }
 
+const GEMINI_RATIO_BASE_SIZE_1K: Record<
+  string,
+  { width: number; height: number }
+> = {
+  "1:1": { width: 1024, height: 1024 },
+  "1:4": { width: 512, height: 2048 },
+  "1:8": { width: 384, height: 3072 },
+  "2:3": { width: 848, height: 1264 },
+  "3:2": { width: 1264, height: 848 },
+  "3:4": { width: 896, height: 1200 },
+  "4:1": { width: 2048, height: 512 },
+  "4:3": { width: 1200, height: 896 },
+  "4:5": { width: 928, height: 1152 },
+  "5:4": { width: 1152, height: 928 },
+  "8:1": { width: 3072, height: 384 },
+  "9:16": { width: 768, height: 1376 },
+  "16:9": { width: 1376, height: 768 },
+  "21:9": { width: 1584, height: 672 }
+};
+
+const GEMINI_SIZE_SCALE: Record<"1K" | "2K" | "4K", number> = {
+  "1K": 1,
+  "2K": 2,
+  "4K": 4
+};
+
+function parseAspectRatioValue(aspectRatio: string): number | undefined {
+  const m = String(aspectRatio || "")
+    .trim()
+    .match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+  if (!m) return undefined;
+  const w = Number(m[1]);
+  const h = Number(m[2]);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0)
+    return undefined;
+  return w / h;
+}
+
+function deriveGeminiMatchFields(
+  width?: number,
+  height?: number
+): {
+  matchedAspectRatio?: string;
+  matchedResolutionText?: string;
+} {
+  if (
+    !width ||
+    !height ||
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return {};
+  }
+  const targetW = Math.max(1, Math.floor(width));
+  const targetH = Math.max(1, Math.floor(height));
+  const targetRatio = targetW / targetH;
+
+  let bestRatio = "1:1";
+  let bestRatioDiff = Number.POSITIVE_INFINITY;
+  for (const ratio of Object.keys(GEMINI_RATIO_BASE_SIZE_1K)) {
+    const ratioValue = parseAspectRatioValue(ratio);
+    if (!ratioValue) continue;
+    const diff = Math.abs(ratioValue - targetRatio);
+    if (diff < bestRatioDiff) {
+      bestRatioDiff = diff;
+      bestRatio = ratio;
+    }
+  }
+
+  const base =
+    GEMINI_RATIO_BASE_SIZE_1K[bestRatio] || GEMINI_RATIO_BASE_SIZE_1K["1:1"];
+  let bestSize: "1K" | "2K" | "4K" = "1K";
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (const size of Object.keys(GEMINI_SIZE_SCALE) as Array<
+    "1K" | "2K" | "4K"
+  >) {
+    const scale = GEMINI_SIZE_SCALE[size];
+    const w = base.width * scale;
+    const h = base.height * scale;
+    const dist =
+      Math.abs(w - targetW) / targetW + Math.abs(h - targetH) / targetH;
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestSize = size;
+    }
+  }
+  const scale = GEMINI_SIZE_SCALE[bestSize];
+  const reqW = base.width * scale;
+  const reqH = base.height * scale;
+
+  return {
+    matchedAspectRatio: bestRatio,
+    matchedResolutionText: `${bestSize} (${reqW}x${reqH})`
+  };
+}
+
 function splitLinesToList(input: string): string[] {
   return (
     (input || "")
@@ -185,7 +282,6 @@ export default function ConfigsPage() {
   const watchedJimengHeight = Form.useWatch("imageConfig_height", form) as
     | number
     | undefined;
-  const prevModelProviderRef = useRef<"gemini" | "jimeng" | null>(null);
   const refFolderInput = useRef<HTMLInputElement>(null);
   const refFilesInput = useRef<HTMLInputElement>(null);
   const [isNarrowScreen, setIsNarrowScreen] = useState(false);
@@ -519,14 +615,10 @@ export default function ConfigsPage() {
     ) => {
       if (!tableEditMode) return;
       if (!row?.id) return;
-      if (field === "aspectRatio" && row.modelProvider === "jimeng") return;
+      if (field === "aspectRatio") return;
       const savingKey = `${row.id}:${field}`;
       if (savingCellMap[savingKey]) return;
       setEditingCell({ id: row.id, field });
-      if (field === "aspectRatio") {
-        setEditingDraft(String(row.imageConfig?.aspectRatio || ""));
-        return;
-      }
       if (field === "count") {
         setEditingDraft(typeof row.count === "number" ? row.count : "");
         return;
@@ -950,7 +1042,21 @@ export default function ConfigsPage() {
           const saving = Boolean(savingCellMap[savingKey]);
           const isEditing =
             editingCell?.id === row.id && editingCell?.field === field;
-          const text = String(v || "");
+          const width =
+            typeof row.imageConfig?.width === "number"
+              ? row.imageConfig.width
+              : undefined;
+          const height =
+            typeof row.imageConfig?.height === "number"
+              ? row.imageConfig.height
+              : undefined;
+          const provider = (row.modelProvider || "gemini").toLowerCase();
+          const geminiMatched = deriveGeminiMatchFields(width, height);
+          const text =
+            provider === "gemini"
+              ? String(geminiMatched.matchedAspectRatio || "")
+              : String(v || "") ||
+                String(deriveAspectRatioLabel(width, height) || "");
           if (isEditing) {
             return (
               <AutoComplete
@@ -1121,6 +1227,18 @@ export default function ConfigsPage() {
                         .filter(Boolean)
                     )
                   );
+                  const rowWidth =
+                    typeof row.imageConfig?.width === "number"
+                      ? row.imageConfig.width
+                      : undefined;
+                  const rowHeight =
+                    typeof row.imageConfig?.height === "number"
+                      ? row.imageConfig.height
+                      : undefined;
+                  const geminiMatched = deriveGeminiMatchFields(
+                    rowWidth,
+                    rowHeight
+                  );
                   form.setFieldsValue({
                     modelProvider: row.modelProvider || "gemini",
                     appName: row.appName,
@@ -1134,14 +1252,15 @@ export default function ConfigsPage() {
                       : "",
                     generationConfig_temperature:
                       row.generationConfig?.temperature ?? 1,
-                    imageConfig_imageSize: row.imageConfig?.imageSize ?? "1K",
-                    imageConfig_width:
-                      typeof row.imageConfig?.width === "number"
-                        ? row.imageConfig.width
+                    imageConfig_width: rowWidth,
+                    imageConfig_height: rowHeight,
+                    imageConfig_matchedAspectRatio:
+                      (row.modelProvider || "gemini") === "gemini"
+                        ? geminiMatched.matchedAspectRatio
                         : undefined,
-                    imageConfig_height:
-                      typeof row.imageConfig?.height === "number"
-                        ? row.imageConfig.height
+                    imageConfig_matchedResolution:
+                      (row.modelProvider || "gemini") === "gemini"
+                        ? geminiMatched.matchedResolutionText
                         : undefined,
                     imageConfig_minRatio:
                       typeof row.imageConfig?.minRatio === "number"
@@ -1151,8 +1270,7 @@ export default function ConfigsPage() {
                       typeof row.imageConfig?.maxRatio === "number"
                         ? row.imageConfig.maxRatio
                         : undefined,
-                    imageConfig_aspectRatio:
-                      row.imageConfig?.aspectRatio ?? "1:1",
+                    imageConfig_aspectRatio: row.imageConfig?.aspectRatio,
                     responseModalities: Array.isArray(row.responseModalities)
                       ? row.responseModalities
                       : ["IMAGE"],
@@ -1248,14 +1366,6 @@ export default function ConfigsPage() {
   }, []);
 
   useEffect(() => {
-    const prev = prevModelProviderRef.current;
-    if (prev && prev !== watchedModelProvider) {
-      form.setFieldValue("imageConfig_aspectRatio", undefined);
-    }
-    prevModelProviderRef.current = watchedModelProvider;
-  }, [form, watchedModelProvider]);
-
-  useEffect(() => {
     if (watchedModelProvider !== "jimeng") return;
     const derived = deriveJimengRatioFields(
       watchedJimengWidth,
@@ -1265,6 +1375,24 @@ export default function ConfigsPage() {
       imageConfig_aspectRatio: derived.aspectRatio,
       imageConfig_minRatio: derived.minRatio,
       imageConfig_maxRatio: derived.maxRatio
+    });
+  }, [form, watchedJimengHeight, watchedJimengWidth, watchedModelProvider]);
+
+  useEffect(() => {
+    if (watchedModelProvider !== "gemini") {
+      form.setFieldsValue({
+        imageConfig_matchedAspectRatio: undefined,
+        imageConfig_matchedResolution: undefined
+      });
+      return;
+    }
+    const derived = deriveGeminiMatchFields(
+      watchedJimengWidth,
+      watchedJimengHeight
+    );
+    form.setFieldsValue({
+      imageConfig_matchedAspectRatio: derived.matchedAspectRatio,
+      imageConfig_matchedResolution: derived.matchedResolutionText
     });
   }, [form, watchedJimengHeight, watchedJimengWidth, watchedModelProvider]);
 
@@ -1425,11 +1553,14 @@ export default function ConfigsPage() {
 
   const openCreate = () => {
     form.resetFields();
+    const geminiMatched = deriveGeminiMatchFields(1024, 1024);
     form.setFieldsValue({
       modelProvider: "gemini",
       count: 1,
-      imageConfig_aspectRatio: "16:9",
-      imageConfig_imageSize: "1K",
+      imageConfig_width: 1024,
+      imageConfig_height: 1024,
+      imageConfig_matchedAspectRatio: geminiMatched.matchedAspectRatio,
+      imageConfig_matchedResolution: geminiMatched.matchedResolutionText,
       generationConfig_temperature: 1,
       responseModalities: ["IMAGE"]
     });
@@ -1451,42 +1582,44 @@ export default function ConfigsPage() {
         .toLowerCase() === "jimeng"
         ? "jimeng"
         : "gemini";
-    const jimengWidthRaw =
+    const inputWidthRaw =
       values.imageConfig_width === undefined ||
       values.imageConfig_width === null ||
       values.imageConfig_width === ""
         ? undefined
         : Number(values.imageConfig_width);
-    const jimengHeightRaw =
+    const inputHeightRaw =
       values.imageConfig_height === undefined ||
       values.imageConfig_height === null ||
       values.imageConfig_height === ""
         ? undefined
         : Number(values.imageConfig_height);
-    const jimengWidth =
-      typeof jimengWidthRaw === "number" && Number.isFinite(jimengWidthRaw)
-        ? Math.floor(jimengWidthRaw)
+    const inputWidth =
+      typeof inputWidthRaw === "number" && Number.isFinite(inputWidthRaw)
+        ? Math.floor(inputWidthRaw)
         : undefined;
-    const jimengHeight =
-      typeof jimengHeightRaw === "number" && Number.isFinite(jimengHeightRaw)
-        ? Math.floor(jimengHeightRaw)
+    const inputHeight =
+      typeof inputHeightRaw === "number" && Number.isFinite(inputHeightRaw)
+        ? Math.floor(inputHeightRaw)
         : undefined;
     const jimengDerived =
       modelProvider === "jimeng"
-        ? deriveJimengRatioFields(jimengWidth, jimengHeight)
+        ? deriveJimengRatioFields(inputWidth, inputHeight)
         : {};
 
+    if (modelProvider === "gemini") {
+      if (!inputWidth || !inputHeight || inputWidth <= 0 || inputHeight <= 0) {
+        messageApi.error("Gemini 模式下必须填写有效的 width 和 height");
+        return;
+      }
+    }
+
     if (modelProvider === "jimeng") {
-      if (
-        !jimengWidth ||
-        !jimengHeight ||
-        jimengWidth <= 0 ||
-        jimengHeight <= 0
-      ) {
+      if (!inputWidth || !inputHeight || inputWidth <= 0 || inputHeight <= 0) {
         messageApi.error("即梦模式下必须填写有效的 width 和 height");
         return;
       }
-      const area = jimengWidth * jimengHeight;
+      const area = inputWidth * inputHeight;
       if (area < 1024 * 1024 || area > 4096 * 4096) {
         messageApi.error(
           "即梦模式下宽高乘积必须在 1024*1024 到 4096*4096 之间"
@@ -1520,15 +1653,15 @@ export default function ConfigsPage() {
       imageConfig:
         modelProvider === "jimeng"
           ? {
-              width: jimengWidth,
-              height: jimengHeight,
+              width: inputWidth,
+              height: inputHeight,
               minRatio: jimengDerived.minRatio,
               maxRatio: jimengDerived.maxRatio,
               aspectRatio: jimengDerived.aspectRatio
             }
           : {
-              imageSize: values.imageConfig_imageSize,
-              aspectRatio: values.imageConfig_aspectRatio
+              width: inputWidth,
+              height: inputHeight
             },
       extra: values.extraJson
         ? (() => {
@@ -1945,29 +2078,32 @@ export default function ConfigsPage() {
               </Form.Item>
 
               <Form.Item
-                name="imageConfig_imageSize"
-                label="imageConfig.imageSize"
+                name="imageConfig_width"
+                label="imageConfig.width"
+                extra="输入目标输出宽度；服务端将自动匹配 Gemini 支持的比例与 1K/2K/4K 分辨率"
               >
-                <Select
-                  options={IMAGE_SIZE_OPTIONS}
-                  placeholder="请选择 imageSize"
-                />
+                <InputNumber min={1} precision={0} style={{ width: "100%" }} />
               </Form.Item>
               <Form.Item
-                name="imageConfig_aspectRatio"
-                label="imageConfig.aspectRatio"
+                name="imageConfig_height"
+                label="imageConfig.height"
+                extra="输入目标输出高度；最终会按阈值规则进行拉伸或等比缩放"
               >
-                <AutoComplete
-                  options={ASPECT_RATIO_OPTIONS}
-                  allowClear
-                  placeholder="请选择或输入 aspectRatio"
-                  showSearch={{
-                    filterOption: (inputValue, option) =>
-                      String(option?.value || "")
-                        .toLowerCase()
-                        .includes(String(inputValue || "").toLowerCase())
-                  }}
-                />
+                <InputNumber min={1} precision={0} style={{ width: "100%" }} />
+              </Form.Item>
+              <Form.Item
+                name="imageConfig_matchedAspectRatio"
+                label="system.matchedAspectRatio"
+                extra="系统根据输入宽高自动匹配的 Gemini 支持比例（只读）"
+              >
+                <Input readOnly placeholder="请输入 width / height" />
+              </Form.Item>
+              <Form.Item
+                name="imageConfig_matchedResolution"
+                label="system.matchedResolution"
+                extra="系统根据输入宽高自动匹配的 Gemini 分辨率档位（只读）"
+              >
+                <Input readOnly placeholder="请输入 width / height" />
               </Form.Item>
 
               <Form.Item name="responseModalities" label="responseModalities">

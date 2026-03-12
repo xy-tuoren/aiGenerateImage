@@ -9,7 +9,15 @@ import { getCutTemplateTemperature, getCutTemplateThinkingLevel } from "@/lib/se
 import * as promptFns from "@/common/prompt";
 import { buildGlobalPromptSuffix } from "@/common/constants";
 import { addMetadataToImage, DEFAULT_IMAGE_METADATA } from "@/common/utils";
-import { extFromMime, guessMimeFromPath, isImageFileName, resizeImageByAspectRatio, stitchLongImageToSize } from "@/lib/server/utils";
+import {
+  adaptGeminiImageToTargetResolution,
+  extFromMime,
+  guessMimeFromPath,
+  isImageFileName,
+  matchGeminiImageConfigByResolution,
+  resizeImageByAspectRatio,
+  stitchLongImageToSize,
+} from "@/lib/server/utils";
 
 function appendGlobalPrompt(prompt: string, ctx?: { lang?: string;[k: string]: unknown }): string {
   const base = String(prompt || "").trim();
@@ -206,6 +214,25 @@ function parseAspectRatio(aspectRatio: unknown): { w: number; h: number } | null
   return { w, h };
 }
 
+function gcd(a: number, b: number): number {
+  let x = Math.abs(Math.trunc(a));
+  let y = Math.abs(Math.trunc(b));
+  while (y) {
+    const t = x % y;
+    x = y;
+    y = t;
+  }
+  return x || 1;
+}
+
+function deriveAspectRatioLabel(width?: number, height?: number): string | undefined {
+  if (!width || !height) return undefined;
+  const w = Math.max(1, Math.floor(width));
+  const h = Math.max(1, Math.floor(height));
+  const d = gcd(w, h);
+  return `${Math.floor(w / d)}:${Math.floor(h / d)}`;
+}
+
 function aspectRatioToken(aspectRatio: unknown) {
   const r = parseAspectRatio(aspectRatio) || { w: 1, h: 1 };
   const w = Number.isInteger(r.w) ? String(r.w) : String(r.w).replaceAll(".", "_");
@@ -391,7 +418,11 @@ async function prepareReferenceImages(
 
 function buildPrompt(config: ImageConfigDoc): string {
   const fnName = (config.promptTmpFunName || "").trim();
-  const aspectRatio = (config.imageConfig as any)?.aspectRatio;
+  const modelProvider = getModelProvider(config);
+  const imageCfg = config.imageConfig && typeof config.imageConfig === "object" ? (config.imageConfig as any) : {};
+  const aspectRatio =
+    String(imageCfg?.aspectRatio || "").trim() ||
+    (modelProvider === "gemini" ? deriveAspectRatioLabel(asPositiveInt(imageCfg?.width), asPositiveInt(imageCfg?.height)) : undefined);
   const baseArgs = {
     appName: config.appName,
     lang: config.lang,
@@ -509,7 +540,12 @@ async function runBatchJob(input: StartJobInput) {
     );
 
     const prompt = buildPrompt(config);
-    const aspectRatio = String(((config.imageConfig as any)?.aspectRatio ?? "") || "").trim() || undefined;
+    const imageCfg = config.imageConfig && typeof config.imageConfig === "object" ? (config.imageConfig as any) : {};
+    const modelProvider = getModelProvider(config);
+    const aspectRatio0 =
+      String((imageCfg?.aspectRatio ?? "") || "").trim() ||
+      (modelProvider === "gemini" ? deriveAspectRatioLabel(asPositiveInt(imageCfg?.width), asPositiveInt(imageCfg?.height)) : undefined);
+    let resolvedAspectRatio = aspectRatio0;
     const batchFun = (config.batchFun ? String(config.batchFun) : "").trim() || undefined;
     const jc = jobCfgMap.get(String(config._id));
     const sourceConfigId = jc?.sourceConfigId;
@@ -522,7 +558,6 @@ async function runBatchJob(input: StartJobInput) {
         const referenceImages = prepared.forModel;
         referenceImageUrls = prepared.publicUrls;
 
-        const modelProvider = getModelProvider(config);
         let imageBase64 = "";
         let outputMimeType = "image/png";
         if (modelProvider === "jimeng") {
@@ -571,9 +606,19 @@ async function runBatchJob(input: StartJobInput) {
           }
         } else {
           const client = new GeminiClient({});
+          const targetWidth = asPositiveInt(imageCfg?.width);
+          const targetHeight = asPositiveInt(imageCfg?.height);
+          if (!targetWidth || !targetHeight) {
+            throw new Error("Gemini 模式下必须提供有效的 imageConfig.width 和 imageConfig.height");
+          }
+          const matched = matchGeminiImageConfigByResolution(targetWidth, targetHeight);
+          resolvedAspectRatio = matched.matchedAspectRatio;
           const generated = await client.generateImage(prompt, {
             responseModalities: Array.isArray(config.responseModalities) ? config.responseModalities : ["IMAGE"],
-            imageConfig: config.imageConfig,
+            imageConfig: {
+              aspectRatio: matched.matchedAspectRatio,
+              imageSize: matched.imageSize,
+            },
             generationConfig: {
               ...(config.generationConfig && typeof config.generationConfig === "object" ? config.generationConfig : {}),
               temperature:
@@ -584,20 +629,12 @@ async function runBatchJob(input: StartJobInput) {
             referenceImages,
           }, { role: jobRole || undefined, isAdmin: jobIsAdmin });
 
-          imageBase64 = generated.data;
-          outputMimeType = generated.mimeType;
-          try {
-            const ar = String((config.imageConfig as any)?.aspectRatio || "");
-            imageBase64 = await resizeImageByAspectRatio(imageBase64, ar);
-          } catch {
-          }
-          try {
-            outputMimeType = detectMimeTypeFromBuffer(
-              Buffer.from(imageBase64, "base64"),
-              generated.mimeType
-            );
-          } catch {
-          }
+          const adapted = await adaptGeminiImageToTargetResolution(generated.data, targetWidth, targetHeight, {
+            ratioDiffThreshold: 0.15,
+            useStretch: matched.ratioDiff <= 0.15,
+          });
+          imageBase64 = adapted.data;
+          outputMimeType = adapted.mimeType || generated.mimeType;
         }
         const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
         if (addMetadata) {
@@ -614,7 +651,7 @@ async function runBatchJob(input: StartJobInput) {
         }
         const ext = extFromMime(outputMimeType);
         const ts = Date.now();
-        const ratio = aspectRatioToken((config.imageConfig as any)?.aspectRatio);
+        const ratio = aspectRatioToken(resolvedAspectRatio || (config.imageConfig as any)?.aspectRatio);
         const baseName = `${ts}-${ratio}.${ext}`;
         const appNameSeg = safePathSegment(config.appName);
         const langSeg = safePathSegment(config.lang);
@@ -650,7 +687,7 @@ async function runBatchJob(input: StartJobInput) {
           appName: config.appName,
           lang: config.lang,
           batchFun,
-          aspectRatio,
+          aspectRatio: resolvedAspectRatio,
           referenceImages: referenceImageUrls,
         });
         await recordsCol.insertOne({
@@ -667,7 +704,7 @@ async function runBatchJob(input: StartJobInput) {
           appName: config.appName,
           lang: config.lang,
           batchFun,
-          aspectRatio,
+          aspectRatio: resolvedAspectRatio,
           referenceImages: referenceImageUrls,
         });
 
@@ -690,7 +727,7 @@ async function runBatchJob(input: StartJobInput) {
             appName: config.appName,
             lang: config.lang,
             batchFun,
-            aspectRatio,
+            aspectRatio: resolvedAspectRatio,
             referenceImages: referenceImageUrls,
           });
           throw err instanceof Error ? err : new Error(finalMsg);

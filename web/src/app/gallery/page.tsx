@@ -392,12 +392,35 @@ export default function GalleryPage() {
       }
       return "";
     };
+    const parseRatio = (s: string): number | undefined => {
+      const m = String(s || "")
+        .trim()
+        .match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+      if (!m) return undefined;
+      const w = Number(m[1]);
+      const h = Number(m[2]);
+      if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0)
+        return undefined;
+      return w / h;
+    };
+    const isAspectMatch = (itemAspect: string, queryAspect: string) => {
+      const a = String(itemAspect || "").trim();
+      const q = String(queryAspect || "").trim();
+      if (!q) return true;
+      if (!a) return false;
+      if (a === q) return true;
+      const ra = parseRatio(a);
+      const rq = parseRatio(q);
+      if (ra === undefined || rq === undefined) return false;
+      // 允许等价比例（如 43:24 ~= 16:9）命中
+      return Math.abs(ra - rq) <= 0.03;
+    };
     const groupMap = new Map<string, { latestAt: number; imgs: GridImage[] }>();
     for (const it of items) {
       if (!it?.url) continue;
       if (aspectRatio) {
         const ar = getAspect(it);
-        if (ar !== aspectRatio) continue;
+        if (!isAspectMatch(ar, aspectRatio)) continue;
       }
       const recId = it.id ? String(it.id) : "";
       const jobId = String(it.jobId || "");

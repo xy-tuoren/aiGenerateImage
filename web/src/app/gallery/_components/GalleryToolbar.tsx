@@ -1,10 +1,18 @@
 "use client";
 
 import { ReloadOutlined } from "@ant-design/icons";
-import { AutoComplete, Button, Dropdown, Input, Select, Space, Typography } from "antd";
+import {
+  AutoComplete,
+  Button,
+  Dropdown,
+  Input,
+  Select,
+  Space,
+  Typography
+} from "antd";
 import type { RefObject } from "react";
 
-import { ASPECT_RATIO_OPTIONS, SUPPORTED_LANGUAGES } from "@/common/constants";
+import { SUPPORTED_LANGUAGES } from "@/common/constants";
 
 export function GalleryToolbar(props: {
   appName: string;
@@ -75,7 +83,7 @@ export function GalleryToolbar(props: {
     onCreateCut,
     onOpenImageEdit,
     onUploadToFireplay,
-    onDownloadSelected,
+    onDownloadSelected
   } = props;
 
   const disableActions =
@@ -99,7 +107,7 @@ export function GalleryToolbar(props: {
             const l = String((option as any)?.label ?? "");
             const q = String(inputValue || "").toLowerCase();
             return v.toLowerCase().includes(q) || l.toLowerCase().includes(q);
-          },
+          }
         }}
       >
         <Input allowClear placeholder="appName" />
@@ -114,19 +122,21 @@ export function GalleryToolbar(props: {
           filterOption: (inputValue, option) =>
             String(option?.value ?? "")
               .toLowerCase()
-              .includes(String(inputValue || "").toLowerCase()),
+              .includes(String(inputValue || "").toLowerCase())
         }}
       >
         <Input allowClear placeholder="lang" />
       </AutoComplete>
 
-      <Select
-        style={{ width: 100 }}
-        placeholder="比例"
-        value={aspectRatio || undefined}
-        options={ASPECT_RATIO_OPTIONS}
-        onChange={(v) => onAspectRatioChange(String(v || ""))}
-      />
+      <Space.Compact size="small">
+        <Input
+          style={{ width: 100 }}
+          placeholder="比例"
+          value={aspectRatio}
+          onChange={(e) => onAspectRatioChange(String(e.target.value || ""))}
+        />
+        <Button onClick={() => onAspectRatioChange("")}>清除</Button>
+      </Space.Compact>
 
       <Select
         style={{ width: 100 }}
@@ -134,7 +144,7 @@ export function GalleryToolbar(props: {
         value={cutFilter}
         options={[
           { label: "已裁剪", value: "cut" },
-          { label: "未裁剪", value: "uncut" },
+          { label: "未裁剪", value: "uncut" }
         ]}
         onChange={(v) => onCutFilterChange((String(v || "") as any) || "uncut")}
         menuItemSelectedIcon={null as any}
@@ -146,12 +156,10 @@ export function GalleryToolbar(props: {
         value={downloadedFilter}
         options={[
           { label: "已下载", value: "downloaded" },
-          { label: "未下载", value: "undownloaded" },
+          { label: "未下载", value: "undownloaded" }
         ]}
         onChange={(v) =>
-          onDownloadedFilterChange(
-            (String(v || "") as any) || "undownloaded"
-          )
+          onDownloadedFilterChange((String(v || "") as any) || "undownloaded")
         }
         menuItemSelectedIcon={null as any}
       />
@@ -166,12 +174,12 @@ export function GalleryToolbar(props: {
         menu={{
           items: [
             { key: "folder", label: "文件夹" },
-            { key: "image", label: "图片" },
+            { key: "image", label: "图片" }
           ],
           onClick: ({ key }) => {
             if (key === "folder") longFolderPickRef.current?.click();
             if (key === "image") longImagePickRef.current?.click();
-          },
+          }
         }}
       >
         <Button loading={uploadingLongFolder} disabled={disableActions}>
@@ -245,14 +253,15 @@ export function GalleryToolbar(props: {
         {loading
           ? "加载中..."
           : dataTotalCount != null
-            ? `共 ${dataTotalCount} 张，当前筛选 ${filteredCount} 张`
-            : `共 ${filteredCount} 张`}
+          ? `共 ${dataTotalCount} 张，当前筛选 ${filteredCount} 张`
+          : `共 ${filteredCount} 张`}
       </Typography.Text>
 
       {selectMode ? (
-        <Typography.Text type="secondary">已选 {selectedCount} 张</Typography.Text>
+        <Typography.Text type="secondary">
+          已选 {selectedCount} 张
+        </Typography.Text>
       ) : null}
     </Space>
   );
 }
-

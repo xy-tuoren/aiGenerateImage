@@ -246,6 +246,183 @@ export async function resizeImage(
   }
 }
 
+export type GeminiImageSize = "1K" | "2K" | "4K";
+
+const GEMINI_RATIO_BASE_SIZE_1K: Record<string, { width: number; height: number }> = {
+  "1:1": { width: 1024, height: 1024 },
+  "1:4": { width: 512, height: 2048 },
+  "1:8": { width: 384, height: 3072 },
+  "2:3": { width: 848, height: 1264 },
+  "3:2": { width: 1264, height: 848 },
+  "3:4": { width: 896, height: 1200 },
+  "4:1": { width: 2048, height: 512 },
+  "4:3": { width: 1200, height: 896 },
+  "4:5": { width: 928, height: 1152 },
+  "5:4": { width: 1152, height: 928 },
+  "8:1": { width: 3072, height: 384 },
+  "9:16": { width: 768, height: 1376 },
+  "16:9": { width: 1376, height: 768 },
+  "21:9": { width: 1584, height: 672 },
+};
+
+const GEMINI_SIZE_SCALE: Record<GeminiImageSize, number> = {
+  "1K": 1,
+  "2K": 2,
+  "4K": 4,
+};
+
+function parseAspectRatioValue(aspectRatio: string): number | undefined {
+  const m = String(aspectRatio || "").trim().match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
+  if (!m) return undefined;
+  const w = Number(m[1]);
+  const h = Number(m[2]);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return undefined;
+  return w / h;
+}
+
+function sharpOutputFormatFromMetadata(format: string | undefined): keyof sharp.FormatEnum {
+  const f = String(format || "").trim().toLowerCase();
+  if (f === "jpeg" || f === "jpg") return "jpeg";
+  if (f === "webp") return "webp";
+  if (f === "gif") return "gif";
+  if (f === "tiff" || f === "tif") return "tiff";
+  if (f === "avif") return "avif";
+  if (f === "heif" || f === "heic") return "heif";
+  return "png";
+}
+
+export function matchGeminiImageConfigByResolution(width: number, height: number): {
+  targetWidth: number;
+  targetHeight: number;
+  targetRatio: number;
+  matchedAspectRatio: string;
+  matchedRatio: number;
+  ratioDiff: number;
+  imageSize: GeminiImageSize;
+  requestWidth: number;
+  requestHeight: number;
+} {
+  const targetWidth = Math.max(1, Math.floor(Number(width) || 0));
+  const targetHeight = Math.max(1, Math.floor(Number(height) || 0));
+  if (!targetWidth || !targetHeight) {
+    throw new Error("目标宽高无效");
+  }
+  const targetRatio = targetWidth / targetHeight;
+
+  let bestRatio = "1:1";
+  let bestRatioDiff = Number.POSITIVE_INFINITY;
+  for (const ratio of Object.keys(GEMINI_RATIO_BASE_SIZE_1K)) {
+    const ratioValue = parseAspectRatioValue(ratio);
+    if (!ratioValue) continue;
+    const diff = Math.abs(ratioValue - targetRatio);
+    if (diff < bestRatioDiff) {
+      bestRatioDiff = diff;
+      bestRatio = ratio;
+    }
+  }
+
+  const base = GEMINI_RATIO_BASE_SIZE_1K[bestRatio] || GEMINI_RATIO_BASE_SIZE_1K["1:1"];
+  let bestSize: GeminiImageSize = "1K";
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (const size of Object.keys(GEMINI_SIZE_SCALE) as GeminiImageSize[]) {
+    const scale = GEMINI_SIZE_SCALE[size];
+    const w = base.width * scale;
+    const h = base.height * scale;
+    const dist = Math.abs(w - targetWidth) / targetWidth + Math.abs(h - targetHeight) / targetHeight;
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestSize = size;
+    }
+  }
+  const scale = GEMINI_SIZE_SCALE[bestSize];
+  const requestWidth = base.width * scale;
+  const requestHeight = base.height * scale;
+  const matchedRatio = requestWidth / requestHeight;
+
+  return {
+    targetWidth,
+    targetHeight,
+    targetRatio,
+    matchedAspectRatio: bestRatio,
+    matchedRatio,
+    ratioDiff: Math.abs(matchedRatio - targetRatio),
+    imageSize: bestSize,
+    requestWidth,
+    requestHeight,
+  };
+}
+
+export async function adaptGeminiImageToTargetResolution(
+  input: string | ArrayBuffer | Buffer,
+  targetWidth: number,
+  targetHeight: number,
+  options?: {
+    ratioDiffThreshold?: number;
+    useStretch?: boolean;
+    background?: { r: number; g: number; b: number; alpha?: number };
+  }
+): Promise<{ data: string; mimeType: string; strategy: "stretch_one_side" | "scale_contain"; ratioDiff: number }> {
+  const w = Math.max(1, Math.floor(Number(targetWidth) || 0));
+  const h = Math.max(1, Math.floor(Number(targetHeight) || 0));
+  if (!w || !h) throw new Error("目标宽高无效");
+  const threshold = Number(options?.ratioDiffThreshold);
+  const ratioDiffThreshold = Number.isFinite(threshold) ? Math.max(0, threshold) : 0.15;
+  const bg = options?.background || { r: 255, g: 255, b: 255, alpha: 1 };
+
+  const inputBuffer =
+    typeof input === "string"
+      ? Buffer.from(input, "base64")
+      : Buffer.isBuffer(input)
+        ? input
+        : Buffer.from(input);
+
+  const meta = await sharp(inputBuffer, { failOnError: false }).metadata();
+  const inW = Math.max(1, Math.floor(Number(meta.width) || 0));
+  const inH = Math.max(1, Math.floor(Number(meta.height) || 0));
+  const inputRatio = inW / inH;
+  const targetRatio = w / h;
+  const ratioDiff = Math.abs(inputRatio - targetRatio);
+  const outputFormat = sharpOutputFormatFromMetadata(meta.format);
+  const shouldStretch =
+    typeof options?.useStretch === "boolean"
+      ? options.useStretch
+      : ratioDiff <= ratioDiffThreshold;
+
+  if (shouldStretch) {
+    let stretchW = inW;
+    let stretchH = inH;
+    if (targetRatio > inputRatio) {
+      stretchW = Math.max(1, Math.round(inH * targetRatio));
+    } else if (targetRatio < inputRatio) {
+      stretchH = Math.max(1, Math.round(inW / targetRatio));
+    }
+    const stretched = await sharp(inputBuffer, { failOnError: false })
+      .resize(stretchW, stretchH, { fit: "fill" })
+      .toBuffer();
+    const out = await sharp(stretched, { failOnError: false })
+      .resize(w, h, { fit: "fill" })
+      .toFormat(outputFormat)
+      .toBuffer();
+    return {
+      data: out.toString("base64"),
+      mimeType: mimeFromFormat(outputFormat),
+      strategy: "stretch_one_side",
+      ratioDiff,
+    };
+  }
+
+  const out = await sharp(inputBuffer, { failOnError: false })
+    .resize(w, h, { fit: "contain", position: "center", background: bg })
+    .toFormat(outputFormat)
+    .toBuffer();
+  return {
+    data: out.toString("base64"),
+    mimeType: mimeFromFormat(outputFormat),
+    strategy: "scale_contain",
+    ratioDiff,
+  };
+}
+
 /**
  * 裁图（/crop）链路中：按 appName + ratio 决定要跑哪些模板。
  *
