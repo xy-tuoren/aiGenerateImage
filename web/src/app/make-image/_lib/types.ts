@@ -8,7 +8,8 @@ export type PendingImage = {
 };
 
 export type GeneratedImage = {
-  imageBase64: string;
+  imageBase64?: string;
+  imageUrl?: string;
   imageMimeType: string;
 };
 
@@ -17,6 +18,7 @@ export type Message = {
   role: "user" | "assistant";
   content?: string;
   imageBase64?: string;
+  imageUrl?: string;
   imageMimeType?: string;
   generatedImages?: GeneratedImage[];
   referenceImages?: PendingImage[];

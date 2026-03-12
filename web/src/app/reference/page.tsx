@@ -894,18 +894,18 @@ export default function ReferenceGalleryPage() {
         <Space wrap>
           <Typography.Text strong>appName：</Typography.Text>
           <Select
-            showSearch
+            showSearch={{
+              filterOption: (input, option) =>
+                (option?.label ?? "")
+                  .toString()
+                  .toLowerCase()
+                  .includes((input || "").toLowerCase())
+            }}
             virtual={false}
             style={{ width: 360 }}
             placeholder="输入搜索或选择 appName"
             value={appName || undefined}
             options={appNameOptions}
-            filterOption={(input, option) =>
-              (option?.label ?? "")
-                .toString()
-                .toLowerCase()
-                .includes((input || "").toLowerCase())
-            }
             onChange={(v) => {
               setAppName(String(v || ""));
             }}

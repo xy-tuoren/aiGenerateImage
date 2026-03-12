@@ -65,6 +65,16 @@ export function MessagePanel({
         </div>
       ) : (
         messages.map((msg, msgIndex) => {
+          const getImageSrc = (img: {
+            imageBase64?: string;
+            imageUrl?: string;
+            imageMimeType?: string;
+          }) => {
+            const b64 = String(img.imageBase64 || "").trim();
+            if (b64)
+              return `data:${img.imageMimeType || "image/jpeg"};base64,${b64}`;
+            return String(img.imageUrl || "").trim();
+          };
           const generatedImages =
             msg.generatedImages && msg.generatedImages.length > 0
               ? msg.generatedImages
@@ -72,6 +82,13 @@ export function MessagePanel({
               ? [
                   {
                     imageBase64: msg.imageBase64,
+                    imageMimeType: msg.imageMimeType || "image/jpeg"
+                  }
+                ]
+              : msg.imageUrl
+              ? [
+                  {
+                    imageUrl: msg.imageUrl,
                     imageMimeType: msg.imageMimeType || "image/jpeg"
                   }
                 ]
@@ -199,7 +216,10 @@ export function MessagePanel({
                     }}
                   >
                     {msg.loading ? (
-                      <Space size="middle">
+                      <Space
+                        size="middle"
+                        style={{ marginBottom: hasGeneratedImages ? 12 : 0 }}
+                      >
                         <Spin
                           indicator={
                             <LoadingOutlined style={{ fontSize: 24 }} spin />
@@ -209,212 +229,204 @@ export function MessagePanel({
                           {msg.content}
                         </Typography.Text>
                       </Space>
-                    ) : (
-                      <>
-                        {msg.content && (
-                          <div
-                            style={{
-                              whiteSpace: "pre-wrap",
-                              marginBottom: hasGeneratedImages ? 12 : 0
-                            }}
-                          >
-                            {msg.content}
-                          </div>
-                        )}
-                        {hasGeneratedImages && (
-                          <div
-                            style={{
-                              position: "relative",
-                              marginTop: 8,
-                              marginLeft: -16,
-                              marginRight: -16,
-                              marginBottom: -12,
-                              overflow: "hidden",
-                              padding: 5,
-                              lineHeight: 0,
-                              borderRadius:
-                                msg.role === "assistant"
-                                  ? "0 0 16px 16px"
-                                  : undefined
-                            }}
-                            onMouseEnter={() => setHoveredGenMessageId(msg.id)}
-                            onMouseLeave={() => setHoveredGenMessageId(null)}
-                          >
+                    ) : null}
+                    {!msg.loading && msg.content ? (
+                      <div
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          marginBottom: hasGeneratedImages ? 12 : 0
+                        }}
+                      >
+                        {msg.content}
+                      </div>
+                    ) : null}
+                    {hasGeneratedImages && (
+                      <div
+                        style={{
+                          position: "relative",
+                          marginTop: 8,
+                          marginLeft: -16,
+                          marginRight: -16,
+                          marginBottom: -12,
+                          overflow: "hidden",
+                          padding: 5,
+                          lineHeight: 0,
+                          borderRadius:
+                            msg.role === "assistant"
+                              ? "0 0 16px 16px"
+                              : undefined
+                        }}
+                        onMouseEnter={() => setHoveredGenMessageId(msg.id)}
+                        onMouseLeave={() => setHoveredGenMessageId(null)}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 5
+                          }}
+                        >
+                          {generatedImages.map((img, idx) => (
                             <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 5
+                              key={`${msg.id}-${idx}`}
+                              draggable
+                              onDragStart={(e) => {
+                                try {
+                                  const dataUrl = getImageSrc(img);
+                                  if (!dataUrl) return;
+                                  e.dataTransfer.effectAllowed = "copy";
+                                  e.dataTransfer.setData(
+                                    "application/x-make-image-ref",
+                                    JSON.stringify({ url: dataUrl })
+                                  );
+                                  e.dataTransfer.setData(
+                                    "text/uri-list",
+                                    dataUrl
+                                  );
+                                  e.dataTransfer.setData("text/plain", dataUrl);
+                                } catch {}
                               }}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onToggleEditTarget(msg.id, idx);
+                              }}
+                              style={{
+                                position: "relative",
+                                width: 360,
+                                height: 240,
+                                boxSizing: "border-box",
+                                overflow: "hidden",
+                                borderRadius: 8,
+                                background:
+                                  editTarget?.messageId === msg.id &&
+                                  editTarget.indices.includes(idx)
+                                    ? "rgba(22,119,255,0.18)"
+                                    : "transparent",
+                                boxShadow:
+                                  editTarget?.messageId === msg.id &&
+                                  editTarget.indices.includes(idx)
+                                    ? "inset 0 0 0 2px #1677ff"
+                                    : "none"
+                              }}
+                              title="右键选中：后续修改只作用于选中图片"
                             >
-                              {generatedImages.map((img, idx) => (
+                              <AntImage
+                                src={getImageSrc(img)}
+                                width={360}
+                                height={240}
+                                style={{
+                                  borderRadius: 6,
+                                  objectFit: "cover",
+                                  maxWidth: "100%",
+                                  cursor: "pointer",
+                                  display: "block"
+                                }}
+                                preview={false}
+                                onClick={() => {
+                                  const messageStartIndex =
+                                    conversationGeneratedImageIndexByMessageId.get(
+                                      msg.id
+                                    ) ?? 0;
+                                  setConversationPreviewCurrent(
+                                    messageStartIndex + idx
+                                  );
+                                  setConversationPreviewVisible(true);
+                                }}
+                              />
+                              {editTarget?.messageId === msg.id &&
+                              editTarget.indices.includes(idx) ? (
                                 <div
-                                  key={`${msg.id}-${idx}`}
-                                  draggable
-                                  onDragStart={(e) => {
-                                    try {
-                                      const dataUrl = `data:${img.imageMimeType};base64,${img.imageBase64}`;
-                                      e.dataTransfer.effectAllowed = "copy";
-                                      e.dataTransfer.setData(
-                                        "application/x-make-image-ref",
-                                        JSON.stringify({ url: dataUrl })
-                                      );
-                                      e.dataTransfer.setData(
-                                        "text/uri-list",
-                                        dataUrl
-                                      );
-                                      e.dataTransfer.setData(
-                                        "text/plain",
-                                        dataUrl
-                                      );
-                                    } catch {}
-                                  }}
-                                  onContextMenu={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    onToggleEditTarget(msg.id, idx);
-                                  }}
                                   style={{
-                                    position: "relative",
-                                    width: 360,
-                                    height: 240,
-                                    boxSizing: "border-box",
-                                    overflow: "hidden",
-                                    borderRadius: 8,
-                                    background:
-                                      editTarget?.messageId === msg.id &&
-                                      editTarget.indices.includes(idx)
-                                        ? "rgba(22,119,255,0.18)"
-                                        : "transparent",
-                                    boxShadow:
-                                      editTarget?.messageId === msg.id &&
-                                      editTarget.indices.includes(idx)
-                                        ? "inset 0 0 0 2px #1677ff"
-                                        : "none"
+                                    position: "absolute",
+                                    top: 6,
+                                    left: 6,
+                                    padding: "2px 6px",
+                                    borderRadius: 999,
+                                    background: "rgba(22,119,255,0.9)",
+                                    color: "#fff",
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    lineHeight: 1
                                   }}
-                                  title="右键选中：后续修改只作用于选中图片"
                                 >
-                                  <AntImage
-                                    src={`data:${img.imageMimeType};base64,${img.imageBase64}`}
-                                    width={360}
-                                    height={240}
-                                    style={{
-                                      borderRadius: 6,
-                                      objectFit: "cover",
-                                      maxWidth: "100%",
-                                      cursor: "pointer",
-                                      display: "block"
-                                    }}
-                                    preview={false}
-                                    onClick={() => {
-                                      const messageStartIndex =
-                                        conversationGeneratedImageIndexByMessageId.get(
-                                          msg.id
-                                        ) ?? 0;
-                                      setConversationPreviewCurrent(
-                                        messageStartIndex + idx
-                                      );
-                                      setConversationPreviewVisible(true);
-                                    }}
-                                  />
-                                  {editTarget?.messageId === msg.id &&
-                                  editTarget.indices.includes(idx) ? (
-                                    <div
-                                      style={{
-                                        position: "absolute",
-                                        top: 6,
-                                        left: 6,
-                                        padding: "2px 6px",
-                                        borderRadius: 999,
-                                        background: "rgba(22,119,255,0.9)",
-                                        color: "#fff",
-                                        fontSize: 12,
-                                        fontWeight: 600,
-                                        lineHeight: 1
-                                      }}
-                                    >
-                                      已选
-                                    </div>
-                                  ) : null}
-                                  {idx === generatedImages.length - 1 ? (
-                                    <div
-                                      style={{
-                                        position: "absolute",
-                                        right: 5,
-                                        bottom: 5,
-                                        display: "inline-flex",
-                                        gap: 6,
-                                        alignItems: "center",
-                                        padding: "4px 6px",
-                                        borderRadius: 8,
-                                        background: "rgba(0,0,0,0.5)",
-                                        opacity:
-                                          hoveredGenMessageId === msg.id
-                                            ? 1
-                                            : 0,
-                                        pointerEvents:
-                                          hoveredGenMessageId === msg.id
-                                            ? "auto"
-                                            : "none",
-                                        transition: "opacity 0.2s"
-                                      }}
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      {isLastGeneratedImage ? (
-                                        <Tooltip title="重新生成">
-                                          <Button
-                                            type="text"
-                                            shape="circle"
-                                            size="small"
-                                            icon={<ReloadOutlined />}
-                                            onClick={() => onRegenerate(msg.id)}
-                                            disabled={
-                                              isGenerating ||
-                                              conversationLoading
-                                            }
-                                            style={{ color: "#fff" }}
-                                          />
-                                        </Tooltip>
-                                      ) : null}
-                                      <Tooltip title="下载">
-                                        <Button
-                                          type="text"
-                                          shape="circle"
-                                          size="small"
-                                          icon={<DownloadOutlined />}
-                                          onClick={() =>
-                                            onDownload(
-                                              msg,
-                                              selectedIndicesForThisMsg
-                                            )
-                                          }
-                                          style={{ color: "#fff" }}
-                                        />
-                                      </Tooltip>
-                                      <Tooltip title="入库图片广场">
-                                        <Button
-                                          type="text"
-                                          shape="circle"
-                                          size="small"
-                                          icon={<AppstoreAddOutlined />}
-                                          onClick={() =>
-                                            onOpenGallerySaveModal(
-                                              msg.id,
-                                              selectedIndicesForThisMsg
-                                            )
-                                          }
-                                          disabled={!hasGeneratedImages}
-                                          style={{ color: "#fff" }}
-                                        />
-                                      </Tooltip>
-                                    </div>
-                                  ) : null}
+                                  已选
                                 </div>
-                              ))}
+                              ) : null}
+                              {idx === generatedImages.length - 1 ? (
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    right: 5,
+                                    bottom: 5,
+                                    display: "inline-flex",
+                                    gap: 6,
+                                    alignItems: "center",
+                                    padding: "4px 6px",
+                                    borderRadius: 8,
+                                    background: "rgba(0,0,0,0.5)",
+                                    opacity:
+                                      hoveredGenMessageId === msg.id ? 1 : 0,
+                                    pointerEvents:
+                                      hoveredGenMessageId === msg.id
+                                        ? "auto"
+                                        : "none",
+                                    transition: "opacity 0.2s"
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {isLastGeneratedImage ? (
+                                    <Tooltip title="重新生成">
+                                      <Button
+                                        type="text"
+                                        shape="circle"
+                                        size="small"
+                                        icon={<ReloadOutlined />}
+                                        onClick={() => onRegenerate(msg.id)}
+                                        disabled={
+                                          isGenerating || conversationLoading
+                                        }
+                                        style={{ color: "#fff" }}
+                                      />
+                                    </Tooltip>
+                                  ) : null}
+                                  <Tooltip title="下载">
+                                    <Button
+                                      type="text"
+                                      shape="circle"
+                                      size="small"
+                                      icon={<DownloadOutlined />}
+                                      onClick={() =>
+                                        onDownload(
+                                          msg,
+                                          selectedIndicesForThisMsg
+                                        )
+                                      }
+                                      style={{ color: "#fff" }}
+                                    />
+                                  </Tooltip>
+                                  <Tooltip title="入库图片广场">
+                                    <Button
+                                      type="text"
+                                      shape="circle"
+                                      size="small"
+                                      icon={<AppstoreAddOutlined />}
+                                      onClick={() =>
+                                        onOpenGallerySaveModal(
+                                          msg.id,
+                                          selectedIndicesForThisMsg
+                                        )
+                                      }
+                                      disabled={!hasGeneratedImages}
+                                      style={{ color: "#fff" }}
+                                    />
+                                  </Tooltip>
+                                </div>
+                              ) : null}
                             </div>
-                          </div>
-                        )}
-                      </>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                   {isFailedAssistantMessage ? (

@@ -281,12 +281,13 @@ export function getCutAdCreativePrompt({ appName, lang, prompt, aspectRatio }: P
 ## 需要保留的真实素材（必须保留）
 - 广告中间的主视觉内容（人物、场景、产品、主体动作）。
 - 与主视觉连贯的自然背景（保证画面完整，不要硬切边）。
+- 与素材有关的题目、文案、描述等文字区域。
 
 ## 裁图与重构要求
 - 先识别“真实素材边界”再裁切，避免把平台UI一起带入。
 - 主体优先居中且完整，不得截断头部/四肢/关键物体。
 - 为适配目标比例，仅允许：等比缩放、智能补边、背景延展；禁止拉伸变形。
-- 生成结果应像原生素材图，而不是“从广告页截出来的图”。
+- 生成结果应尽量接近原生素材图，而不是“从广告页截出来的图”。
 
 ## 语言要求
 - 若保留可见文字，必须统一为${langDesc}。
@@ -323,10 +324,9 @@ export function getBuzzCutChangeFinalPrompt({ appName, lang, prompt, aspectRatio
 //-----------------------Kids-----------------------------
 
 export function getKidsDefaultPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
-  return `1. 你是一名专业的儿童广告设计师，参考图 **仅作为风格参考**；你需要通过调整构图、修改元素与背景等方式，避免生成图与参考图过于相似。
-2. **设计原则**：色彩鲜艳、对比度高的儿童广告插画，采用卡通风格绘制。
-3. 文字语言必须为${lang}。
-4. ${prompt}`
+  return `1.你是一个儿童广告设计师，你生成的图片应该符合:超高色彩鲜艳饱和，高亮度，曝光度高，工作室灯光，极致清晰的细节，无噪点，干净的背景，光滑质感。这是你过去制作的广告图片，为了进一步推广产品，你需要制作更多的广告图片，你应该使用相同风格制作新的广告，但请注意新的广告与现有广告不应过度相似。
+  2. 除非参考图中包含文字，否则不主动添加文字，且文字语言必须为${lang}。
+  3. ${prompt}`
 }
 
 export function getKids18DefaultPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {

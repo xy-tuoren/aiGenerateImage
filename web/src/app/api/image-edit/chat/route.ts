@@ -5,7 +5,7 @@ import { ObjectId } from "mongodb";
 import { requireApiAccess } from "@/lib/server/auth";
 import { GeminiClient } from "@/lib/server/gemini";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { guessMimeFromPath } from "@/lib/server/utils";
+import { extFromMime, guessMimeFromPath } from "@/lib/server/utils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,6 +45,7 @@ type ImageEditMessageDoc = {
   text?: string;
   loading?: boolean;
   imageBase64?: string;
+  imageUrl?: string;
   imageMimeType?: string;
   thoughtSignature?: string;
   modelParts?: any[];
@@ -57,13 +58,58 @@ type ImageEditMessageImageDoc = {
   messageId: ObjectId;
   userId: string;
   index: number;
-  imageBase64: string;
+  imageBase64?: string;
+  imageUrl?: string;
   imageMimeType: string;
   kind?: "generated" | "reference";
   thoughtSignature?: string;
   modelParts?: any[];
   createdAt: Date;
 };
+
+const MAX_MONGO_DOC_BYTES = 16 * 1024 * 1024;
+const SAFE_MODEL_PARTS_BYTES = 2 * 1024 * 1024;
+
+function utf8Bytes(input: unknown) {
+  return Buffer.byteLength(String(input ?? ""), "utf8");
+}
+
+function clampPersistedModelParts(input: unknown): any[] | undefined {
+  if (!Array.isArray(input) || input.length === 0) return undefined;
+  try {
+    const raw = JSON.stringify(input);
+    if (!raw) return undefined;
+    return utf8Bytes(raw) <= SAFE_MODEL_PARTS_BYTES ? input : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function persistBase64AsPublicAsset(args: {
+  base64: unknown;
+  mimeType?: unknown;
+  subDir: "generated" | "reference";
+}): Promise<{ url: string; mimeType: string } | undefined> {
+  const raw = String(args.base64 || "").trim();
+  if (!raw) return undefined;
+  const mimeType = String(args.mimeType || "image/png").trim() || "image/png";
+  const ext = extFromMime(mimeType);
+  const publicDir = await resolvePublicDir();
+  const dateSeg = new Date().toISOString().slice(0, 10);
+  const relDir = path.join("material", "image-edit", "chat", args.subDir, dateSeg);
+  const absDir = path.join(publicDir, relDir);
+  await fs.ensureDir(absDir);
+  const ts = Date.now();
+  const rand = Math.random().toString(36).slice(2, 8);
+  const fileName = `${ts}-${rand}.${ext}`;
+  const absPath = path.join(absDir, fileName);
+  await fs.writeFile(absPath, Buffer.from(raw, "base64"));
+  const relUrl = `/${relDir.split(path.sep).join("/")}/${encodeURIComponent(fileName)}`;
+  return {
+    url: relUrl,
+    mimeType
+  };
+}
 
 async function resolvePublicDir(): Promise<string> {
   const cwd = process.cwd();
@@ -318,6 +364,59 @@ async function loadConversationHistoryFromDb(args: {
   }));
 }
 
+async function hydrateImageData(args: {
+  imageBase64?: unknown;
+  imageUrl?: unknown;
+  imageMimeType?: unknown;
+  publicDir: string;
+  cache: Map<string, { data: string; mimeType: string } | null>;
+}): Promise<{ imageBase64?: string; imageMimeType: string; imageUrl?: string }> {
+  const directBase64 = String(args.imageBase64 || "").trim();
+  const directUrl = String(args.imageUrl || "").trim();
+  const mimeType = String(args.imageMimeType || "image/png").trim() || "image/png";
+  if (directBase64) {
+    return {
+      imageBase64: directBase64,
+      imageMimeType: mimeType,
+      imageUrl: directUrl || undefined
+    };
+  }
+  if (!directUrl) {
+    return {
+      imageMimeType: mimeType
+    };
+  }
+  const cached = args.cache.get(directUrl);
+  if (cached) {
+    return {
+      imageBase64: cached.data,
+      imageMimeType: cached.mimeType || mimeType,
+      imageUrl: directUrl
+    };
+  }
+  if (cached === null) {
+    return {
+      imageMimeType: mimeType,
+      imageUrl: directUrl
+    };
+  }
+  try {
+    const inlined = await readRefFromPublicUrl(directUrl, args.publicDir);
+    args.cache.set(directUrl, inlined);
+    return {
+      imageBase64: inlined.data,
+      imageMimeType: inlined.mimeType || mimeType,
+      imageUrl: directUrl
+    };
+  } catch {
+    args.cache.set(directUrl, null);
+    return {
+      imageMimeType: mimeType,
+      imageUrl: directUrl
+    };
+  }
+}
+
 export async function GET(req: NextRequest) {
   const guard = requireApiAccess(req);
   if (!guard.ok) return Response.json({ ok: false, error: guard.error }, { status: guard.status });
@@ -325,6 +424,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const conversationId = String(searchParams.get("conversationId") || "").trim();
   const db = await getMongoDb();
+  const publicDir = await resolvePublicDir();
+  const imageHydrationCache = new Map<string, { data: string; mimeType: string } | null>();
   const conversationsCol = db.collection<ImageEditConversationDoc>("image_edit_conversations");
   const messagesCol = db.collection<ImageEditMessageDoc>("image_edit_messages");
   const messageImagesCol = db.collection<ImageEditMessageImageDoc>("image_edit_message_images");
@@ -361,19 +462,29 @@ export async function GET(req: NextRequest) {
         )
         .toArray()
       : [];
-    const msgIdToGeneratedImages = new Map<
-      string,
-      Array<{ imageBase64: string; imageMimeType: string }>
-    >();
-    const msgIdToReferenceImages = new Map<
-      string,
-      Array<{ imageBase64: string; imageMimeType: string }>
-    >();
+    const msgIdToGeneratedImages = new Map<string, Array<{
+      imageBase64?: string;
+      imageUrl?: string;
+      imageMimeType: string;
+    }>>();
+    const msgIdToReferenceImages = new Map<string, Array<{
+      imageBase64?: string;
+      imageUrl?: string;
+      imageMimeType: string;
+    }>>();
     for (const row of imageRows) {
       const k = String(row.messageId);
+      const hydrated = await hydrateImageData({
+        imageBase64: row.imageBase64,
+        imageUrl: row.imageUrl,
+        imageMimeType: row.imageMimeType,
+        publicDir,
+        cache: imageHydrationCache
+      });
       const item = {
-        imageBase64: String(row.imageBase64 || ""),
-        imageMimeType: String(row.imageMimeType || "image/png") || "image/png"
+        imageBase64: hydrated.imageBase64,
+        imageUrl: hydrated.imageUrl,
+        imageMimeType: hydrated.imageMimeType
       };
       if ((row as any)?.kind === "reference") {
         const arr = msgIdToReferenceImages.get(k) || [];
@@ -385,6 +496,31 @@ export async function GET(req: NextRequest) {
       arr.push(item);
       msgIdToGeneratedImages.set(k, arr);
     }
+    const hydratedMessages = await Promise.all(
+      messages.map(async (m) => {
+        const hydrated = await hydrateImageData({
+          imageBase64: m.imageBase64,
+          imageUrl: (m as any).imageUrl,
+          imageMimeType: m.imageMimeType,
+          publicDir,
+          cache: imageHydrationCache
+        });
+        return {
+          id: String(m._id),
+          role: m.role,
+          text: m.text || "",
+          loading: Boolean((m as any).loading),
+          imageBase64: hydrated.imageBase64,
+          imageUrl: hydrated.imageUrl,
+          imageMimeType: hydrated.imageMimeType,
+          generatedImages: msgIdToGeneratedImages.get(String(m._id)) || undefined,
+          referenceImages: msgIdToReferenceImages.get(String(m._id)) || undefined,
+          thoughtSignature: m.thoughtSignature,
+          modelParts: Array.isArray(m.modelParts) ? m.modelParts : undefined,
+          createdAt: m.createdAt
+        };
+      })
+    );
     return Response.json({
       ok: true,
       conversation: {
@@ -395,19 +531,7 @@ export async function GET(req: NextRequest) {
         createdAt: conv.createdAt,
         updatedAt: conv.updatedAt
       },
-      messages: messages.map((m) => ({
-        id: String(m._id),
-        role: m.role,
-        text: m.text || "",
-        loading: Boolean((m as any).loading),
-        imageBase64: m.imageBase64,
-        imageMimeType: m.imageMimeType,
-        generatedImages: msgIdToGeneratedImages.get(String(m._id)) || undefined,
-        referenceImages: msgIdToReferenceImages.get(String(m._id)) || undefined,
-        thoughtSignature: m.thoughtSignature,
-        modelParts: Array.isArray(m.modelParts) ? m.modelParts : undefined,
-        createdAt: m.createdAt
-      }))
+      messages: hydratedMessages
     });
   }
 
@@ -464,6 +588,7 @@ export async function POST(req: NextRequest) {
 
   const user = guard.user;
   const db = await getMongoDb();
+  const publicDir = await resolvePublicDir();
   const conversationsCol = db.collection<ImageEditConversationDoc>("image_edit_conversations");
   const messagesCol = db.collection<ImageEditMessageDoc>("image_edit_messages");
   const messageImagesCol = db.collection<ImageEditMessageImageDoc>("image_edit_message_images");
@@ -569,6 +694,8 @@ export async function POST(req: NextRequest) {
   ).sort((a, b) => a - b);
   let hasPersistedMessages = false;
   let hasPersistedConversationMeta = false;
+  let droppedGeneratedImageForDbCount = 0;
+  let droppedReferenceImageForDbCount = 0;
 
   try {
     const client = new GeminiClient({});
@@ -592,7 +719,7 @@ export async function POST(req: NextRequest) {
       return (latestAssistantRows?.[0]?._id as ObjectId | undefined) || undefined;
     })();
 
-    const latestSeeds = resolvedSeedMessageId
+    const latestSeedsRaw = resolvedSeedMessageId
       ? await messageImagesCol
         .find(
           {
@@ -604,6 +731,23 @@ export async function POST(req: NextRequest) {
         )
         .toArray()
       : [];
+    const latestSeeds = await Promise.all(
+      latestSeedsRaw.map(async (seed) => {
+        if (seed.imageBase64) return seed;
+        const seedUrl = String((seed as any).imageUrl || "").trim();
+        if (!seedUrl) return seed;
+        try {
+          const inlined = await readRefFromPublicUrl(seedUrl, publicDir);
+          return {
+            ...seed,
+            imageBase64: inlined.data,
+            imageMimeType: inlined.mimeType || seed.imageMimeType || "image/png"
+          };
+        } catch {
+          return seed;
+        }
+      })
+    );
     const selectionMode = latestSeeds.length > 0 && targetImageIndices.length > 0;
     const baseCount =
       latestSeeds.length > 0
@@ -725,14 +869,54 @@ export async function POST(req: NextRequest) {
         .filter(Boolean);
       return texts.length ? texts[texts.length - 1] : "";
     })();
-    const generatedImagesForDb = finalImages
-      .map((x) => ({
-        imageBase64: String(x.imageBase64 || ""),
-        imageMimeType: String(x.imageMimeType || "image/png") || "image/png",
-        thoughtSignature: x.thoughtSignature,
-        modelParts: x.modelParts
-      }))
-      .filter((x) => x.imageBase64);
+    const generatedImagesForDb = (
+      await Promise.all(
+        finalImages.map(async (x) => {
+          const stored = await persistBase64AsPublicAsset({
+            base64: x.imageBase64,
+            mimeType: x.imageMimeType,
+            subDir: "generated"
+          });
+          if (!stored?.url) return null;
+          return {
+            imageUrl: stored.url,
+            imageMimeType: stored.mimeType,
+            thoughtSignature: x.thoughtSignature,
+            modelParts: clampPersistedModelParts(x.modelParts)
+          };
+        })
+      )
+    ).filter(Boolean) as Array<{
+      imageUrl: string;
+      imageMimeType: string;
+      thoughtSignature?: string;
+      modelParts?: any[];
+    }>;
+    droppedGeneratedImageForDbCount = Math.max(
+      0,
+      finalImages.length - generatedImagesForDb.length
+    );
+    const firstGeneratedForMessage = generatedImagesForDb[0];
+    const referenceImagesForDb = (
+      await Promise.all(
+        referenceImages.map(async (img) => {
+          const stored = await persistBase64AsPublicAsset({
+            base64: img.data,
+            mimeType: img.mimeType,
+            subDir: "reference"
+          });
+          if (!stored?.url) return null;
+          return {
+            url: stored.url,
+            mimeType: stored.mimeType
+          };
+        })
+      )
+    ).filter(Boolean) as Array<{ url: string; mimeType: string }>;
+    droppedReferenceImageForDbCount = Math.max(
+      0,
+      referenceImages.length - referenceImagesForDb.length
+    );
     const now = new Date();
     const userMsgId = new ObjectId();
     const assistantMsgId = new ObjectId();
@@ -751,25 +935,23 @@ export async function POST(req: NextRequest) {
         userId: user.userId,
         role: "assistant",
         text: assistantText,
-        imageBase64: firstGenerated?.imageBase64,
-        imageMimeType: firstGenerated?.imageMimeType || "image/png",
+        imageUrl: firstGeneratedForMessage?.imageUrl,
+        imageMimeType: firstGeneratedForMessage?.imageMimeType || "image/png",
         thoughtSignature: lastModified?.thoughtSignature || undefined,
-        modelParts: Array.isArray(lastModified?.modelPartsForNextTurn)
-          ? lastModified.modelPartsForNextTurn
-          : undefined,
+        modelParts: clampPersistedModelParts(lastModified?.modelPartsForNextTurn),
         createdAt: now
       }
     ] as any);
     hasPersistedMessages = true;
-    if (referenceImages.length > 0) {
+    if (referenceImagesForDb.length > 0) {
       await messageImagesCol.insertMany(
-        referenceImages.map((img, idx) => ({
+        referenceImagesForDb.map((img, idx) => ({
           conversationId,
           messageId: userMsgId,
           userId: user.userId,
           index: idx,
-          imageBase64: String(img.data || ""),
-          imageMimeType: String(img.mimeType || "image/png") || "image/png",
+          imageUrl: img.url,
+          imageMimeType: img.mimeType,
           kind: "reference" as const,
           createdAt: now
         })) as any
@@ -782,7 +964,7 @@ export async function POST(req: NextRequest) {
           messageId: assistantMsgId,
           userId: user.userId,
           index: idx,
-          imageBase64: img.imageBase64,
+          imageUrl: img.imageUrl,
           imageMimeType: img.imageMimeType,
           kind: "generated" as const,
           thoughtSignature: img.thoughtSignature || undefined,
@@ -811,11 +993,17 @@ export async function POST(req: NextRequest) {
       assistantText: assistantText || undefined,
       imageBase64: firstGenerated?.imageBase64,
       mimeType: firstGenerated?.imageMimeType || "image/png",
-      generatedImages: generatedImagesForDb.length
-        ? generatedImagesForDb
+      generatedImages: finalImages.length
+        ? finalImages.map((img) => ({
+          imageBase64: img.imageBase64,
+          imageMimeType: img.imageMimeType
+        }))
         : undefined,
       thoughtSignature: lastModified?.thoughtSignature || undefined,
       usedReferenceImages: referenceImages.length,
+      droppedGeneratedImageForDbCount,
+      droppedReferenceImageForDbCount,
+      maxMongoDocBytes: MAX_MONGO_DOC_BYTES
     });
   } catch (e: any) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -842,15 +1030,31 @@ export async function POST(req: NextRequest) {
             createdAt: now
           }
         ] as any);
-        if (referenceImages.length > 0) {
+        const referenceImagesForDb = (
+          await Promise.all(
+            referenceImages.map(async (img) => {
+              const stored = await persistBase64AsPublicAsset({
+                base64: img.data,
+                mimeType: img.mimeType,
+                subDir: "reference"
+              });
+              if (!stored?.url) return null;
+              return {
+                url: stored.url,
+                mimeType: stored.mimeType
+              };
+            })
+          )
+        ).filter(Boolean) as Array<{ url: string; mimeType: string }>;
+        if (referenceImagesForDb.length > 0) {
           await messageImagesCol.insertMany(
-            referenceImages.map((img, idx) => ({
+            referenceImagesForDb.map((img, idx) => ({
               conversationId,
               messageId: userMsgId,
               userId: user.userId,
               index: idx,
-              imageBase64: String(img.data || ""),
-              imageMimeType: String(img.mimeType || "image/png") || "image/png",
+              imageUrl: img.url,
+              imageMimeType: img.mimeType,
               kind: "reference" as const,
               createdAt: now
             })) as any

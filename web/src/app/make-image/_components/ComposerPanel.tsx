@@ -67,6 +67,12 @@ export function ComposerPanel({
   imageSize,
   setImageSize
 }: ComposerPanelProps) {
+  const collapseSettingsOnInput = (text: string) => {
+    if (enableImageSettings && String(text || "").trim()) {
+      setEnableImageSettings(() => false);
+    }
+  };
+
   const extractUrlsFromDataTransfer = (dt: DataTransfer): string[] => {
     const out: string[] = [];
     const custom = dt.getData("application/x-make-image-ref");
@@ -225,8 +231,20 @@ export function ComposerPanel({
 
           <Input.TextArea
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => {
+              const nextValue = e.target.value;
+              setInputValue(nextValue);
+              collapseSettingsOnInput(nextValue);
+            }}
+            onDrop={(e) => {
+              const text = String(e.dataTransfer?.getData("text/plain") || "");
+              collapseSettingsOnInput(text);
+            }}
             onPaste={async (e) => {
+              const pastedText = String(
+                e.clipboardData?.getData("text/plain") || ""
+              );
+              collapseSettingsOnInput(pastedText);
               const items = Array.from(e.clipboardData?.items || []);
               const imageFiles = items
                 .filter(

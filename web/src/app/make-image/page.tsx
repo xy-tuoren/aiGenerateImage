@@ -105,6 +105,7 @@ export default function MakeImagePage() {
           item?.role === "user" ? ("user" as const) : ("assistant" as const),
         content: item?.content ? String(item.content) : "",
         imageBase64: item?.imageBase64 ? String(item.imageBase64) : undefined,
+        imageUrl: item?.imageUrl ? String(item.imageUrl) : undefined,
         imageMimeType: item?.imageMimeType
           ? String(item.imageMimeType)
           : undefined,
@@ -112,10 +113,11 @@ export default function MakeImagePage() {
         generatedImages: Array.isArray(item?.generatedImages)
           ? item.generatedImages
               .map((x: any) => ({
-                imageBase64: String(x?.imageBase64 || ""),
+                imageBase64: x?.imageBase64 ? String(x.imageBase64) : undefined,
+                imageUrl: x?.imageUrl ? String(x.imageUrl) : undefined,
                 imageMimeType: String(x?.imageMimeType || "image/jpeg")
               }))
-              .filter((x: any) => x.imageBase64)
+              .filter((x: any) => x.imageBase64 || x.imageUrl)
           : undefined,
         referenceImages: normalizePendingImages(item?.referenceImages)
       })
@@ -170,8 +172,11 @@ export default function MakeImagePage() {
       .map((x: any) => {
         const mimeType = String(x?.imageMimeType || "image/png") || "image/png";
         const pureBase64 = String(x?.imageBase64 || "").trim();
-        if (!pureBase64) return null;
-        const dataUrl = `data:${mimeType};base64,${pureBase64}`;
+        const imageUrl = String(x?.imageUrl || "").trim();
+        if (!pureBase64 && !imageUrl) return null;
+        const dataUrl = pureBase64
+          ? `data:${mimeType};base64,${pureBase64}`
+          : imageUrl;
         return {
           url: dataUrl,
           base64: dataUrl,
@@ -296,6 +301,7 @@ export default function MakeImagePage() {
           content: msg.content || "",
           loading: Boolean(msg.loading),
           imageBase64: msg.imageBase64,
+          imageUrl: msg.imageUrl,
           imageMimeType: msg.imageMimeType,
           generatedImages: msg.generatedImages,
           referenceImages: (msg.referenceImages || []).map((img) => ({
@@ -367,6 +373,7 @@ export default function MakeImagePage() {
             content: String(m.text || ""),
             loading: Boolean(m.loading),
             imageBase64: m.imageBase64 ? String(m.imageBase64) : undefined,
+            imageUrl: m.imageUrl ? String(m.imageUrl) : undefined,
             imageMimeType: m.imageMimeType
               ? String(m.imageMimeType)
               : undefined,
@@ -374,10 +381,13 @@ export default function MakeImagePage() {
             generatedImages: Array.isArray(m.generatedImages)
               ? m.generatedImages
                   .map((x: any) => ({
-                    imageBase64: String(x?.imageBase64 || ""),
+                    imageBase64: x?.imageBase64
+                      ? String(x.imageBase64)
+                      : undefined,
+                    imageUrl: x?.imageUrl ? String(x.imageUrl) : undefined,
                     imageMimeType: String(x?.imageMimeType || "image/jpeg")
                   }))
-                  .filter((x: any) => x.imageBase64)
+                  .filter((x: any) => x.imageBase64 || x.imageUrl)
               : undefined
           })
         );
@@ -512,15 +522,19 @@ export default function MakeImagePage() {
           content: String(m.text || ""),
           loading: Boolean(m.loading),
           imageBase64: m.imageBase64 ? String(m.imageBase64) : undefined,
+          imageUrl: m.imageUrl ? String(m.imageUrl) : undefined,
           imageMimeType: m.imageMimeType ? String(m.imageMimeType) : undefined,
           referenceImages: mapReferenceImagesFromApi(m),
           generatedImages: Array.isArray(m.generatedImages)
             ? m.generatedImages
                 .map((x: any) => ({
-                  imageBase64: String(x?.imageBase64 || ""),
+                  imageBase64: x?.imageBase64
+                    ? String(x.imageBase64)
+                    : undefined,
+                  imageUrl: x?.imageUrl ? String(x.imageUrl) : undefined,
                   imageMimeType: String(x?.imageMimeType || "image/jpeg")
                 }))
-                .filter((x: any) => x.imageBase64)
+                .filter((x: any) => x.imageBase64 || x.imageUrl)
             : undefined
         })
       );
@@ -733,64 +747,128 @@ export default function MakeImagePage() {
 
       let latestConversationId = currentConversationId || undefined;
       const generatedImages: Array<{
-        imageBase64: string;
+        imageBase64?: string;
+        imageUrl?: string;
         imageMimeType: string;
       }> = [];
-
-      const res = await fetch("/api/image-edit/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        signal: abortController.signal,
-        body: JSON.stringify({
-          prompt: userMessage.content || "请参考图片进行处理",
-          referenceImageInline,
-          history,
-          thinkingLevel,
-          temperature,
-          enableImageSettings,
-          outputCount: safeOutputCount,
-          ...(enableImageSettings && aspectRatio ? { aspectRatio } : {}),
-          ...(enableImageSettings && imageSize ? { imageSize } : {}),
-          conversationId: latestConversationId,
-          ...(activeEditTarget
-            ? {
-                targetMessageId: activeEditTarget.messageId,
-                targetImageIndices: activeEditTarget.indices
-              }
-            : {})
-        })
-      });
+      let lastAssistantText = "";
       let assistantMessageIdFromServer = "";
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || "请求失败");
-      }
-      if (Array.isArray(data.generatedImages)) {
-        generatedImages.push(
-          ...data.generatedImages
-            .map((x: any) => ({
-              imageBase64: String(x?.imageBase64 || ""),
-              imageMimeType: String(x?.imageMimeType || "image/jpeg")
-            }))
-            .filter((x: any) => x.imageBase64)
-        );
-      } else if (data.imageBase64) {
-        generatedImages.push({
-          imageBase64: String(data.imageBase64),
-          imageMimeType: String(data.mimeType || "image/jpeg")
+      const shouldProgressivelyRender =
+        safeOutputCount > 1 && !activeEditTarget;
+      const requestCount = shouldProgressivelyRender ? safeOutputCount : 1;
+
+      for (let reqIndex = 0; reqIndex < requestCount; reqIndex += 1) {
+        if (!leftWhileGeneratingRef.current) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? {
+                    ...msg,
+                    loading: true,
+                    content: shouldProgressivelyRender
+                      ? `正在思考与生成中... (${
+                          reqIndex + 1
+                        }/${safeOutputCount})`
+                      : msg.content,
+                    imageBase64: generatedImages[0]?.imageBase64,
+                    imageMimeType:
+                      generatedImages[0]?.imageMimeType || "image/jpeg",
+                    generatedImages: [...generatedImages]
+                  }
+                : msg
+            )
+          );
+        }
+
+        const res = await fetch("/api/image-edit/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          signal: abortController.signal,
+          body: JSON.stringify({
+            prompt: userMessage.content || "请参考图片进行处理",
+            referenceImageInline,
+            history,
+            thinkingLevel,
+            temperature,
+            enableImageSettings,
+            outputCount: shouldProgressivelyRender ? 1 : safeOutputCount,
+            ...(enableImageSettings && aspectRatio ? { aspectRatio } : {}),
+            ...(enableImageSettings && imageSize ? { imageSize } : {}),
+            conversationId: latestConversationId,
+            ...(activeEditTarget
+              ? {
+                  targetMessageId: activeEditTarget.messageId,
+                  targetImageIndices: activeEditTarget.indices
+                }
+              : {})
+          })
         });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || "请求失败");
+        }
+
+        if (Array.isArray(data.generatedImages)) {
+          generatedImages.push(
+            ...data.generatedImages
+              .map((x: any) => ({
+                imageBase64: x?.imageBase64 ? String(x.imageBase64) : undefined,
+                imageUrl: x?.imageUrl ? String(x.imageUrl) : undefined,
+                imageMimeType: String(x?.imageMimeType || "image/jpeg")
+              }))
+              .filter((x: any) => x.imageBase64 || x.imageUrl)
+          );
+        } else if (data.imageBase64) {
+          generatedImages.push({
+            imageBase64: String(data.imageBase64),
+            imageMimeType: String(data.mimeType || "image/jpeg")
+          });
+        } else if (data.imageUrl) {
+          generatedImages.push({
+            imageUrl: String(data.imageUrl),
+            imageMimeType: String(data.mimeType || "image/jpeg")
+          });
+        }
+        lastAssistantText =
+          String(data?.assistantText || "").trim() || lastAssistantText;
+        if (!assistantMessageIdFromServer) {
+          assistantMessageIdFromServer = String(
+            data.assistantMessageId || ""
+          ).trim();
+        }
+        if (data.conversationId) {
+          latestConversationId = String(data.conversationId);
+          setCurrentConversationId(String(data.conversationId));
+          bindSettingsToConversation(String(data.conversationId));
+          setActiveGeneratingConversationId(String(data.conversationId));
+        }
+
+        if (!leftWhileGeneratingRef.current && shouldProgressivelyRender) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? {
+                    ...msg,
+                    loading: true,
+                    content:
+                      generatedImages.length > 0
+                        ? `已生成 ${generatedImages.length}/${safeOutputCount} 张`
+                        : `正在思考与生成中... (${
+                            reqIndex + 1
+                          }/${safeOutputCount})`,
+                    imageBase64: generatedImages[0]?.imageBase64,
+                    imageUrl: generatedImages[0]?.imageUrl,
+                    imageMimeType:
+                      generatedImages[0]?.imageMimeType || "image/jpeg",
+                    generatedImages: [...generatedImages]
+                  }
+                : msg
+            )
+          );
+        }
       }
-      if (data.conversationId) {
-        latestConversationId = String(data.conversationId);
-        setCurrentConversationId(String(data.conversationId));
-        bindSettingsToConversation(String(data.conversationId));
-        setActiveGeneratingConversationId(String(data.conversationId));
-      }
-      assistantMessageIdFromServer = String(
-        data.assistantMessageId || ""
-      ).trim();
 
       if (!leftWhileGeneratingRef.current) {
         setMessages((prev) =>
@@ -798,15 +876,18 @@ export default function MakeImagePage() {
             msg.id === assistantMessageId
               ? {
                   ...msg,
-                  ...(assistantMessageIdFromServer
+                  ...(shouldProgressivelyRender
+                    ? {}
+                    : assistantMessageIdFromServer
                     ? { id: assistantMessageIdFromServer }
                     : {}),
                   loading: false,
                   content:
                     generatedImages.length > 0
-                      ? String(data?.assistantText || "").trim() || ""
+                      ? lastAssistantText || ""
                       : "抱歉，生成失败：未成功生成图片",
                   imageBase64: generatedImages[0]?.imageBase64,
+                  imageUrl: generatedImages[0]?.imageUrl,
                   imageMimeType:
                     generatedImages[0]?.imageMimeType || "image/jpeg",
                   generatedImages
@@ -894,7 +975,7 @@ export default function MakeImagePage() {
     await sendMessage(prompt, referenceImages);
   };
 
-  const handleDownload = (msg: Message, indices?: number[]) => {
+  const handleDownload = async (msg: Message, indices?: number[]) => {
     const imgs =
       msg.generatedImages && msg.generatedImages.length > 0
         ? msg.generatedImages
@@ -916,15 +997,21 @@ export default function MakeImagePage() {
     // 多图：按序触发多次下载（避免引入 zip 依赖）
     for (let i = 0; i < list.length; i += 1) {
       const targetImage = list[i];
-      if (!targetImage?.imageBase64) continue;
-      const mimeType = targetImage.imageMimeType || "image/jpeg";
+      const mimeType = targetImage?.imageMimeType || "image/jpeg";
       const ext = mimeType.includes("png")
         ? "png"
         : mimeType.includes("webp")
         ? "webp"
         : "jpg";
+      let href = "";
+      if (targetImage?.imageBase64) {
+        href = `data:${mimeType};base64,${targetImage.imageBase64}`;
+      } else if (targetImage?.imageUrl) {
+        href = targetImage.imageUrl;
+      }
+      if (!href) continue;
       const link = document.createElement("a");
-      link.href = `data:${mimeType};base64,${targetImage.imageBase64}`;
+      link.href = href;
       link.download = `generated-${Date.now()}-${i + 1}.${ext}`;
       document.body.appendChild(link);
       link.click();
@@ -984,13 +1071,24 @@ export default function MakeImagePage() {
     try {
       for (let i = 0; i < list.length; i += 1) {
         const targetImage = list[i];
-        if (!targetImage?.imageBase64) continue;
+        let imageBase64 = String(targetImage?.imageBase64 || "").trim();
+        let imageMimeType = String(targetImage?.imageMimeType || "image/jpeg");
+        if (!imageBase64 && targetImage?.imageUrl) {
+          const hydrated = await urlToPendingImage(targetImage.imageUrl).catch(
+            () => null
+          );
+          if (hydrated?.base64) {
+            imageBase64 = hydrated.base64.split(",")[1] || hydrated.base64;
+            imageMimeType = hydrated.mimeType || imageMimeType;
+          }
+        }
+        if (!imageBase64) continue;
         const res = await fetch("/api/image-edit/save", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            imageBase64: targetImage.imageBase64,
-            mimeType: targetImage.imageMimeType || "image/jpeg",
+            imageBase64,
+            mimeType: imageMimeType || "image/jpeg",
             mode: "new",
             appName,
             lang,
@@ -1075,10 +1173,11 @@ export default function MakeImagePage() {
     const msgImages =
       msg.generatedImages && msg.generatedImages.length > 0
         ? msg.generatedImages
-        : msg.imageBase64
+        : msg.imageBase64 || msg.imageUrl
         ? [
             {
               imageBase64: msg.imageBase64,
+              imageUrl: msg.imageUrl,
               imageMimeType: msg.imageMimeType || "image/jpeg"
             }
           ]
@@ -1086,9 +1185,13 @@ export default function MakeImagePage() {
     if (msgImages.length === 0) continue;
     const idx = conversationGeneratedImageItems.length;
     conversationGeneratedImageItems.push(
-      ...msgImages.map(
-        (item) => `data:${item.imageMimeType};base64,${item.imageBase64}`
-      )
+      ...msgImages
+        .map((item) =>
+          item.imageBase64
+            ? `data:${item.imageMimeType};base64,${item.imageBase64}`
+            : item.imageUrl || ""
+        )
+        .filter(Boolean)
     );
     conversationGeneratedImageIndexByMessageId.set(msg.id, idx);
   }
