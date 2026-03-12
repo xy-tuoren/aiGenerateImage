@@ -18,6 +18,7 @@ const envInt = (name: string, fallback: number) => {
 type ImageConfigDoc = {
   _id: ObjectId;
   userId: string;
+  modelProvider?: "gemini" | "jimeng";
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, unknown>;
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest) {
 
     for (const lang of effectiveLangs) {
       const cfgForExpand: any = {
+        modelProvider: (src as any).modelProvider,
         prompt: src.prompt,
         referenceImages: src.referenceImages,
         generationConfig: src.generationConfig,
@@ -116,7 +118,8 @@ export async function POST(req: NextRequest) {
         expandedJobConfigs.push({
           configId: cfgId,
           sourceConfigId: src._id,
-          config: { ...e, count: perCount },
+          // Ensure provider choice survives batchFun expansion.
+          config: { ...e, modelProvider: (e as any).modelProvider ?? (src as any).modelProvider, count: perCount },
           total: perCount,
         });
       }

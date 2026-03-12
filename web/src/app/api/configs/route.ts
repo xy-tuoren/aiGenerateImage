@@ -7,6 +7,7 @@ type ImageConfigDoc = {
   _id?: ObjectId;
   userId: string;
   username?: string;
+  modelProvider?: "gemini" | "jimeng";
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, any>;
@@ -78,11 +79,14 @@ export async function POST(req: NextRequest) {
   const inputImageConfig = body.imageConfig && typeof body.imageConfig === "object" ? body.imageConfig : undefined;
   const aspectRatioRaw = inputImageConfig ? (inputImageConfig as any).aspectRatio : undefined;
   const aspectRatio = (aspectRatioRaw ?? "").toString().trim() || "16:9";
+  const modelProviderRaw = String((body as any).modelProvider || "").trim().toLowerCase();
+  const modelProvider = modelProviderRaw === "jimeng" ? "jimeng" : "gemini";
 
   const now = new Date();
   const doc: ImageConfigDoc = {
     userId: user.userId,
     username: user.username,
+    modelProvider,
     prompt,
     referenceImages,
     generationConfig: normalizeGenerationConfig(body.generationConfig),

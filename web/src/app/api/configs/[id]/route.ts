@@ -10,6 +10,7 @@ type ImageConfigDoc = {
   _id?: ObjectId;
   userId: string;
   username?: string;
+  modelProvider?: "gemini" | "jimeng";
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, any>;
@@ -87,9 +88,12 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     : [];
   const langs = Array.from(new Set((langs0.length ? langs0 : (lang0 ? [lang0] : [])).filter(Boolean)));
   const lang = langs.length ? langs[0] : (lang0 || undefined);
+  const modelProviderRaw = String((body as any).modelProvider || "").trim().toLowerCase();
+  const modelProvider = modelProviderRaw === "jimeng" ? "jimeng" : "gemini";
 
   const now = new Date();
   const patch: Partial<ImageConfigDoc> = {
+    modelProvider,
     prompt,
     referenceImages,
     generationConfig: normalizeGenerationConfig(body.generationConfig),

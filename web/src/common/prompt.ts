@@ -324,15 +324,24 @@ export function getBuzzCutChangeFinalPrompt({ appName, lang, prompt, aspectRatio
 //-----------------------Kids-----------------------------
 
 export function getKidsDefaultPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
-  return `1.你是一个儿童广告设计师，你生成的图片应该符合:超高色彩鲜艳饱和，高亮度，曝光度高，工作室灯光，极致清晰的细节，无噪点，干净的背景，光滑质感。这是你过去制作的广告图片，为了进一步推广产品，你需要制作更多的广告图片，你应该使用相同风格制作新的广告，但请注意新的广告与现有广告不应过度相似。
-  2. 除非参考图中包含文字，否则不主动添加文字，且文字语言必须为${lang}。
+  return `1.你是一个广告设计师，你生成的图片应该符合:高饱和色彩，高亮度，曝光度高，画面内容饱满，工作室灯光，极致清晰的细节，无噪点，光滑质感。这是你过去制作的广告图片，为了进一步推广产品，你需要制作更多的广告图片，你应该使用相同风格制作新的广告，但请注意新的广告与现有广告不应过度相似。
+  2. 除非参考图中包含文字，否则不添加文字，如果添加文字，文字语言必须为${lang}。
   3. ${prompt}`
 }
 
 export function getKids18DefaultPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
   return `1. 你是一名专业的广告设计师，这是你过去制作的图片，参考图 **作为风格参考**、**意境氛围的延续**，你需要通过调整构图、修改元素与背景等方式，避免生成图与参考图过于相似。
-2. 除非参考图中包含文字，否则不主动添加文字，且文字语言必须为${lang}。
-3. ${prompt}`
+2. 除非参考图中包含文字，否则不添加文字，如果添加文字，文字语言必须为${lang}。
+3. 使用对比色或光影效果突出主体元素。
+4. ${prompt}`
+}
+
+
+export function getGamesDefaultPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
+  return `1. 你是一名专业的广告设计师，这是你过去制作的图片，参考图 **作为风格参考**、**意境氛围的延续**，你需要通过调整构图、修改元素与背景等方式，避免生成图与参考图过于相似。
+2. 除非参考图中包含文字，否则不添加文字，如果添加文字，文字语言必须为${lang}。
+3. 使用对比色或光影效果突出主体元素。
+4. ${prompt}`
 }
 
 export function getKidsCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {

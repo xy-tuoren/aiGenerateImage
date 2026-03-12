@@ -4,6 +4,7 @@ import path, { join } from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { GeminiClient } from "@/lib/server/gemini";
+import { JimengClient } from "@/lib/server/jimeng";
 import { getCutTemplateTemperature, getCutTemplateThinkingLevel } from "@/lib/server/utils";
 import * as promptFns from "@/common/prompt";
 import { buildGlobalPromptSuffix } from "@/common/constants";
@@ -22,6 +23,7 @@ function appendGlobalPrompt(prompt: string, ctx?: { lang?: string;[k: string]: u
 type ImageConfigDoc = {
   _id: ObjectId;
   userId?: string;
+  modelProvider?: "gemini" | "jimeng";
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, unknown>;
@@ -209,6 +211,44 @@ function aspectRatioToken(aspectRatio: unknown) {
   const w = Number.isInteger(r.w) ? String(r.w) : String(r.w).replaceAll(".", "_");
   const h = Number.isInteger(r.h) ? String(r.h) : String(r.h).replaceAll(".", "_");
   return `${w}x${h}`;
+}
+
+function getModelProvider(config: ImageConfigDoc): "gemini" | "jimeng" {
+  const raw = String((config as any)?.modelProvider || "").trim().toLowerCase();
+  return raw === "jimeng" ? "jimeng" : "gemini";
+}
+
+function asFiniteNumber(input: unknown): number | undefined {
+  const n = Number(input);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function asPositiveInt(input: unknown): number | undefined {
+  const n = asFiniteNumber(input);
+  if (n === undefined || n <= 0) return undefined;
+  return Math.floor(n);
+}
+
+function deriveJimengRatioBounds(width?: number, height?: number): {
+  minRatio?: number;
+  maxRatio?: number;
+} {
+  if (!width || !height) return {};
+  const ratio = Number((width / height).toFixed(6));
+  return { minRatio: ratio, maxRatio: ratio };
+}
+
+async function pollJimengUntilDone(client: JimengClient, taskId: string) {
+  for (let i = 0; i < 120; i += 1) {
+    const result = await client.getResult(taskId);
+    const status = String(result.status || "").trim().toLowerCase();
+    if (status === "done") return result;
+    if (status === "not_found" || status === "expired") {
+      throw new Error(`即梦任务状态异常: ${result.status}`);
+    }
+    await sleep(2000);
+  }
+  throw new Error("即梦任务轮询超时");
 }
 
 async function collectImagesFromDirRecursive(dir: string): Promise<string[]> {
@@ -482,32 +522,84 @@ async function runBatchJob(input: StartJobInput) {
         const referenceImages = prepared.forModel;
         referenceImageUrls = prepared.publicUrls;
 
-        const client = new GeminiClient({});
-        const generated = await client.generateImage(prompt, {
-          responseModalities: Array.isArray(config.responseModalities) ? config.responseModalities : ["IMAGE"],
-          imageConfig: config.imageConfig,
-          generationConfig: {
-            ...(config.generationConfig && typeof config.generationConfig === "object" ? config.generationConfig : {}),
-            temperature:
-              (config.generationConfig as any)?.temperature === undefined || (config.generationConfig as any)?.temperature === null || (config.generationConfig as any)?.temperature === ""
-                ? 1
-                : Number((config.generationConfig as any)?.temperature),
-          },
-          referenceImages,
-        }, { role: jobRole || undefined, isAdmin: jobIsAdmin });
+        const modelProvider = getModelProvider(config);
+        let imageBase64 = "";
+        let outputMimeType = "image/png";
+        if (modelProvider === "jimeng") {
+          const imageCfg = (config.imageConfig && typeof config.imageConfig === "object"
+            ? config.imageConfig
+            : {}) as Record<string, unknown>;
+          const width = asPositiveInt(imageCfg.width);
+          const height = asPositiveInt(imageCfg.height);
+          const ratioBounds = deriveJimengRatioBounds(width, height);
+          const minRatio = asFiniteNumber(imageCfg.minRatio) ?? ratioBounds.minRatio;
+          const maxRatio = asFiniteNumber(imageCfg.maxRatio) ?? ratioBounds.maxRatio;
+          const client = new JimengClient({});
+          const submitted = await client.submitTask(prompt, {
+            imageUrls: referenceImageUrls,
+            width,
+            height,
+            minRatio,
+            maxRatio,
+            forceSingle: true,
+          });
+          if (!submitted.taskId) throw new Error("即梦提交任务成功，但 task_id 为空");
+          const result = await pollJimengUntilDone(client, submitted.taskId);
+          imageBase64 = String(result.binaryDataBase64[0] || "").trim();
+          if (!imageBase64 && result.imageUrls[0]) {
+            const res = await fetch(result.imageUrls[0]);
+            if (!res.ok) {
+              throw new Error(`即梦结果图片下载失败: status=${res.status}`);
+            }
+            const buf = Buffer.from(await res.arrayBuffer());
+            imageBase64 = buf.toString("base64");
+            outputMimeType = detectMimeTypeFromBuffer(
+              buf,
+              res.headers.get("content-type") || "image/png"
+            );
+          } else if (imageBase64) {
+            try {
+              outputMimeType = detectMimeTypeFromBuffer(
+                Buffer.from(imageBase64, "base64"),
+                "image/png"
+              );
+            } catch {
+            }
+          }
+          if (!imageBase64) {
+            throw new Error("即梦任务已完成，但未返回图片数据");
+          }
+        } else {
+          const client = new GeminiClient({});
+          const generated = await client.generateImage(prompt, {
+            responseModalities: Array.isArray(config.responseModalities) ? config.responseModalities : ["IMAGE"],
+            imageConfig: config.imageConfig,
+            generationConfig: {
+              ...(config.generationConfig && typeof config.generationConfig === "object" ? config.generationConfig : {}),
+              temperature:
+                (config.generationConfig as any)?.temperature === undefined || (config.generationConfig as any)?.temperature === null || (config.generationConfig as any)?.temperature === ""
+                  ? 1
+                  : Number((config.generationConfig as any)?.temperature),
+            },
+            referenceImages,
+          }, { role: jobRole || undefined, isAdmin: jobIsAdmin });
 
-        let imageBase64 = generated.data;
+          imageBase64 = generated.data;
+          outputMimeType = generated.mimeType;
+          try {
+            const ar = String((config.imageConfig as any)?.aspectRatio || "");
+            imageBase64 = await resizeImageByAspectRatio(imageBase64, ar);
+          } catch {
+          }
+          try {
+            outputMimeType = detectMimeTypeFromBuffer(
+              Buffer.from(imageBase64, "base64"),
+              generated.mimeType
+            );
+          } catch {
+          }
+        }
         const addMetadata = ["1", "true", "yes"].includes(String(process.env.ADD_IMAGE_METADATA || "").toLowerCase());
-        try {
-          const ar = String((config.imageConfig as any)?.aspectRatio || "");
-          imageBase64 = await resizeImageByAspectRatio(imageBase64, ar);
-        } catch {
-        }
-        let outputMimeType = generated.mimeType;
-        try {
-          outputMimeType = detectMimeTypeFromBuffer(Buffer.from(imageBase64, "base64"), generated.mimeType);
-        } catch {
-        }
         if (addMetadata) {
           try {
             const buf = Buffer.from(imageBase64, "base64");

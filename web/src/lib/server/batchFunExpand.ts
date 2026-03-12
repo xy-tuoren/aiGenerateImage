@@ -4,6 +4,7 @@ import { join, dirname, basename } from "path";
 import { isImageFileName } from "@/lib/server/utils";
 
 export type WebImageConfig = {
+  modelProvider?: "gemini" | "jimeng";
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, unknown>;

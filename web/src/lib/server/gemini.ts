@@ -13,7 +13,7 @@ function getCurrentDateTime(): { date: string; year: number } {
 
 function buildRequestContext(date: string, year: number): string {
   return `
-        [1.Context: Current date is ${date}, year ${year}. Use this when generating time-sensitive content.]
+        [1.Context: Time anchor is ${date} (year ${year}). Use it ONLY if the user request is time-sensitive (e.g. asks for "today/current/latest/this year", recent events, news, or explicitly requests a date). Otherwise, ignore it and DO NOT mention the date/year in any user-visible output.]
         [2.Generate an image]
       `;
 }
@@ -212,7 +212,7 @@ export class GeminiClient {
       };
     })();
 
-    const systemInstruction = `For time-sensitive user queries that require up-to-date information, you MUST follow the provided current time (date and year) when formulating search queries in tool calls. Current date: ${date}. Remember it is ${year} this year.`;
+    const systemInstruction = `Use the provided time anchor (${date}, year ${year}) ONLY for time-sensitive user queries (e.g. "today/current/latest/this year", recent events, news, or when a date is explicitly requested), especially when forming web search queries in tool calls. Do NOT mention or reveal the time anchor in user-visible output unless the user explicitly asks for it.`;
 
     return {
       model: this.model,

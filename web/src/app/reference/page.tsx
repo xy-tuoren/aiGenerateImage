@@ -924,6 +924,14 @@ export default function ReferenceGalleryPage() {
             刷新
           </Button>
           <Button
+            icon={<CopyOutlined />}
+            loading={copyingPath}
+            disabled={!appName || loading}
+            onClick={handleCopyReferencePath}
+          >
+            复制参考图路径
+          </Button>
+          <Button
             icon={<CloudDownloadOutlined />}
             loading={fetchingReferenceImages}
             disabled={loading || loadingMore || vectorizingReferenceImages}
@@ -957,14 +965,6 @@ export default function ReferenceGalleryPage() {
             onClick={handleOpenVectorizeModal}
           >
             向量化
-          </Button>
-          <Button
-            icon={<CopyOutlined />}
-            loading={copyingPath}
-            disabled={!appName || loading}
-            onClick={handleCopyReferencePath}
-          >
-            复制参考图路径
           </Button>
           {appName && !isUploadApp ? (
             <Tooltip

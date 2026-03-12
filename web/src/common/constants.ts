@@ -68,6 +68,7 @@ export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
   const isBuzz = !!appName && appName.toLowerCase() === "buzz";
   const isKids = !!appName && appName.toLowerCase() === "kids";
   const isKids18 = !!appName && appName.toLowerCase() === "kids18";
+  const isCoupons = !!appName && appName.toLowerCase() === "Coupons";
 
   if (isBuzz) {
     return `
@@ -75,6 +76,14 @@ export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
 > 与其他任何指令冲突时，以本段为准。
   `;
   }
+
+  if (isCoupons) {
+    return `
+## 最高优先级｜绝对禁止事项
+> 与其他任何指令冲突时，以本段为准。
+  `;
+  }
+
 
   if (isKids || isKids18) {
     return `

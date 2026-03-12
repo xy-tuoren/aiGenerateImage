@@ -212,6 +212,7 @@ export async function POST(req: Request) {
 
   const startFolderIndex = Math.max(1, Number((body as any).startFolderIndex ?? 1) || 1);
   const fixedCode = String((body as any).fixedCode ?? "404").trim() || "404";
+  const includeSubfolders = Boolean((body as any).includeSubfolders);
   const excludedKeysRaw = (body as any).excludedKeys;
   const excludedKeysArr = Array.isArray(excludedKeysRaw) ? excludedKeysRaw.map((x) => String(x)).filter(Boolean) : [];
   const excludedSet = new Set(excludedKeysArr);
@@ -254,7 +255,7 @@ export async function POST(req: Request) {
       for (let i = 0; i < orderedDocs.length; i++) {
         if (aborted) break;
         const folderIndex = startFolderIndex + i;
-        const folder = `${folderIndex}/`;
+        const folder = includeSubfolders ? `${folderIndex}/` : "";
         const rec = orderedDocs[i];
 
         // 原图 => landscape-1

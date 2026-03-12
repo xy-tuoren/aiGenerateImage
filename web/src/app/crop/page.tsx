@@ -9,6 +9,7 @@ import {
   InputNumber,
   Select,
   Space,
+  Switch,
   Table,
   Typography,
   message
@@ -87,6 +88,8 @@ export default function CropPage() {
   const [downloadStartFolderIndex, setDownloadStartFolderIndex] =
     useState<number>(1);
   const [downloadFixedCode, setDownloadFixedCode] = useState<string>("404");
+  const [downloadWithSubfolders, setDownloadWithSubfolders] =
+    useState<boolean>(false);
   const [downloading, setDownloading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [excludedKeys, setExcludedKeys] = useState<Record<string, true>>({});
@@ -456,6 +459,7 @@ export default function CropPage() {
               ids: selectedIds,
               startFolderIndex: downloadStartFolderIndex,
               fixedCode: downloadFixedCode,
+              includeSubfolders: downloadWithSubfolders,
               excludedKeys: Object.keys(excludedKeys)
             }),
             signal: controller.signal
@@ -526,6 +530,7 @@ export default function CropPage() {
           ids: selectedIds,
           startFolderIndex: downloadStartFolderIndex,
           fixedCode: downloadFixedCode,
+          includeSubfolders: downloadWithSubfolders,
           excludedKeys: Object.keys(excludedKeys)
         }),
         signal: controller.signal
@@ -1287,6 +1292,12 @@ export default function CropPage() {
               style={{ width: 90 }}
               value={downloadFixedCode}
               onChange={(e) => setDownloadFixedCode(e.target.value)}
+            />
+            <Typography.Text type="secondary">子文件夹</Typography.Text>
+            <Switch
+              size="small"
+              checked={downloadWithSubfolders}
+              onChange={(checked) => setDownloadWithSubfolders(checked)}
             />
             <Button
               size="small"

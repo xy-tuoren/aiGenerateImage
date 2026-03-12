@@ -41,12 +41,17 @@ import * as promptFns from "@/common/prompt";
 
 type ConfigItem = {
   id: string;
+  modelProvider?: "gemini" | "jimeng";
   prompt: string;
   referenceImages?: string[];
   generationConfig?: { temperature?: number; [k: string]: unknown };
   imageConfig?: {
     imageSize?: string;
     aspectRatio?: string;
+    width?: number;
+    height?: number;
+    minRatio?: number;
+    maxRatio?: number;
     [k: string]: unknown;
   };
   responseModalities?: string[];
@@ -60,6 +65,60 @@ type ConfigItem = {
   extra?: Record<string, unknown>;
   createdAt?: string;
 };
+
+const MODEL_PROVIDER_OPTIONS = [
+  { label: "谷歌", value: "gemini" },
+  { label: "即梦", value: "jimeng" }
+];
+
+function gcd(a: number, b: number): number {
+  let x = Math.abs(Math.trunc(a));
+  let y = Math.abs(Math.trunc(b));
+  while (y) {
+    const t = x % y;
+    x = y;
+    y = t;
+  }
+  return x || 1;
+}
+
+function deriveAspectRatioLabel(
+  width?: number,
+  height?: number
+): string | undefined {
+  if (!width || !height || !Number.isFinite(width) || !Number.isFinite(height))
+    return undefined;
+  const w = Math.max(1, Math.floor(width));
+  const h = Math.max(1, Math.floor(height));
+  const d = gcd(w, h);
+  return `${Math.floor(w / d)}:${Math.floor(h / d)}`;
+}
+
+function deriveJimengRatioFields(
+  width?: number,
+  height?: number
+): {
+  aspectRatio?: string;
+  minRatio?: number;
+  maxRatio?: number;
+} {
+  if (
+    !width ||
+    !height ||
+    !Number.isFinite(width) ||
+    !Number.isFinite(height)
+  ) {
+    return {};
+  }
+  const w = Math.max(1, Math.floor(width));
+  const h = Math.max(1, Math.floor(height));
+  const ratio = Number((w / h).toFixed(6));
+  return {
+    aspectRatio: deriveAspectRatioLabel(w, h),
+    minRatio: ratio,
+    maxRatio: ratio
+  };
+}
 
 function splitLinesToList(input: string): string[] {
   return (
@@ -117,6 +176,16 @@ export default function ConfigsPage() {
   const [configPageSize, setConfigPageSize] = useState(10);
   const [uploadingReferenceImages, setUploadingReferenceImages] =
     useState(false);
+  const watchedModelProvider =
+    (Form.useWatch("modelProvider", form) as "gemini" | "jimeng" | undefined) ||
+    "gemini";
+  const watchedJimengWidth = Form.useWatch("imageConfig_width", form) as
+    | number
+    | undefined;
+  const watchedJimengHeight = Form.useWatch("imageConfig_height", form) as
+    | number
+    | undefined;
+  const prevModelProviderRef = useRef<"gemini" | "jimeng" | null>(null);
   const refFolderInput = useRef<HTMLInputElement>(null);
   const refFilesInput = useRef<HTMLInputElement>(null);
   const [isNarrowScreen, setIsNarrowScreen] = useState(false);
@@ -217,6 +286,7 @@ export default function ConfigsPage() {
           )
         );
         const payload = {
+          modelProvider: row.modelProvider || "gemini",
           prompt: row.prompt,
           count: row.count ?? undefined,
           appName: row.appName || undefined,
@@ -349,6 +419,7 @@ export default function ConfigsPage() {
       new Set(langs0.map((s: any) => String(s ?? "").trim()).filter(Boolean))
     );
     return {
+      modelProvider: row.modelProvider || "gemini",
       prompt: row.prompt,
       count: row.count ?? undefined,
       appName: row.appName || undefined,
@@ -448,6 +519,7 @@ export default function ConfigsPage() {
     ) => {
       if (!tableEditMode) return;
       if (!row?.id) return;
+      if (field === "aspectRatio" && row.modelProvider === "jimeng") return;
       const savingKey = `${row.id}:${field}`;
       if (savingCellMap[savingKey]) return;
       setEditingCell({ id: row.id, field });
@@ -1050,6 +1122,7 @@ export default function ConfigsPage() {
                     )
                   );
                   form.setFieldsValue({
+                    modelProvider: row.modelProvider || "gemini",
                     appName: row.appName,
                     langs,
                     batchFun: row.batchFun,
@@ -1062,6 +1135,22 @@ export default function ConfigsPage() {
                     generationConfig_temperature:
                       row.generationConfig?.temperature ?? 1,
                     imageConfig_imageSize: row.imageConfig?.imageSize ?? "1K",
+                    imageConfig_width:
+                      typeof row.imageConfig?.width === "number"
+                        ? row.imageConfig.width
+                        : undefined,
+                    imageConfig_height:
+                      typeof row.imageConfig?.height === "number"
+                        ? row.imageConfig.height
+                        : undefined,
+                    imageConfig_minRatio:
+                      typeof row.imageConfig?.minRatio === "number"
+                        ? row.imageConfig.minRatio
+                        : undefined,
+                    imageConfig_maxRatio:
+                      typeof row.imageConfig?.maxRatio === "number"
+                        ? row.imageConfig.maxRatio
+                        : undefined,
                     imageConfig_aspectRatio:
                       row.imageConfig?.aspectRatio ?? "1:1",
                     responseModalities: Array.isArray(row.responseModalities)
@@ -1157,6 +1246,27 @@ export default function ConfigsPage() {
     fetchAppNameOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const prev = prevModelProviderRef.current;
+    if (prev && prev !== watchedModelProvider) {
+      form.setFieldValue("imageConfig_aspectRatio", undefined);
+    }
+    prevModelProviderRef.current = watchedModelProvider;
+  }, [form, watchedModelProvider]);
+
+  useEffect(() => {
+    if (watchedModelProvider !== "jimeng") return;
+    const derived = deriveJimengRatioFields(
+      watchedJimengWidth,
+      watchedJimengHeight
+    );
+    form.setFieldsValue({
+      imageConfig_aspectRatio: derived.aspectRatio,
+      imageConfig_minRatio: derived.minRatio,
+      imageConfig_maxRatio: derived.maxRatio
+    });
+  }, [form, watchedJimengHeight, watchedJimengWidth, watchedModelProvider]);
 
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 1919px)");
@@ -1316,6 +1426,7 @@ export default function ConfigsPage() {
   const openCreate = () => {
     form.resetFields();
     form.setFieldsValue({
+      modelProvider: "gemini",
       count: 1,
       imageConfig_aspectRatio: "16:9",
       imageConfig_imageSize: "1K",
@@ -1334,8 +1445,58 @@ export default function ConfigsPage() {
       ? values.langs.map((s: any) => String(s ?? "").trim()).filter(Boolean)
       : [];
     const langs = Array.from(new Set(langs0));
+    const modelProvider =
+      String(values.modelProvider || "gemini")
+        .trim()
+        .toLowerCase() === "jimeng"
+        ? "jimeng"
+        : "gemini";
+    const jimengWidthRaw =
+      values.imageConfig_width === undefined ||
+      values.imageConfig_width === null ||
+      values.imageConfig_width === ""
+        ? undefined
+        : Number(values.imageConfig_width);
+    const jimengHeightRaw =
+      values.imageConfig_height === undefined ||
+      values.imageConfig_height === null ||
+      values.imageConfig_height === ""
+        ? undefined
+        : Number(values.imageConfig_height);
+    const jimengWidth =
+      typeof jimengWidthRaw === "number" && Number.isFinite(jimengWidthRaw)
+        ? Math.floor(jimengWidthRaw)
+        : undefined;
+    const jimengHeight =
+      typeof jimengHeightRaw === "number" && Number.isFinite(jimengHeightRaw)
+        ? Math.floor(jimengHeightRaw)
+        : undefined;
+    const jimengDerived =
+      modelProvider === "jimeng"
+        ? deriveJimengRatioFields(jimengWidth, jimengHeight)
+        : {};
+
+    if (modelProvider === "jimeng") {
+      if (
+        !jimengWidth ||
+        !jimengHeight ||
+        jimengWidth <= 0 ||
+        jimengHeight <= 0
+      ) {
+        messageApi.error("即梦模式下必须填写有效的 width 和 height");
+        return;
+      }
+      const area = jimengWidth * jimengHeight;
+      if (area < 1024 * 1024 || area > 4096 * 4096) {
+        messageApi.error(
+          "即梦模式下宽高乘积必须在 1024*1024 到 4096*4096 之间"
+        );
+        return;
+      }
+    }
 
     const payload = {
+      modelProvider,
       prompt: values.prompt,
       count: values.count ?? undefined,
       appName: values.appName || undefined,
@@ -1346,15 +1507,29 @@ export default function ConfigsPage() {
       referenceImages: referenceImages.length ? referenceImages : undefined,
       nextPromptFun: nextPromptFun.length ? nextPromptFun : undefined,
       responseModalities: Array.isArray(values.responseModalities)
-        ? values.responseModalities
+        ? modelProvider === "gemini"
+          ? values.responseModalities
+          : undefined
         : undefined,
-      generationConfig: {
-        temperature: values.generationConfig_temperature
-      },
-      imageConfig: {
-        imageSize: values.imageConfig_imageSize,
-        aspectRatio: values.imageConfig_aspectRatio
-      },
+      generationConfig:
+        modelProvider === "gemini"
+          ? {
+              temperature: values.generationConfig_temperature
+            }
+          : undefined,
+      imageConfig:
+        modelProvider === "jimeng"
+          ? {
+              width: jimengWidth,
+              height: jimengHeight,
+              minRatio: jimengDerived.minRatio,
+              maxRatio: jimengDerived.maxRatio,
+              aspectRatio: jimengDerived.aspectRatio
+            }
+          : {
+              imageSize: values.imageConfig_imageSize,
+              aspectRatio: values.imageConfig_aspectRatio
+            },
       extra: values.extraJson
         ? (() => {
             try {
@@ -1632,6 +1807,9 @@ export default function ConfigsPage() {
         }
       >
         <Form form={form} layout="vertical">
+          <Form.Item name="modelProvider" label="生图模型">
+            <Select options={MODEL_PROVIDER_OPTIONS} />
+          </Form.Item>
           <Form.Item name="appName" label="appName">
             <AutoComplete
               options={appNameOptions}
@@ -1757,63 +1935,84 @@ export default function ConfigsPage() {
             />
           </Form.Item>
 
-          <Form.Item
-            name="generationConfig_temperature"
-            label="generationConfig.temperature"
-          >
-            <InputNumber step={0.1} style={{ width: "100%" }} />
-          </Form.Item>
+          {watchedModelProvider === "gemini" ? (
+            <>
+              <Form.Item
+                name="generationConfig_temperature"
+                label="generationConfig.temperature"
+              >
+                <InputNumber step={0.1} style={{ width: "100%" }} />
+              </Form.Item>
 
-          <Form.Item name="imageConfig_imageSize" label="imageConfig.imageSize">
-            <AutoComplete
-              options={IMAGE_SIZE_OPTIONS}
-              allowClear
-              placeholder="请选择或输入 imageSize"
-              showSearch={{
-                filterOption: (inputValue, option) =>
-                  String(option?.value || "")
-                    .toLowerCase()
-                    .includes(String(inputValue || "").toLowerCase())
-              }}
-            />
-          </Form.Item>
-          <Form.Item
-            name="imageConfig_aspectRatio"
-            label="imageConfig.aspectRatio"
-          >
-            <AutoComplete
-              options={ASPECT_RATIO_OPTIONS}
-              allowClear
-              placeholder="请选择或输入 aspectRatio"
-              showSearch={{
-                filterOption: (inputValue, option) =>
-                  String(option?.value || "")
-                    .toLowerCase()
-                    .includes(String(inputValue || "").toLowerCase())
-              }}
-            />
-          </Form.Item>
+              <Form.Item
+                name="imageConfig_imageSize"
+                label="imageConfig.imageSize"
+              >
+                <Select
+                  options={IMAGE_SIZE_OPTIONS}
+                  placeholder="请选择 imageSize"
+                />
+              </Form.Item>
+              <Form.Item
+                name="imageConfig_aspectRatio"
+                label="imageConfig.aspectRatio"
+              >
+                <AutoComplete
+                  options={ASPECT_RATIO_OPTIONS}
+                  allowClear
+                  placeholder="请选择或输入 aspectRatio"
+                  showSearch={{
+                    filterOption: (inputValue, option) =>
+                      String(option?.value || "")
+                        .toLowerCase()
+                        .includes(String(inputValue || "").toLowerCase())
+                  }}
+                />
+              </Form.Item>
 
-          <Form.Item name="responseModalities" label="responseModalities">
-            <Select mode="tags" options={RESPONSE_MODALITIES_OPTIONS} />
-          </Form.Item>
-
-          <Form.Item
-            name="nextPromptFunText"
-            label="nextPromptFun（可选，每行一个函数名）"
-          >
-            <Input.TextArea
-              rows={3}
-              placeholder="例如：getCutLogoFinalPrompt"
-            />
-          </Form.Item>
-
-          <Form.Item name="extraJson" label="extra（可选，JSON 扩展字段）">
-            <Input.TextArea
-              rows={6}
-              placeholder='例如：{"anyKey":"anyValue"}'
-            />
-          </Form.Item>
+              <Form.Item name="responseModalities" label="responseModalities">
+                <Select mode="tags" options={RESPONSE_MODALITIES_OPTIONS} />
+              </Form.Item>
+            </>
+          ) : (
+            <>
+              <Form.Item
+                name="imageConfig_width"
+                label="imageConfig.width"
+                extra="即梦模式下自定义输出宽度"
+              >
+                <InputNumber min={1} precision={0} style={{ width: "100%" }} />
+              </Form.Item>
+              <Form.Item
+                name="imageConfig_height"
+                label="imageConfig.height"
+                extra="即梦模式下自定义输出高度"
+              >
+                <InputNumber min={1} precision={0} style={{ width: "100%" }} />
+              </Form.Item>
+              <Form.Item
+                name="imageConfig_aspectRatio"
+                label="imageConfig.aspectRatio"
+                extra="根据宽高自动计算"
+              >
+                <Input readOnly />
+              </Form.Item>
+              <Form.Item
+                name="imageConfig_minRatio"
+                label="imageConfig.minRatio"
+                extra="根据宽高自动填充"
+              >
+                <InputNumber disabled style={{ width: "100%" }} />
+              </Form.Item>
+              <Form.Item
+                name="imageConfig_maxRatio"
+                label="imageConfig.maxRatio"
+                extra="根据宽高自动填充"
+              >
+                <InputNumber disabled style={{ width: "100%" }} />
+              </Form.Item>
+            </>
+          )}
         </Form>
       </Drawer>
     </AdminShell>
