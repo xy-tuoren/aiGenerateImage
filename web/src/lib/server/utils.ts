@@ -460,8 +460,8 @@ export const CUT_TEMPLATES_BY_APP_RATIO: Record<string, Partial<Record<string, s
     "4:5": ["getGamesCutScaleFinalPrompt", "getGamesCutChangeFinalPrompt", "getCutVerticalCollagePrompt"],
   },
   coupons: {
-    "1:1": ["getCouponCutScaleFinalPrompt", "getCouponCutChangeFinalPrompt", "stitchLongImage1024"],
-    "4:5": ["getCouponCutScaleFinalPrompt", "getCouponCutChangeFinalPrompt", "getCutVerticalCollagePrompt"],
+    "1:1": ["getCouponCutLogoFinalPrompt", "getCouponCutScaleFinalPrompt", "getCouponCutChangeFinalPrompt", "stitchLongImage1024"],
+    "4:5": ["getCouponCutLogoFinalPrompt", "getCouponCutScaleFinalPrompt", "getCouponCutChangeFinalPrompt", "getCutVerticalCollagePrompt"],
   },
 };
 

@@ -411,3 +411,21 @@ export function getCouponCutChangeFinalPrompt({ appName, lang, prompt, aspectRat
 - **美学**：新图需层次清晰、符合美学。
 - **关联性**：与参考图在风格、色调、元素上保持明显关联性。`;
 }
+
+export function getCouponCutLogoFinalPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
+  const appDesc = appName ? `${appName}应用的` : '参考图中应用的（请根据参考图自行推断应用名称）';
+  const langDesc = lang ? `${lang}语言的` : '参考图中语言的（请根据参考图自行推断语言）';
+  return `## 目标
+生成一张${getRatioDesc(aspectRatio)}。从参考图中提取${appDesc}图标与文字，作为唯一主体放在画面中心。
+
+## 要求
+- **构图**：主体（图标 + 文案）占画面约 65% - 75%。
+- **层级**：应用图标最大最醒目，文字次之。
+- **文字**：文字提取1-2条核心文字,可以换行或者适当精简优化文字内容不要显得过于拥挤。
+- **背景**：保留参考图的部分背景。
+
+## 严格限制（必须遵守）
+- **图标**：外观必须与参考图${appDesc}图标100%一致。
+- **文字**：语言必须为${langDesc}。
+- **元素**：其他元素一律丢弃。`;
+}
