@@ -432,7 +432,7 @@ export async function adaptGeminiImageToTargetResolution(
  */
 export const CUT_TEMPLATES_BY_APP_RATIO: Record<string, Partial<Record<string, string[]>>> = {
   "*": {
-    "1:1": [ 
+    "1:1": [
       "getCutScaleFinalPrompt",
       "stitchLongImage1024",
     ],
@@ -458,6 +458,10 @@ export const CUT_TEMPLATES_BY_APP_RATIO: Record<string, Partial<Record<string, s
   games: {
     "1:1": ["getGamesCutScaleFinalPrompt", "getGamesCutChangeFinalPrompt", "stitchLongImage1024"],
     "4:5": ["getGamesCutScaleFinalPrompt", "getGamesCutChangeFinalPrompt", "getCutVerticalCollagePrompt"],
+  },
+  coupons: {
+    "1:1": ["getCouponCutScaleFinalPrompt", "getCouponCutChangeFinalPrompt", "stitchLongImage1024"],
+    "4:5": ["getCouponCutScaleFinalPrompt", "getCouponCutChangeFinalPrompt", "getCutVerticalCollagePrompt"],
   },
 };
 
@@ -504,6 +508,8 @@ export const CUT_TEMPLATE_TEMPERATURE: Record<string, number> = {
   getKidsCutChangeFinalPrompt: 1,
   getGamesCutScaleFinalPrompt: 1,
   getGamesCutChangeFinalPrompt: 1,
+  getCouponCutScaleFinalPrompt: 1,
+  getCouponCutChangeFinalPrompt: 1,
   // stitchLongImage1024 不走 Gemini 生图，这里无需配置
 };
 
@@ -517,7 +523,9 @@ export const CUT_TEMPLATE_THINKING_LEVEL: Record<string, string> = {
   getKidsCutScaleFinalPrompt: "minimal",
   getKidsCutChangeFinalPrompt: "High",
   getGamesCutScaleFinalPrompt: "minimal",
-  getGamesCutChangeFinalPrompt: "High",// stitchLongImage1024 不走 Gemini 生图，这里无需配置
+  getGamesCutChangeFinalPrompt: "High",
+  getCouponCutScaleFinalPrompt: "minimal",
+  getCouponCutChangeFinalPrompt: "High",// stitchLongImage1024 不走 Gemini 生图，这里无需配置
 };
 
 export function getCutTemplateTemperature(templateName: string): number {
