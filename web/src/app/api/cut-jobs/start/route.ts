@@ -3,8 +3,13 @@ import { join, normalize } from "path";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { startCutJob } from "@/lib/server/batchJobRunner";
-import { getCutTemplatesForAppRatio } from "@/lib/server/utils";
 import { requireApiAccess, resolveGalleryOwnerUserId } from "@/lib/server/auth";
+import {
+  getCutSettingsForUser,
+  resolveCustomCutTemplateThinkingLevel,
+  resolveCustomCutTemplatePrompt,
+  resolveCutTemplatesForAppRatio,
+} from "@/lib/server/cutSettings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +33,8 @@ type CutJobItemDoc = {
   lang?: string;
   ratio: string;
   templateName: string;
+  templatePromptText?: string;
+  templateThinkingLevel?: string;
   status: "queued" | "running" | "completed" | "failed";
   total: number;
   done: number;
@@ -123,6 +130,7 @@ export async function POST(req: Request) {
 
   const ratios = ["1:1", "4:5"];
 
+  const cutSettings = await getCutSettingsForUser(operatorUserId);
   const now = new Date();
   const requestId = new ObjectId();
 
@@ -176,7 +184,16 @@ export async function POST(req: Request) {
   };
 
   // Build desired outputs list
-  const desired: Array<{ url: string; abs: string; appName?: string; lang?: string; ratio: string; templateName: string }> = [];
+  const desired: Array<{
+    url: string;
+    abs: string;
+    appName?: string;
+    lang?: string;
+    ratio: string;
+    templateName: string;
+    templatePromptText?: string;
+    templateThinkingLevel?: string;
+  }> = [];
   if (!isRegenerate) {
     for (const it of images) {
       const url = String((it as any)?.url || "").trim();
@@ -187,8 +204,19 @@ export async function POST(req: Request) {
       if (!(await fs.pathExists(abs))) return Response.json({ ok: false, error: `图片不存在: ${url}` }, { status: 400 });
 
       for (const ratio of ratios) {
-        const templateNames = getCutTemplatesForAppRatio(appName, ratio);
-        for (const templateName of templateNames) desired.push({ url, abs, appName, lang, ratio, templateName });
+        const templateNames = resolveCutTemplatesForAppRatio(appName, ratio, cutSettings);
+        for (const templateName of templateNames) {
+          desired.push({
+            url,
+            abs,
+            appName,
+            lang,
+            ratio,
+            templateName,
+            templatePromptText: resolveCustomCutTemplatePrompt(templateName, cutSettings),
+            templateThinkingLevel: resolveCustomCutTemplateThinkingLevel(templateName, cutSettings),
+          });
+        }
       }
     }
   } else {
@@ -202,7 +230,16 @@ export async function POST(req: Request) {
       if (!ratio || !templateName) continue;
       const abs = publicUrlToAbsPath(url);
       if (!(await fs.pathExists(abs))) return Response.json({ ok: false, error: `图片不存在: ${url}` }, { status: 400 });
-      desired.push({ url, abs, appName, lang, ratio, templateName });
+      desired.push({
+        url,
+        abs,
+        appName,
+        lang,
+        ratio,
+        templateName,
+        templatePromptText: resolveCustomCutTemplatePrompt(templateName, cutSettings),
+        templateThinkingLevel: resolveCustomCutTemplateThinkingLevel(templateName, cutSettings),
+      });
     }
   }
 
@@ -283,6 +320,8 @@ export async function POST(req: Request) {
     lang: c.lang,
     ratio: c.ratio,
     templateName: c.templateName,
+    templatePromptText: c.templatePromptText,
+    templateThinkingLevel: c.templateThinkingLevel,
     status: "queued",
     total: 1,
     done: 0,

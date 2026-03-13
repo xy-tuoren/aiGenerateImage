@@ -243,13 +243,13 @@ export function GalleryToolbar(props: {
         改图
       </Button>
 
-      <Button
+      {/* <Button
         onClick={onUploadToFireplay}
         disabled={!selectMode || !selectedCount || loading || creatingCut}
         loading={uploadingFireplay}
       >
         上传到Fireplay
-      </Button>
+      </Button> */}
 
       <Button
         onClick={onDownloadSelected}

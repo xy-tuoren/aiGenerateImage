@@ -138,6 +138,13 @@ export default function AdminShell({
         apiPerm: "api:cut-records:read"
       },
       {
+        key: "/cut-settings",
+        icon: <SettingOutlined />,
+        label: <Link href="/cut-settings">裁图设置</Link>,
+        uiPerm: "ui:/cut-settings",
+        apiPerm: "api:cut-settings:write"
+      },
+      {
         key: "/make-image",
         icon: <PictureOutlined />,
         label: <Link href="/make-image">制作图片</Link>,
@@ -178,6 +185,7 @@ export default function AdminShell({
       { prefix: "/batch", uiPerm: "ui:/batch" },
       { prefix: "/gallery", uiPerm: "ui:/gallery" },
       { prefix: "/crop", uiPerm: "ui:/crop" },
+      { prefix: "/cut-settings", uiPerm: "ui:/cut-settings" },
       { prefix: "/make-image", uiPerm: "ui:/make-image" }
     ];
     const hit = rules.find(

@@ -141,6 +141,8 @@ type CutJobItemDoc = {
   lang?: string;
   ratio: string;
   templateName: string;
+  templatePromptText?: string;
+  templateThinkingLevel?: string;
   status: "queued" | "running" | "completed" | "failed";
   total: number;
   done: number;
@@ -231,6 +233,26 @@ function deriveAspectRatioLabel(width?: number, height?: number): string | undef
   const h = Math.max(1, Math.floor(height));
   const d = gcd(w, h);
   return `${Math.floor(w / d)}:${Math.floor(h / d)}`;
+}
+
+function renderCustomCutPromptTemplate(
+  template: string,
+  args: Record<string, unknown>
+): string {
+  const raw = String(template || "");
+  if (!raw.trim()) return "";
+  return raw.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, key: string) => {
+    const v = args[key];
+    return v === undefined || v === null ? "" : String(v);
+  });
+}
+
+function getRatioDescForCut(aspectRatio?: unknown): string {
+  const ratio = String(aspectRatio || "").trim();
+  if (!ratio) return "图片";
+  if (ratio === "1:1") return "1:1的方图";
+  if (ratio === "4:5") return "4:5的竖图";
+  return `${ratio}比例的图片`;
 }
 
 function aspectRatioToken(aspectRatio: unknown) {
@@ -901,8 +923,21 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
       cutRatio: item.ratio,
       cutTemplate: item.templateName,
     };
+    const customTemplatePrompt = String(item.templatePromptText || "").trim();
     const fn = (promptFns as Record<string, unknown>)[item.templateName];
-    const prompt0 = typeof fn === "function" ? String((fn as (args: typeof baseArgs) => unknown)(baseArgs)) : "";
+    const customTemplateArgs = {
+      appName: item.appName,
+      lang: item.lang,
+    };
+    const ratioTailText = `生成一张${getRatioDescForCut(item.ratio)}。`;
+    const prompt0 = customTemplatePrompt
+      ? `${renderCustomCutPromptTemplate(
+        customTemplatePrompt,
+        customTemplateArgs as Record<string, unknown>
+      )}\n${ratioTailText}`.trim()
+      : typeof fn === "function"
+        ? String((fn as (args: typeof baseArgs) => unknown)(baseArgs))
+        : "";
     const prompt = appendGlobalPrompt(prompt0, baseArgs);
 
     try {
@@ -995,7 +1030,11 @@ async function runCutJob(input: { jobId: string; concurrency: number }) {
               responseModalities: ["IMAGE"],
               imageConfig: { aspectRatio: item.ratio, imageSize: "1K" },
               generationConfig: { temperature: getCutTemplateTemperature(item.templateName) },
-              thinkingConfig: { thinkingLevel: getCutTemplateThinkingLevel(item.templateName) },
+              thinkingConfig: {
+                thinkingLevel:
+                  String(item.templateThinkingLevel || "").trim() ||
+                  getCutTemplateThinkingLevel(item.templateName)
+              },
               referenceImages,
             }, { role: jobRole || undefined, isAdmin: jobIsAdmin });
             break;

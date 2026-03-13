@@ -336,6 +336,20 @@ export function getKids18DefaultPrompt({ appName, lang, prompt, aspectRatio }: P
 4. ${prompt}`
 }
 
+export function getKidsCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
+  return `生成一张${getRatioDesc(aspectRatio)}，需要重新调整构图以及元素适应新尺寸。可在布局、细节或表现方式上有所创新，但整体风格、色调与主体元素需与参考图保持明显关联性。`;
+}
+
+export function getKidsCutChangeFinalPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
+  return `生成一张${getRatioDesc(aspectRatio)}。
+- **构图**：以参考图中的**主要元素**（最大、最显眼的主体）为核心，结合长图比例重新构图；**主要元素必须位于画面核心位置**，且在画面中**占比要大**，比辅助元素**更大、更显眼**（主体突出、不显空）。若参考图元素较多，可适当保留少量辅助元素以丰富画面，但辅助元素不得喧宾夺主。
+- **背景**：必须保留或延展背景，使画面完整。
+- **美学**：新图需层次清晰、符合美学。
+- **关联性**：与参考图在风格、色调、元素上保持明显关联性。`;
+}
+
+
+//-----------------------Games-----------------------------
 
 export function getGamesDefaultPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
   return `1. 你是一名专业的广告设计师，这是你过去制作的图片，参考图 **作为风格参考**、**意境氛围的延续**，你需要通过调整构图、修改元素与背景等方式，避免生成图与参考图过于相似。
@@ -344,11 +358,11 @@ export function getGamesDefaultPrompt({ appName, lang, prompt, aspectRatio }: Pr
 4. ${prompt}`
 }
 
-export function getKidsCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
+export function getGamesCutScaleFinalPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
   return `生成一张${getRatioDesc(aspectRatio)}，需要重新调整构图以及元素适应新尺寸。可在布局、细节或表现方式上有所创新，但整体风格、色调与主体元素需与参考图保持明显关联性。`;
 }
 
-export function getKidsCutChangeFinalPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
+export function getGamesCutChangeFinalPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
   return `生成一张${getRatioDesc(aspectRatio)}。
 - **构图**：以参考图中的**主要元素**（最大、最显眼的主体）为核心，结合长图比例重新构图；**主要元素必须位于画面核心位置**，且在画面中**占比要大**，比辅助元素**更大、更显眼**（主体突出、不显空）。若参考图元素较多，可适当保留少量辅助元素以丰富画面，但辅助元素不得喧宾夺主。
 - **背景**：必须保留或延展背景，使画面完整。

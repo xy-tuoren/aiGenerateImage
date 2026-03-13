@@ -36,6 +36,7 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
     "ui:/batch": true,
     "ui:/gallery": true,
     "ui:/crop": true,
+    "ui:/cut-settings": true,
     "ui:/make-image": true,
     "api:*": true,
   },
@@ -43,6 +44,7 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
   operator: {
     "ui:/gallery": true,
     "ui:/crop": true,
+    "ui:/cut-settings": true,
     "api:*": true,
   },
 };
@@ -424,6 +426,11 @@ function resolveApiPermissionKey(pathname: string, method: string): string | nul
       if (m === "POST") return "api:cut-jobs:start";
       return null;
     }
+  }
+
+  if (parts[1] === "cut-settings") {
+    if (parts.length === 2 && (m === "GET" || m === "PUT")) return "api:cut-settings:write";
+    return null;
   }
 
   if (parts[1] === "cut-records") {
