@@ -668,7 +668,7 @@ export default function CropPage() {
       const res = await fetch("/api/cut-jobs/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, concurrency: 32 })
+        body: JSON.stringify({ items, concurrency: 64 })
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
@@ -743,7 +743,7 @@ export default function CropPage() {
       const res = await fetch("/api/cut-jobs/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, concurrency: 32 })
+        body: JSON.stringify({ items, concurrency: 64 })
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {

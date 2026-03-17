@@ -25,6 +25,14 @@ type ParsedAuthUsersConfig = {
   roleLimits: AuthRoleLimits;
 };
 
+type AuthUsersConfigCache = {
+  key: string;
+  value: ParsedAuthUsersConfig;
+  filePath: string;
+  fileMtimeMs: number;
+  lastFileCheckAt: number;
+};
+
 export type ResolvedAuthz = {
   role: string;
   isSuperAdmin: boolean;
@@ -63,6 +71,8 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
 
 const COOKIE_NAME = "bg_session";
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
+const AUTH_USERS_FILE_CHECK_INTERVAL_MS = 2_000;
+let authUsersConfigCache: AuthUsersConfigCache | null = null;
 
 export function computePwdSig(username: string, password: string) {
   const secret = getAuthSecret();
@@ -274,31 +284,92 @@ export function resolveAuthUsersConfigPathFromEnv(): string {
   return path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
 }
 
+function getFileMtimeMs(filePath: string): number {
+  try {
+    const st = fs.statSync(filePath);
+    return st?.isFile?.() ? Number(st.mtimeMs || 0) : -1;
+  } catch {
+    return -1;
+  }
+}
+
 export function readAuthUsersConfigFromEnv(): ParsedAuthUsersConfig {
   const rawJson = String(process.env.AUTH_USERS_JSON || "").trim();
   if (rawJson) {
+    const filePath = resolveAuthUsersConfigPathFromEnv();
+    const key = `AUTH_USERS_JSON:${rawJson}`;
+    const now = Date.now();
+    if (authUsersConfigCache && authUsersConfigCache.key === key) {
+      if (!filePath) return authUsersConfigCache.value;
+      if (authUsersConfigCache.filePath === filePath) {
+        if (now - authUsersConfigCache.lastFileCheckAt < AUTH_USERS_FILE_CHECK_INTERVAL_MS) {
+          return authUsersConfigCache.value;
+        }
+        const currentMtime = getFileMtimeMs(filePath);
+        if (currentMtime === authUsersConfigCache.fileMtimeMs) {
+          authUsersConfigCache.lastFileCheckAt = now;
+          return authUsersConfigCache.value;
+        }
+      }
+    }
+
     // AUTH_USERS_JSON 既支持内联 JSON，也支持传入 JSON 文件路径。
     const inline = parseAuthUsersConfigText(rawJson);
-    if (inline) return inline;
+    if (inline) {
+      authUsersConfigCache = {
+        key,
+        value: inline,
+        filePath: "",
+        fileMtimeMs: -1,
+        lastFileCheckAt: now,
+      };
+      return inline;
+    }
 
     try {
-      const filePath = resolveAuthUsersConfigPathFromEnv();
-      if (fs.existsSync(filePath)) {
+      const mtimeMs = getFileMtimeMs(filePath);
+      if (mtimeMs >= 0) {
         const fileContent = fs.readFileSync(filePath, "utf8");
         const fileConfig = parseAuthUsersConfigText(fileContent);
-        if (fileConfig) return fileConfig;
+        if (fileConfig) {
+          authUsersConfigCache = {
+            key,
+            value: fileConfig,
+            filePath,
+            fileMtimeMs: mtimeMs,
+            lastFileCheckAt: now,
+          };
+          return fileConfig;
+        }
       }
     } catch {
       // ignore
     }
 
-    return { users: [], roleLimits: {} };
+    const empty = { users: [], roleLimits: {} };
+    authUsersConfigCache = {
+      key,
+      value: empty,
+      filePath,
+      fileMtimeMs: getFileMtimeMs(filePath),
+      lastFileCheckAt: now,
+    };
+    return empty;
   }
   const u = String(process.env.AUTH_USERNAME || "").trim();
   const p = String(process.env.AUTH_PASSWORD || "").trim();
   const r = String(process.env.AUTH_ROLE || "").trim();
-  if (u && p) return { users: [{ username: u, password: p, role: r || undefined }], roleLimits: {} };
-  return { users: [], roleLimits: {} };
+  const key = `AUTH_BASIC:${u}:${p}:${r}`;
+  if (authUsersConfigCache && authUsersConfigCache.key === key) return authUsersConfigCache.value;
+  const value = u && p ? { users: [{ username: u, password: p, role: r || undefined }], roleLimits: {} } : { users: [], roleLimits: {} };
+  authUsersConfigCache = {
+    key,
+    value,
+    filePath: "",
+    fileMtimeMs: -1,
+    lastFileCheckAt: Date.now(),
+  };
+  return value;
 }
 
 export function readUsersFromEnv(): EnvAuthUser[] {
@@ -332,6 +403,7 @@ export function saveRoleLimitsToAuthUsersFile(nextRoleLimits: AuthRoleLimits): {
     const next = { users, roleLimits };
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+    authUsersConfigCache = null;
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };

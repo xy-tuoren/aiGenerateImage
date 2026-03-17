@@ -11,6 +11,7 @@ const CACHE_TTL_MS = 60_000;
 const UPLOAD_APP_NAME = "reference-uploads";
 let cachedAppDirs: { at: number; appDirs: string[] } | null = null;
 const cachedFilesByApp = new Map<string, { at: number; files: string[] }>();
+const cachedUploadSortedFilesByApp = new Map<string, { at: number; files: string[]; sourceAt: number; sourceCount: number }>();
 let cachedRemoteAdCost: { at: number; appNames: string[]; byAppLower: Map<string, { appName: string; items: Array<{ url: string; cost?: number }> }> } | null = null;
 let cachedRemoteAppNames: { at: number; appNames: string[] } | null = null;
 let cachedRemoteIndex: { at: number; byAppLower: Map<string, { appName: string; items: Array<{ url: string; cost: number }> }> } | null = null;
@@ -340,22 +341,37 @@ export async function GET(req: Request) {
         return null;
       };
 
-      const sortedAll = isUploadApp
-        ? (
-          await Promise.all(
-            all.map(async (file) => {
-              const st2 = await fs.stat(path.join(absDir, file)).catch(() => null);
-              const mtimeMs = st2 && typeof st2.mtimeMs === "number" ? st2.mtimeMs : 0;
-              return { file, mtimeMs };
-            })
+      let sortedAll: string[] = [];
+      if (isUploadApp) {
+        const sourceAt = cached?.at ?? now;
+        const sourceCount = all.length;
+        const uploadCached = cachedUploadSortedFilesByApp.get(resolvedAppName);
+        if (
+          uploadCached &&
+          now - uploadCached.at < CACHE_TTL_MS &&
+          uploadCached.sourceAt === sourceAt &&
+          uploadCached.sourceCount === sourceCount
+        ) {
+          sortedAll = uploadCached.files;
+        } else {
+          sortedAll = (
+            await Promise.all(
+              all.map(async (file) => {
+                const st2 = await fs.stat(path.join(absDir, file)).catch(() => null);
+                const mtimeMs = st2 && typeof st2.mtimeMs === "number" ? st2.mtimeMs : 0;
+                return { file, mtimeMs };
+              })
+            )
           )
-        )
-          .sort((a, b) => {
-            if (a.mtimeMs !== b.mtimeMs) return b.mtimeMs - a.mtimeMs;
-            return a.file.localeCompare(b.file);
-          })
-          .map((x) => x.file)
-        : sortByCost === "default"
+            .sort((a, b) => {
+              if (a.mtimeMs !== b.mtimeMs) return b.mtimeMs - a.mtimeMs;
+              return a.file.localeCompare(b.file);
+            })
+            .map((x) => x.file);
+          cachedUploadSortedFilesByApp.set(resolvedAppName, { at: now, files: sortedAll, sourceAt, sourceCount });
+        }
+      } else {
+        sortedAll = sortByCost === "default"
           ? [...all].sort((a, b) => a.localeCompare(b))
           : [...all].sort((a, b) => {
             const ca = extractCostFromFilename(a);
@@ -369,6 +385,7 @@ export async function GET(req: Request) {
             if (ca === cb) return a.localeCompare(b);
             return sortByCost === "asc" ? ca! - cb! : cb! - ca!;
           });
+      }
 
       const total = sortedAll.length;
       const start = (page - 1) * pageSize;

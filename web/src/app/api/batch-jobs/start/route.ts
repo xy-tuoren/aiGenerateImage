@@ -53,7 +53,11 @@ export async function POST(req: NextRequest) {
   }
 
   const nonAdminMax = envInt("NON_ADMIN_CONCURRENCY_MAX", 10);
-  const concurrencyRaw = Math.max(1, Number((body as any).concurrency ?? 3) || 3);
+  const inputConcurrency = (body as any).concurrency;
+  const hasInputConcurrency = inputConcurrency !== undefined && inputConcurrency !== null && inputConcurrency !== "";
+  const defaultConcurrency = guard.authz.isSuperAdmin ? 64 : nonAdminMax;
+  const parsedConcurrency = hasInputConcurrency ? Number(inputConcurrency) : defaultConcurrency;
+  const concurrencyRaw = Math.max(1, Number.isFinite(parsedConcurrency) ? Math.floor(parsedConcurrency) : defaultConcurrency);
   const concurrency = guard.authz.isSuperAdmin ? concurrencyRaw : Math.min(concurrencyRaw, nonAdminMax);
   const roleMaxGenerateCount = guard.authz.isSuperAdmin ? undefined : resolveRoleMaxGenerateCount(guard.authz.role);
   const clampByRole = (n: number) => {

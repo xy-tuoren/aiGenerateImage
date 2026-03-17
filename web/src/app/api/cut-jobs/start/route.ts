@@ -125,7 +125,11 @@ export async function POST(req: Request) {
   }
 
   const nonAdminMax = envInt("NON_ADMIN_CONCURRENCY_MAX", 10);
-  const concurrencyRaw = Math.max(1, Number((body as any).concurrency ?? 8) || 8);
+  const inputConcurrency = (body as any).concurrency;
+  const hasInputConcurrency = inputConcurrency !== undefined && inputConcurrency !== null && inputConcurrency !== "";
+  const defaultConcurrency = guard.authz.isSuperAdmin ? 64 : nonAdminMax;
+  const parsedConcurrency = hasInputConcurrency ? Number(inputConcurrency) : defaultConcurrency;
+  const concurrencyRaw = Math.max(1, Number.isFinite(parsedConcurrency) ? Math.floor(parsedConcurrency) : defaultConcurrency);
   const concurrency = guard.authz.isSuperAdmin ? concurrencyRaw : Math.min(concurrencyRaw, nonAdminMax);
 
   const ratios = ["1:1", "4:5"];

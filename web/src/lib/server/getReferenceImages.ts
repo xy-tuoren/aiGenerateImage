@@ -472,7 +472,7 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
     console.log(`[reference-images] default query done items=${all.length}`);
     if (includeKidsFromExtraFetch) {
       console.log(`[reference-images] kids query start category=${KIDS_CATEGORY}`);
-      const kids = await fetchAdCostMonthAll({ ...params, category: [KIDS_CATEGORY] }); 
+      const kids = await fetchAdCostMonthAll({ ...params, category: [KIDS_CATEGORY] });
       console.log(`[reference-images] kids query end category=${KIDS_CATEGORY} items=${kids.length}`);
       all.push(...kids);
     }
@@ -671,26 +671,29 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
   console.log(`[reference-images] 开始下载: total=${totalJobs} concurrency=${downloadConcurrency}`);
 
   // 避免“刷新后 cost 变化导致文件名变化”而重复下载同一张图：按 url 派生的 idPart 做去重
-  const appDirIdPartToFilenameCache = new Map<string, Map<string, string>>();
-  const getIdPartToFilenameMap = async (appDir: string) => {
-    const cached = appDirIdPartToFilenameCache.get(appDir);
+  const appDirCache = new Map<string, { idPartToFilename: Map<string, string>; filenames: Set<string> }>();
+  const getAppDirCache = async (appDir: string) => {
+    const cached = appDirCache.get(appDir);
     if (cached) return cached;
-    const map = new Map<string, string>();
+    const idPartToFilename = new Map<string, string>();
+    const filenames = new Set<string>();
     try {
       const names = await fs.readdir(appDir);
       for (const name of names) {
         const base = String(name || "").trim();
         if (!base) continue;
+        filenames.add(base);
         const m = base.match(/^(\d+)/);
         const idPart = (m?.[1] || "").trim();
         if (!idPart) continue;
-        if (!map.has(idPart)) map.set(idPart, base);
+        if (!idPartToFilename.has(idPart)) idPartToFilename.set(idPart, base);
       }
     } catch {
       // ignore
     }
-    appDirIdPartToFilenameCache.set(appDir, map);
-    return map;
+    const entry = { idPartToFilename, filenames };
+    appDirCache.set(appDir, entry);
+    return entry;
   };
 
   await asyncLib.eachLimit(downloadJobs, downloadConcurrency, async (job) => {
@@ -710,7 +713,9 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
       let absFile = path.join(appDir, filename);
       let relFile = path.posix.join("/material", encodeURIComponent(safeAppName), filename);
 
-      const idPartToFilename = await getIdPartToFilenameMap(appDir);
+      const appDirCached = await getAppDirCache(appDir);
+      const idPartToFilename = appDirCached.idPartToFilename;
+      const knownFilenames = appDirCached.filenames;
       const existingFilenameByIdPart = idPartToFilename.get(idPart);
       if (existingFilenameByIdPart) {
         const existingRel = path.posix.join("/material", encodeURIComponent(safeAppName), existingFilenameByIdPart);
@@ -720,7 +725,7 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
         return;
       }
 
-      if (await fs.pathExists(absFile)) {
+      if (knownFilenames.has(filename)) {
         const bucket = byAppName[job.app_name];
         if (bucket && !bucket.local_files.includes(relFile)) bucket.local_files.push(relFile);
         outcome = "skipped";
@@ -754,7 +759,7 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
         absFile = path.join(appDir, filename);
         relFile = path.posix.join("/material", encodeURIComponent(safeAppName), filename);
       }
-      if (await fs.pathExists(absFile)) {
+      if (knownFilenames.has(filename)) {
         const bucket = byAppName[job.app_name];
         if (bucket && !bucket.local_files.includes(relFile)) bucket.local_files.push(relFile);
         outcome = "skipped";
@@ -762,17 +767,26 @@ export async function fetchAdCostMonthAllThenMatchAppNamesAndDownloadToPublicMat
         return;
       }
       let k = 2;
-      while (await fs.pathExists(absFile)) {
+      while (true) {
+        if (!knownFilenames.has(filename)) {
+          try {
+            await fs.writeFile(absFile, Buffer.from(res.data), { flag: "wx" });
+            break;
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (!/EEXIST/i.test(msg)) throw e;
+          }
+        }
         filename = `${baseStem}-${k}${ext}`;
         absFile = path.join(appDir, filename);
         relFile = path.posix.join("/material", encodeURIComponent(safeAppName), filename);
         k += 1;
       }
-      await fs.writeFile(absFile, Buffer.from(res.data));
       const bucket = byAppName[job.app_name];
       if (bucket && !bucket.local_files.includes(relFile)) bucket.local_files.push(relFile);
       outcome = "success";
       idPartToFilename.set(idPart, filename);
+      knownFilenames.add(filename);
       console.log(`[reference-images] 已保存: app=${safeAppName} file=${filename}`);
     } catch {
       outcome = "failed";

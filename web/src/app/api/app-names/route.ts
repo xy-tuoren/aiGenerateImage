@@ -4,6 +4,9 @@ import { join } from "path";
 import { requireApiAccess } from "@/lib/server/auth";
 import { CUSTOM_APP_NAMES } from "./customAppNames";
 
+const CACHE_TTL_MS = 60_000;
+let mergedAppNamesCache: { at: number; items: string[] } | null = null;
+
 async function readRemoteAdCostMonthFallbackAppNames(cwd: string) {
   try {
     const cacheDir = join(cwd, ".cache");
@@ -50,6 +53,11 @@ export async function GET(req: Request) {
     const guard = requireApiAccess(req);
     if (!guard.ok) return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
 
+    const now = Date.now();
+    if (mergedAppNamesCache && now - mergedAppNamesCache.at < CACHE_TTL_MS) {
+      return NextResponse.json({ ok: true, items: mergedAppNamesCache.items });
+    }
+
     const cwd = process.cwd();
 
     // 1) 本地：public/material 下的文件夹名
@@ -90,6 +98,7 @@ export async function GET(req: Request) {
     const merged = Array.from(
       new Set([...folderNames, ...remoteNames, ...customNames])
     ).sort((a, b) => a.localeCompare(b));
+    mergedAppNamesCache = { at: now, items: merged };
     return NextResponse.json({ ok: true, items: merged });
   } catch (error) {
     console.error("读取文件夹列表失败:", error);

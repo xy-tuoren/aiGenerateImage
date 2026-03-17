@@ -149,7 +149,7 @@ export function getCutOtherFinalPrompt({ appName, lang, prompt, aspectRatio }: P
 
 ## 可选角标（35% 概率出现）
 在画面角落添加一个角标（badge）：
-- **角标内容**：“免费”/“最新”/相关小 icon；语言必须为${langDesc}。
+- **角标内容**：“免费”/“下载”/“最新”/相关小icon；语言必须为${langDesc}。
 - **角标底色**：随机，但必须与画面整体色调/材质融合，并保证角标文字/图形与底色对比清晰可读。
 - **角标尺寸**：不喧宾夺主但清晰可见，边缘不要被裁切。
 
