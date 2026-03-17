@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
-import { requireApiAccess } from "@/lib/server/auth";
+import { requireApiAccess, resolveRoleMaxGenerateCount } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,6 +80,17 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
 
   const countRaw = body.count;
   const countNum = countRaw === undefined || countRaw === null || countRaw === "" ? undefined : Number(countRaw);
+  const normalizedCount =
+    typeof countNum === "number" && !Number.isNaN(countNum) ? Math.max(0, Math.floor(countNum)) : undefined;
+  if (!guard.authz.isSuperAdmin && normalizedCount !== undefined) {
+    const roleMax = resolveRoleMaxGenerateCount(guard.authz.role);
+    if (roleMax !== undefined && normalizedCount > roleMax) {
+      return Response.json(
+        { ok: false, error: `当前角色最大 count 为 ${roleMax}` },
+        { status: 400 }
+      );
+    }
+  }
 
   const lang0 = body.lang ? String(body.lang).trim() : "";
   const langsRaw = (body as any).langs;
@@ -104,7 +115,7 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     generationConfig: normalizeGenerationConfig(body.generationConfig),
     imageConfig: imageConfigRaw,
     responseModalities: Array.isArray(body.responseModalities) ? body.responseModalities : undefined,
-    count: typeof countNum === "number" && !Number.isNaN(countNum) ? countNum : undefined,
+    count: normalizedCount,
     nextPromptFun: Array.isArray(body.nextPromptFun) ? body.nextPromptFun : undefined,
     appName: body.appName ? String(body.appName) : undefined,
     lang,

@@ -433,6 +433,8 @@ export async function adaptGeminiImageToTargetResolution(
 export const CUT_TEMPLATES_BY_APP_RATIO: Record<string, Partial<Record<string, string[]>>> = {
   "*": {
     "1:1": [
+      "getCutLogoFinalPrompt",
+      "getCutOtherFinalPrompt",
       "getCutScaleFinalPrompt",
       "stitchLongImage1024",
     ],
@@ -482,9 +484,26 @@ export function getCutTemplatesForAppRatio(appName: unknown, ratio: unknown): st
   const appKey = String(appName || "").trim().toLowerCase();
   const ratioKey = String(ratio || "").trim();
 
-  const byApp = appKey ? CUT_TEMPLATES_BY_APP_RATIO[appKey] : undefined;
-  const picked = uniqTrim(byApp?.[ratioKey]);
-  if (picked.length) return picked;
+  // 优先精确匹配 appName
+  const exactByApp = appKey ? CUT_TEMPLATES_BY_APP_RATIO[appKey] : undefined;
+  const exactPicked = uniqTrim(exactByApp?.[ratioKey]);
+  if (exactPicked.length) return exactPicked;
+
+  // 其次做 startsWith 前缀匹配，多个命中时取最长前缀（更具体）
+  if (appKey) {
+    let bestPrefix = "";
+    let bestByApp: Partial<Record<string, string[]>> | undefined;
+    for (const [key, byRatio] of Object.entries(CUT_TEMPLATES_BY_APP_RATIO)) {
+      const prefix = String(key || "").trim().toLowerCase();
+      if (!prefix || prefix === "*") continue;
+      if (!appKey.startsWith(prefix)) continue;
+      if (prefix.length <= bestPrefix.length) continue;
+      bestPrefix = prefix;
+      bestByApp = byRatio;
+    }
+    const prefixPicked = uniqTrim(bestByApp?.[ratioKey]);
+    if (prefixPicked.length) return prefixPicked;
+  }
 
   return uniqTrim(CUT_TEMPLATES_BY_APP_RATIO["*"]?.[ratioKey]);
 }
@@ -518,7 +537,7 @@ export const CUT_TEMPLATE_THINKING_LEVEL: Record<string, string> = {
   getCutOtherFinalPrompt: "High",
   getCutScaleFinalPrompt: "minimal",
   getCutVerticalCollagePrompt: "minimal",
-  getBuzzCutScaleFinalPrompt: "High",
+  getBuzzCutScaleFinalPrompt: "minimal",
   getBuzzCutChangeFinalPrompt: "High",
   getKidsCutScaleFinalPrompt: "minimal",
   getKidsCutChangeFinalPrompt: "High",

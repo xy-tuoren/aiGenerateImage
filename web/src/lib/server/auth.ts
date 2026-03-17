@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 
 export type SessionUser = {
   userId: string;
@@ -14,6 +16,13 @@ export type EnvAuthUser = {
    * 用于“图片广场”共享：相关接口会把数据归属到关联账号（或其链路最终指向的账号）。
    */
   related?: string;
+};
+
+export type AuthRoleLimits = Record<string, { maxGenerateCount?: number }>;
+
+type ParsedAuthUsersConfig = {
+  users: EnvAuthUser[];
+  roleLimits: AuthRoleLimits;
 };
 
 export type ResolvedAuthz = {
@@ -42,9 +51,12 @@ export const ROLE_PERMISSIONS: Record<string, Record<string, boolean>> = {
   },
   // 操作员（示例权限，可按需增删 key）
   operator: {
+    "ui:/configs": true,
+    "ui:/batch": true,
     "ui:/gallery": true,
     "ui:/crop": true,
     "ui:/cut-settings": true,
+    "ui:/make-image": true,
     "api:*": true,
   },
 };
@@ -206,29 +218,124 @@ export function getUserFromRequest(req: Request): SessionUser | null {
   return { userId, username };
 }
 
-export function readUsersFromEnv(): EnvAuthUser[] {
+function normalizeUsers(input: unknown): EnvAuthUser[] {
+  const arr = Array.isArray(input) ? input : [];
+  return arr
+    .map((x: any) => ({
+      username: String(x?.username || "").trim(),
+      password: String(x?.password || "").trim(),
+      role: String(x?.role || "").trim() || undefined,
+      related: String(x?.related || "").trim() || undefined,
+    }))
+    .filter((x) => x.username && x.password);
+}
+
+function normalizeRoleLimits(input: unknown): AuthRoleLimits {
+  const obj = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  const out: AuthRoleLimits = {};
+  for (const [rawRole, rawValue] of Object.entries(obj)) {
+    const role = String(rawRole || "").trim();
+    if (!role) continue;
+    const n = Number((rawValue as any)?.maxGenerateCount);
+    if (Number.isFinite(n)) {
+      out[role] = { maxGenerateCount: Math.max(0, Math.floor(n)) };
+    } else {
+      out[role] = {};
+    }
+  }
+  return out;
+}
+
+function parseAuthUsersConfigText(input: string): ParsedAuthUsersConfig | null {
+  try {
+    const parsed = JSON.parse(String(input || ""));
+    if (Array.isArray(parsed)) {
+      return { users: normalizeUsers(parsed), roleLimits: {} };
+    }
+    if (parsed && typeof parsed === "object") {
+      const users = normalizeUsers((parsed as any).users);
+      const roleLimits = normalizeRoleLimits((parsed as any).roleLimits);
+      return { users, roleLimits };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function isLikelyInlineJson(text: string) {
+  const s = String(text || "").trim();
+  return s.startsWith("[") || s.startsWith("{");
+}
+
+export function resolveAuthUsersConfigPathFromEnv(): string {
+  const raw = String(process.env.AUTH_USERS_JSON || "").trim();
+  if (!raw || isLikelyInlineJson(raw)) return "";
+  return path.isAbsolute(raw) ? raw : path.resolve(process.cwd(), raw);
+}
+
+export function readAuthUsersConfigFromEnv(): ParsedAuthUsersConfig {
   const rawJson = String(process.env.AUTH_USERS_JSON || "").trim();
   if (rawJson) {
+    // AUTH_USERS_JSON 既支持内联 JSON，也支持传入 JSON 文件路径。
+    const inline = parseAuthUsersConfigText(rawJson);
+    if (inline) return inline;
+
     try {
-      const parsed = JSON.parse(rawJson);
-      const arr = Array.isArray(parsed) ? parsed : [];
-      return arr
-        .map((x: any) => ({
-          username: String(x?.username || "").trim(),
-          password: String(x?.password || "").trim(),
-          role: String(x?.role || "").trim() || undefined,
-          related: String(x?.related || "").trim() || undefined,
-        }))
-        .filter((x) => x.username && x.password);
+      const filePath = resolveAuthUsersConfigPathFromEnv();
+      if (fs.existsSync(filePath)) {
+        const fileContent = fs.readFileSync(filePath, "utf8");
+        const fileConfig = parseAuthUsersConfigText(fileContent);
+        if (fileConfig) return fileConfig;
+      }
     } catch {
-      return [];
+      // ignore
     }
+
+    return { users: [], roleLimits: {} };
   }
   const u = String(process.env.AUTH_USERNAME || "").trim();
   const p = String(process.env.AUTH_PASSWORD || "").trim();
   const r = String(process.env.AUTH_ROLE || "").trim();
-  if (u && p) return [{ username: u, password: p, role: r || undefined }];
-  return [];
+  if (u && p) return { users: [{ username: u, password: p, role: r || undefined }], roleLimits: {} };
+  return { users: [], roleLimits: {} };
+}
+
+export function readUsersFromEnv(): EnvAuthUser[] {
+  return readAuthUsersConfigFromEnv().users;
+}
+
+export function readRoleLimitsFromEnv(): AuthRoleLimits {
+  return readAuthUsersConfigFromEnv().roleLimits;
+}
+
+export function resolveRoleMaxGenerateCount(role: string): number | undefined {
+  const roleKey = String(role || "").trim();
+  if (!roleKey) return undefined;
+  const limits = readRoleLimitsFromEnv();
+  const n = Number(limits[roleKey]?.maxGenerateCount);
+  if (!Number.isFinite(n)) return undefined;
+  return Math.max(0, Math.floor(n));
+}
+
+export function saveRoleLimitsToAuthUsersFile(nextRoleLimits: AuthRoleLimits): { ok: boolean; error?: string } {
+  const filePath = resolveAuthUsersConfigPathFromEnv();
+  if (!filePath) {
+    return { ok: false, error: "AUTH_USERS_JSON 不是文件路径，无法写入 roleLimits" };
+  }
+
+  try {
+    const roleLimits = normalizeRoleLimits(nextRoleLimits);
+    const current = fs.existsSync(filePath) ? String(fs.readFileSync(filePath, "utf8") || "") : "";
+    const parsed = parseAuthUsersConfigText(current);
+    const users = parsed?.users || [];
+    const next = { users, roleLimits };
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 /**

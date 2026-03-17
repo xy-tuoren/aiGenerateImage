@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 import { getMongoDb } from "@/lib/server/mongodb";
 import { startBatchJob } from "@/lib/server/batchJobRunner";
 import { expandConfigByBatchFun } from "@/lib/server/batchFunExpand";
-import { requireApiAccess } from "@/lib/server/auth";
+import { requireApiAccess, resolveRoleMaxGenerateCount } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,9 +55,20 @@ export async function POST(req: NextRequest) {
   const nonAdminMax = envInt("NON_ADMIN_CONCURRENCY_MAX", 10);
   const concurrencyRaw = Math.max(1, Number((body as any).concurrency ?? 3) || 3);
   const concurrency = guard.authz.isSuperAdmin ? concurrencyRaw : Math.min(concurrencyRaw, nonAdminMax);
+  const roleMaxGenerateCount = guard.authz.isSuperAdmin ? undefined : resolveRoleMaxGenerateCount(guard.authz.role);
+  const clampByRole = (n: number) => {
+    const base = Math.max(0, Math.floor(Number(n) || 0));
+    if (roleMaxGenerateCount === undefined) return base;
+    return Math.min(base, roleMaxGenerateCount);
+  };
   const actualCountRaw = (body as any).actualCount;
   const actualCountNum = actualCountRaw === undefined || actualCountRaw === null || actualCountRaw === "" ? undefined : Number(actualCountRaw);
-  const actualCount = typeof actualCountNum === "number" && Number.isFinite(actualCountNum) ? Math.max(0, Math.floor(actualCountNum)) : undefined;
+  const requestedActualCount = typeof actualCountNum === "number" && Number.isFinite(actualCountNum) ? Math.max(0, Math.floor(actualCountNum)) : undefined;
+  const actualCount = requestedActualCount === undefined ? undefined : clampByRole(requestedActualCount);
+  const cappedByRoleOnActualCount =
+    requestedActualCount !== undefined &&
+    roleMaxGenerateCount !== undefined &&
+    requestedActualCount > roleMaxGenerateCount;
 
   const db = await getMongoDb();
   const configsCol = db.collection<ImageConfigDoc>("image_configs");
@@ -84,7 +95,8 @@ export async function POST(req: NextRequest) {
   for (const id of configIds) {
     const src = cfgMap.get(id);
     if (!src) continue;
-    const effectiveCount = actualCount !== undefined ? actualCount : Math.max(0, Number(src.count ?? 1) || 0);
+    const effectiveCountRaw = actualCount !== undefined ? actualCount : Math.max(0, Number(src.count ?? 1) || 0);
+    const effectiveCount = clampByRole(effectiveCountRaw);
 
     const srcLangs = Array.isArray((src as any).langs)
       ? (src as any).langs.map((s: any) => String(s ?? "").trim()).filter(Boolean)
@@ -114,7 +126,12 @@ export async function POST(req: NextRequest) {
       const expanded = await expandConfigByBatchFun(cfgForExpand, { countOverride: isCombination ? effectiveCount : undefined });
       for (const e of expanded) {
         const cfgId = new ObjectId();
-        const perCount = isCombination ? 1 : (actualCount !== undefined ? effectiveCount : Math.max(0, Number(e.count ?? src.count ?? 1) || 0));
+        const perCountRaw = isCombination
+          ? 1
+          : actualCount !== undefined
+            ? effectiveCount
+            : Math.max(0, Number(e.count ?? src.count ?? 1) || 0);
+        const perCount = clampByRole(perCountRaw);
         expandedJobConfigs.push({
           configId: cfgId,
           sourceConfigId: src._id,
@@ -165,6 +182,15 @@ export async function POST(req: NextRequest) {
     concurrency,
   });
 
-  return Response.json({ ok: true, jobId: String(jobId), total, actualCount, createdConfigs: expandedConfigIds.length });
+  return Response.json({
+    ok: true,
+    jobId: String(jobId),
+    total,
+    actualCount,
+    requestedActualCount,
+    roleMaxGenerateCount,
+    cappedByRoleOnActualCount,
+    createdConfigs: expandedConfigIds.length,
+  });
 }
 

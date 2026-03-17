@@ -1,0 +1,54 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "password": "1234568",
+      "role": "admin"
+    },
+    {
+      "username": "wyx",
+      "password": "123457",
+      "role": "user"
+    },
+    {
+      "username": "zb",
+      "password": "123457",
+      "role": "user"
+    },
+    {
+      "username": "yjy",
+      "password": "123456",
+      "role": "operator"
+    },
+    {
+      "username": "dwy",
+      "password": "123456",
+      "role": "operator"
+    },
+    {
+      "username": "nrl",
+      "password": "123456",
+      "role": "operator"
+    },
+    {
+      "username": "xl",
+      "password": "123456",
+      "role": "operator"
+    },
+    {
+      "username": "yy",
+      "password": "123456",
+      "role": "operator"
+    },
+    {
+      "username": "zx",
+      "password": "123456",
+      "role": "operator"
+    }
+  ],
+  "roleLimits": {
+    "operator": {
+      "maxGenerateCount": 20
+    }
+  }
+}

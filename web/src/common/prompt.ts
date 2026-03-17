@@ -373,7 +373,7 @@ export function getGamesCutChangeFinalPrompt({ appName, lang, prompt, aspectRati
 //-----------------------Coupon-----------------------------
 
 export function getCouponDefaultPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
-  const appDesc = appName ? `${appName}应用` : '目标应用（请根据参考图或上下文推断）';
+  const appDesc = appName ? `${appName.split('-')[1]}应用` : '目标应用（请根据参考图或上下文推断）';
   const langDesc = lang || '参考图中使用的语言';
   return `### 角色与目标
 你是一个精通优惠券推广的广告设计师。参考图 **仅作为风格参考**；你需要通过调整构图、修改元素与背景等方式，避免生成图与参考图过于相似。
