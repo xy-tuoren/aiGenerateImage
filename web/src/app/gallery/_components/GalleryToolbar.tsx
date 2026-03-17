@@ -43,6 +43,7 @@ export function GalleryToolbar(props: {
   longImagePickRef: RefObject<HTMLInputElement | null>;
   onLongFolderPicked: (e: any) => void;
   onLongImagePicked: (e: any) => void;
+  onCopySelectedPaths: () => void;
 
   selectMode: boolean;
   selectedCount: number;
@@ -76,6 +77,7 @@ export function GalleryToolbar(props: {
     longImagePickRef,
     onLongFolderPicked,
     onLongImagePicked,
+    onCopySelectedPaths,
     selectMode,
     selectedCount,
     filteredCount,
@@ -219,6 +221,13 @@ export function GalleryToolbar(props: {
           />
         </Button>
       </Dropdown>
+
+      <Button
+        onClick={onCopySelectedPaths}
+        disabled={!selectMode || !selectedCount}
+      >
+        复制路径
+      </Button>
 
       <Button
         type="primary"

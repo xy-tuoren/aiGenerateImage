@@ -1030,6 +1030,50 @@ export default function GalleryPage() {
     }
   }, [appName, aspectRatio, keyToImg, lang, messageApi, selectedKeys]);
 
+  const onCopySelectedPaths = useCallback(async () => {
+    if (!selectedKeys.length) {
+      messageApi.error("请先选择图片");
+      return;
+    }
+    const toPublicPath = (raw: string) => {
+      const s = String(raw || "").trim();
+      if (!s) return "";
+      if (s.startsWith("public/")) return s;
+      const stripQuery = (x: string) => x.split("?")[0].split("#")[0];
+      const joinPublic = (x: string) => `public/${x.replace(/^\/+/, "")}`;
+      if (s.startsWith("/public/")) return s.replace(/^\/+/, "");
+      if (s.startsWith("/")) return joinPublic(stripQuery(s));
+      if (/^https?:\/\//i.test(s)) {
+        try {
+          const u = new URL(s);
+          return joinPublic(stripQuery(u.pathname));
+        } catch {
+          return "";
+        }
+      }
+      return joinPublic(stripQuery(s));
+    };
+    const picked = selectedKeys
+      .map((k) => toPublicPath(String(keyToImg.get(k)?.url || "")))
+      .filter(Boolean);
+    const uniquePaths = Array.from(new Set(picked));
+    if (!uniquePaths.length) {
+      messageApi.error("选中的图片路径无效");
+      return;
+    }
+    const text = uniquePaths.join("\n");
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        throw new Error("clipboard_unavailable");
+      }
+      messageApi.success(`已复制 ${uniquePaths.length} 条路径`);
+    } catch {
+      messageApi.error("复制失败，请检查浏览器剪贴板权限");
+    }
+  }, [keyToImg, messageApi, selectedKeys]);
+
   return (
     <AdminShell defaultSelectedKey="/gallery" headerTitle="图片广场">
       {contextHolder}
@@ -1077,6 +1121,7 @@ export default function GalleryPage() {
           longImagePickRef={longImagePickRef}
           onLongFolderPicked={onLongFolderPicked}
           onLongImagePicked={onLongImagePicked}
+          onCopySelectedPaths={onCopySelectedPaths}
           selectMode={selectMode}
           selectedCount={selectedKeys.length}
           filteredCount={filteredGridImages.length}
