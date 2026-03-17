@@ -200,6 +200,23 @@ export function resolveCutTemplatesForAppRatio(
   const byApp = settings?.byAppRatio || {};
   const picked = uniqTrim(byApp[appKey]?.[ratioKey]).slice(0, CUT_SETTING_MAX_TEMPLATE_PER_RATIO);
   if (picked.length) return picked;
+
+  // 其次做 startsWith 前缀匹配（不区分大小写）；多个命中时取最长前缀（更具体）
+  if (appKey) {
+    let bestPrefix = "";
+    let bestCfg: Partial<Record<CutSettingRatio, string[]>> | undefined;
+    for (const [key, cfg] of Object.entries(byApp)) {
+      const prefix = normalizeAppKey(key);
+      if (!prefix || prefix === "*") continue;
+      if (!appKey.startsWith(prefix)) continue;
+      if (prefix.length <= bestPrefix.length) continue;
+      bestPrefix = prefix;
+      bestCfg = cfg;
+    }
+    const prefixPicked = uniqTrim(bestCfg?.[ratioKey]).slice(0, CUT_SETTING_MAX_TEMPLATE_PER_RATIO);
+    if (prefixPicked.length) return prefixPicked;
+  }
+
   const pickedGlobal = uniqTrim(byApp["*"]?.[ratioKey]).slice(0, CUT_SETTING_MAX_TEMPLATE_PER_RATIO);
   if (pickedGlobal.length) return pickedGlobal;
   return getCutTemplatesForAppRatio(appName, ratioKey);

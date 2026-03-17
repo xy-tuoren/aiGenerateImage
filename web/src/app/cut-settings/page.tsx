@@ -670,11 +670,12 @@ export default function CutSettingsPage() {
             onChange={(v) => setNewAppName(v)}
             style={{ width: "100%" }}
             placeholder="输入或选择 appName"
-            filterOption={(input, option) =>
-              String(option?.value || "")
-                .toLowerCase()
-                .includes(String(input || "").toLowerCase())
-            }
+            showSearch={{
+              filterOption: (input, option) =>
+                String(option?.value || "")
+                  .toLowerCase()
+                  .includes(String(input || "").toLowerCase())
+            }}
           />
           {ratios.map((ratio) => (
             <Select

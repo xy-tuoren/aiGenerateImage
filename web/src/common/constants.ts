@@ -65,10 +65,13 @@ export type GlobalPromptContext = {
  */
 export function buildGlobalPromptSuffix(ctx?: GlobalPromptContext): string {
   const appName = String(ctx?.appName || "").trim();
-  const isBuzz = !!appName && appName.toLowerCase() === "buzz";
-  const isKids = !!appName && appName.toLowerCase() === "kids";
-  const isKids18 = !!appName && appName.toLowerCase() === "kids18";
-  const isCoupons = !!appName && appName.toLowerCase() === "Coupons";
+  const appNameLower = appName.toLowerCase();
+  const startsWithApp = (prefix: string) =>
+    !!appNameLower && appNameLower.startsWith(String(prefix || "").trim().toLowerCase());
+  const isBuzz = startsWithApp("buzz");
+  const isKids = startsWithApp("kids");
+  const isKids18 = startsWithApp("kids18");
+  const isCoupons = startsWithApp("coupons");
 
   if (!appName) {
     return "";
