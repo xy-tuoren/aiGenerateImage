@@ -211,7 +211,7 @@ export async function POST(req: Request) {
   if (!ids.length) return Response.json({ ok: false, error: "ids 不能为空" }, { status: 400 });
 
   const startFolderIndex = Math.max(1, Number((body as any).startFolderIndex ?? 1) || 1);
-  const fixedCode = String((body as any).fixedCode ?? "404").trim() || "404";
+  const fixedCode = String((body as any).fixedCode ?? "@404").trim() || "@404";
   const includeSubfolders = Boolean((body as any).includeSubfolders);
   const excludedKeysRaw = (body as any).excludedKeys;
   const excludedKeysArr = Array.isArray(excludedKeysRaw) ? excludedKeysRaw.map((x) => String(x)).filter(Boolean) : [];
@@ -264,7 +264,7 @@ export async function POST(req: Request) {
           if (srcAbs && await fs.pathExists(srcAbs)) {
             const jpg = await readAsJpegBuffer(srcAbs);
             if (aborted) break;
-            archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}@${fixedCode}-landscape-1.jpg` });
+            archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}${fixedCode}-landscape-1.jpg` });
             added += 1;
           }
         } catch {
@@ -287,7 +287,7 @@ export async function POST(req: Request) {
               const jpg = await readAsJpegBuffer(abs);
               if (aborted) break;
               n += 1;
-              archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}@${fixedCode}-square-${n}.jpg` });
+              archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}${fixedCode}-square-${n}.jpg` });
               added += 1;
             }
           }
@@ -311,7 +311,7 @@ export async function POST(req: Request) {
               const jpg = await readAsJpegBuffer(abs);
               if (aborted) break;
               n += 1;
-              archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}@${fixedCode}-vertical-${n}.jpg` });
+              archive.append(jpegWithMeta(jpg, rec), { name: `${folder}${folderIndex}${fixedCode}-vertical-${n}.jpg` });
               added += 1;
             }
           }

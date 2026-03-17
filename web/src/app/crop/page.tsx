@@ -6,7 +6,6 @@ import {
   Card,
   Image,
   Input,
-  InputNumber,
   Select,
   Space,
   Switch,
@@ -85,9 +84,7 @@ export default function CropPage() {
     scrollWidth: 0
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const [downloadStartFolderIndex, setDownloadStartFolderIndex] =
-    useState<number>(1);
-  const [downloadFixedCode, setDownloadFixedCode] = useState<string>("404");
+  const [downloadFixedCode, setDownloadFixedCode] = useState<string>("@404");
   const [downloadWithSubfolders, setDownloadWithSubfolders] =
     useState<boolean>(false);
   const [downloading, setDownloading] = useState(false);
@@ -457,7 +454,6 @@ export default function CropPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ids: selectedIds,
-              startFolderIndex: downloadStartFolderIndex,
               fixedCode: downloadFixedCode,
               includeSubfolders: downloadWithSubfolders,
               excludedKeys: Object.keys(excludedKeys)
@@ -528,7 +524,6 @@ export default function CropPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ids: selectedIds,
-          startFolderIndex: downloadStartFolderIndex,
           fixedCode: downloadFixedCode,
           includeSubfolders: downloadWithSubfolders,
           excludedKeys: Object.keys(excludedKeys)
@@ -1279,13 +1274,6 @@ export default function CropPage() {
             {recordsLoading ? "加载中..." : `${recordsTotal} 条`}
           </Typography.Text>
           <Space size={6}>
-            <Typography.Text type="secondary">起始序号</Typography.Text>
-            <InputNumber
-              size="small"
-              min={1}
-              value={downloadStartFolderIndex}
-              onChange={(v) => setDownloadStartFolderIndex(Number(v || 1))}
-            />
             <Typography.Text type="secondary">固定码</Typography.Text>
             <Input
               size="small"
