@@ -43,7 +43,11 @@ type ConfigItem = {
   modelProvider?: "gemini" | "jimeng";
   prompt: string;
   referenceImages?: string[];
-  generationConfig?: { temperature?: number; [k: string]: unknown };
+  generationConfig?: {
+    temperature?: number;
+    thinkingLevel?: "High" | "minimal";
+    [k: string]: unknown;
+  };
   imageConfig?: {
     imageSize?: string;
     aspectRatio?: string;
@@ -69,6 +73,15 @@ const MODEL_PROVIDER_OPTIONS = [
   { label: "谷歌", value: "gemini" },
   { label: "即梦", value: "jimeng" }
 ];
+
+const THINKING_LEVEL_OPTIONS = [
+  { label: "High", value: "High" },
+  { label: "minimal", value: "minimal" }
+];
+
+function normalizeThinkingLevel(input: unknown): "High" | "minimal" {
+  return String(input || "").trim() === "minimal" ? "minimal" : "High";
+}
 
 function gcd(a: number, b: number): number {
   let x = Math.abs(Math.trunc(a));
@@ -261,6 +274,7 @@ export default function ConfigsPage() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deletingBatch, setDeletingBatch] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [form] = Form.useForm();
   const [appNameOptions, setAppNameOptions] = useState<
     { label: string; value: string }[]
@@ -405,8 +419,16 @@ export default function ConfigsPage() {
               : undefined,
           generationConfig:
             row.generationConfig && typeof row.generationConfig === "object"
-              ? row.generationConfig
-              : undefined,
+              ? {
+                  ...row.generationConfig,
+                  thinkingLevel: normalizeThinkingLevel(
+                    (row.generationConfig as any)?.thinkingLevel
+                  )
+                }
+              : {
+                  temperature: 1,
+                  thinkingLevel: isSuperAdmin ? "High" : "minimal"
+                },
           imageConfig:
             row.imageConfig && typeof row.imageConfig === "object"
               ? row.imageConfig
@@ -430,7 +452,7 @@ export default function ConfigsPage() {
         messageApi.error(e instanceof Error ? e.message : String(e));
       }
     },
-    [fetchList, messageApi]
+    [fetchList, isSuperAdmin, messageApi]
   );
 
   const handleDelete = useCallback(
@@ -537,7 +559,12 @@ export default function ConfigsPage() {
           : undefined,
       generationConfig:
         row.generationConfig && typeof row.generationConfig === "object"
-          ? row.generationConfig
+          ? {
+              ...row.generationConfig,
+              thinkingLevel: normalizeThinkingLevel(
+                (row.generationConfig as any)?.thinkingLevel
+              )
+            }
           : undefined,
       imageConfig:
         row.imageConfig && typeof row.imageConfig === "object"
@@ -1252,6 +1279,9 @@ export default function ConfigsPage() {
                       : "",
                     generationConfig_temperature:
                       row.generationConfig?.temperature ?? 1,
+                    generationConfig_thinkingLevel: normalizeThinkingLevel(
+                      row.generationConfig?.thinkingLevel
+                    ),
                     imageConfig_width: rowWidth,
                     imageConfig_height: rowHeight,
                     imageConfig_matchedAspectRatio:
@@ -1363,6 +1393,28 @@ export default function ConfigsPage() {
     fetchList();
     fetchAppNameOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me", {
+          method: "GET",
+          cache: "no-store",
+          credentials: "include"
+        });
+        const data = await res.json().catch(() => null);
+        if (!mounted) return;
+        setIsSuperAdmin(Boolean(data?.ok && data?.user?.isSuperAdmin));
+      } catch {
+        if (!mounted) return;
+        setIsSuperAdmin(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -1562,6 +1614,7 @@ export default function ConfigsPage() {
       imageConfig_matchedAspectRatio: geminiMatched.matchedAspectRatio,
       imageConfig_matchedResolution: geminiMatched.matchedResolutionText,
       generationConfig_temperature: 1,
+      generationConfig_thinkingLevel: isSuperAdmin ? "High" : "minimal",
       responseModalities: ["IMAGE"]
     });
     setEditingId(null);
@@ -1644,12 +1697,14 @@ export default function ConfigsPage() {
           ? values.responseModalities
           : undefined
         : undefined,
-      generationConfig:
-        modelProvider === "gemini"
-          ? {
-              temperature: values.generationConfig_temperature
-            }
-          : undefined,
+      generationConfig: {
+        ...(modelProvider === "gemini"
+          ? { temperature: values.generationConfig_temperature }
+          : {}),
+        thinkingLevel: normalizeThinkingLevel(
+          values.generationConfig_thinkingLevel
+        )
+      },
       imageConfig:
         modelProvider === "jimeng"
           ? {
@@ -2149,6 +2204,12 @@ export default function ConfigsPage() {
               </Form.Item>
             </>
           )}
+          <Form.Item
+            name="generationConfig_thinkingLevel"
+            label="思考等级（thinkingLevel）"
+          >
+            <Select options={THINKING_LEVEL_OPTIONS} />
+          </Form.Item>
         </Form>
       </Drawer>
     </AdminShell>
