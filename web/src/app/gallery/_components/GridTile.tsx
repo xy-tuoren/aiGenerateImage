@@ -9,13 +9,22 @@ export const GridTile = memo(
   function GridTile(props: {
     img: GridImage;
     idx: number;
+    displayUrl?: string;
     selected: boolean;
     onTogglePick: (k: string) => void;
     onOpenPreview: (idx: number) => void;
     onOpenMeta: (img: GridImage) => void;
   }) {
-    const { img, idx, selected, onTogglePick, onOpenPreview, onOpenMeta } =
-      props;
+    const {
+      img,
+      idx,
+      displayUrl,
+      selected,
+      onTogglePick,
+      onOpenPreview,
+      onOpenMeta
+    } = props;
+    const src = displayUrl ?? img.url;
 
     const onContextMenu = useCallback(
       (e: any) => {
@@ -49,10 +58,8 @@ export const GridTile = memo(
           aspectRatio: "16 / 9",
           overflow: "hidden",
           borderRadius: 10,
-          border: selected
-            ? "3px solid #1677ff"
-            : "1px solid rgba(0,0,0,0.06)",
-          boxShadow: selected ? "0 0 0 3px rgba(22,119,255,0.22)" : undefined,
+          border: selected ? "3px solid #1677ff" : "1px solid rgba(0,0,0,0.06)",
+          boxShadow: selected ? "0 0 0 3px rgba(22,119,255,0.22)" : undefined
         }}
         onContextMenu={onContextMenu}
         onClick={onClick}
@@ -63,7 +70,7 @@ export const GridTile = memo(
           height="100%"
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
           preview={false}
-          src={img.url}
+          src={src}
           alt={img.url}
           loading="lazy"
           decoding="async"
@@ -74,7 +81,7 @@ export const GridTile = memo(
               position: "absolute",
               inset: 0,
               background: "rgba(22,119,255,0.16)",
-              pointerEvents: "none",
+              pointerEvents: "none"
             }}
           />
         ) : null}
@@ -95,7 +102,7 @@ export const GridTile = memo(
               color: "#fff",
               fontSize: 16,
               fontWeight: 700,
-              userSelect: "none",
+              userSelect: "none"
             }}
           >
             ✓
@@ -107,9 +114,9 @@ export const GridTile = memo(
   (a, b) =>
     a.img === b.img &&
     a.idx === b.idx &&
+    a.displayUrl === b.displayUrl &&
     a.selected === b.selected &&
     a.onTogglePick === b.onTogglePick &&
     a.onOpenPreview === b.onOpenPreview &&
     a.onOpenMeta === b.onOpenMeta
 );
-

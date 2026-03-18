@@ -6,6 +6,7 @@ import type { GridImage } from "../_lib/types";
 
 export function SelectedImagesStrip(props: {
   selectedPreviewImages: GridImage[];
+  selectedPreviewDisplayUrls?: string[];
   selectedPreviewConfig: any;
   onOpenPreviewAt: (idx: number) => void;
   onRemove: (key: string) => void;
@@ -16,12 +17,13 @@ export function SelectedImagesStrip(props: {
 }) {
   const {
     selectedPreviewImages,
+    selectedPreviewDisplayUrls,
     selectedPreviewConfig,
     onOpenPreviewAt,
     onRemove,
     selectedCount,
     onClear,
-    disableClear,
+    disableClear
   } = props;
 
   if (!selectedCount) return null;
@@ -32,7 +34,7 @@ export function SelectedImagesStrip(props: {
         padding: 10,
         background: "#f5f5f5",
         borderRadius: 10,
-        border: "1px solid rgba(0,0,0,0.06)",
+        border: "1px solid rgba(0,0,0,0.06)"
       }}
     >
       <Space wrap size={10} align="center" style={{ width: "100%" }}>
@@ -46,61 +48,63 @@ export function SelectedImagesStrip(props: {
         <div style={{ flex: "1 1 100%" }} />
         <Image.PreviewGroup preview={selectedPreviewConfig}>
           <Space wrap size={8}>
-            {selectedPreviewImages.map((img, i) => (
-              <div
-                key={`sel|${img.key}`}
-                style={{
-                  position: "relative",
-                  width: 92,
-                  height: 52,
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  border: "1px solid rgba(0,0,0,0.12)",
-                  background: "#fff",
-                  cursor: "pointer",
-                }}
-                onClick={() => onOpenPreviewAt(i)}
-              >
-                <Image
-                  width={92}
-                  height={52}
-                  style={{ width: 92, height: 52, objectFit: "cover" }}
-                  src={img.url}
-                  alt={img.url}
-                  loading="lazy"
-                  decoding="async"
-                />
+            {selectedPreviewImages.map((img, i) => {
+              const src = selectedPreviewDisplayUrls?.[i] ?? img.url;
+              return (
                 <div
-                  title="移除"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove(img.key);
-                  }}
+                  key={`sel|${img.key}`}
                   style={{
-                    position: "absolute",
-                    top: 4,
-                    right: 4,
-                    width: 18,
-                    height: 18,
-                    borderRadius: 6,
-                    background: "rgba(0,0,0,0.55)",
-                    color: "#fff",
-                    fontSize: 12,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    userSelect: "none",
+                    position: "relative",
+                    width: 92,
+                    height: 52,
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    border: "1px solid rgba(0,0,0,0.12)",
+                    background: "#fff",
+                    cursor: "pointer"
                   }}
+                  onClick={() => onOpenPreviewAt(i)}
                 >
-                  ×
+                  <Image
+                    width={92}
+                    height={52}
+                    style={{ width: 92, height: 52, objectFit: "cover" }}
+                    src={src}
+                    alt={img.url}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <div
+                    title="移除"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove(img.key);
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      width: 18,
+                      height: 18,
+                      borderRadius: 6,
+                      background: "rgba(0,0,0,0.55)",
+                      color: "#fff",
+                      fontSize: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      userSelect: "none"
+                    }}
+                  >
+                    ×
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </Space>
         </Image.PreviewGroup>
       </Space>
     </div>
   );
 }
-

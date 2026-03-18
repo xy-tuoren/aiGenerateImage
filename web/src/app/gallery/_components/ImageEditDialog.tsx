@@ -21,7 +21,11 @@ export function ImageEditDialog(props: {
   initialImages: GridImage[];
   aspectRatio?: string;
   messageApi: any;
-  onSaved: () => void;
+  onSaved: (payload?: {
+    type: "override";
+    url: string;
+    originalUrl?: string;
+  }) => void;
 }) {
   const { open, onClose, initialImages, aspectRatio, messageApi, onSaved } =
     props;
@@ -92,7 +96,7 @@ export function ImageEditDialog(props: {
       bodyOverflow: body.style.overflow || "",
       bodyPaddingRight: body.style.paddingRight || "",
       htmlOverflow: html.style.overflow || "",
-      htmlPaddingRight: html.style.paddingRight || "",
+      htmlPaddingRight: html.style.paddingRight || ""
     };
 
     const scrollbarWidth = Math.max(
@@ -156,7 +160,7 @@ export function ImageEditDialog(props: {
           const mimeType = mimeMatch?.[1] || "image/png";
           setUploadedImages((prev) => [
             ...prev,
-            { dataUrl, data: base64, mimeType },
+            { dataUrl, data: base64, mimeType }
           ]);
         };
         reader.readAsDataURL(file);
@@ -193,17 +197,17 @@ export function ImageEditDialog(props: {
           referenceImageUrls: referenceUrls,
           referenceImageInline: uploadedImages.map((img) => ({
             data: img.data,
-            mimeType: img.mimeType,
+            mimeType: img.mimeType
           })),
-          aspectRatio: aspectRatio || undefined,
-        }),
+          aspectRatio: aspectRatio || undefined
+        })
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
         const errMsg = data?.error || "生成失败";
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", text: `错误: ${errMsg}` },
+          { role: "assistant", text: `错误: ${errMsg}` }
         ]);
         messageApi.error(errMsg);
         return;
@@ -217,14 +221,14 @@ export function ImageEditDialog(props: {
           role: "assistant",
           imageBase64: data.imageBase64,
           imageMimeType: data.mimeType,
-          thoughtSignature: data.thoughtSignature || undefined,
-        },
+          thoughtSignature: data.thoughtSignature || undefined
+        }
       ]);
     } catch (e: any) {
       const msg = e instanceof Error ? e.message : String(e);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: `错误: ${msg}` },
+        { role: "assistant", text: `错误: ${msg}` }
       ]);
       messageApi.error(msg);
     } finally {
@@ -237,7 +241,7 @@ export function ImageEditDialog(props: {
     uploadedImages,
     aspectRatio,
     messageApi,
-    messages,
+    messages
   ]);
 
   const handleSave = useCallback(
@@ -263,12 +267,9 @@ export function ImageEditDialog(props: {
             appName: initialImages[0]?.appName || undefined,
             lang: initialImages[0]?.lang || undefined,
             aspectRatio: aspectRatio || undefined,
-            prompt:
-              messages.find((m) => m.role === "user")?.text || undefined,
-            referenceImageUrls: referenceUrls.length
-              ? referenceUrls
-              : undefined,
-          }),
+            prompt: messages.find((m) => m.role === "user")?.text || undefined,
+            referenceImageUrls: referenceUrls.length ? referenceUrls : undefined
+          })
         });
         const data = await res.json();
         if (!res.ok || !data?.ok) {
@@ -276,7 +277,15 @@ export function ImageEditDialog(props: {
           return;
         }
         messageApi.success(mode === "override" ? "已覆盖原图" : "已保存为新图");
-        onSaved();
+        if (mode === "override" && data?.url) {
+          onSaved({
+            type: "override",
+            url: String(data.url),
+            originalUrl: originalUrl || undefined
+          });
+        } else {
+          onSaved();
+        }
         handleClose();
       } catch (e: any) {
         messageApi.error(e instanceof Error ? e.message : String(e));
@@ -293,7 +302,7 @@ export function ImageEditDialog(props: {
       referenceUrls,
       messageApi,
       onSaved,
-      handleClose,
+      handleClose
     ]
   );
 
@@ -327,7 +336,7 @@ export function ImageEditDialog(props: {
           style={{
             padding: "12px 16px",
             borderBottom: "1px solid rgba(0,0,0,0.06)",
-            background: "#fafafa",
+            background: "#fafafa"
           }}
         >
           <div style={{ marginBottom: 8 }}>
@@ -346,7 +355,7 @@ export function ImageEditDialog(props: {
               display: "flex",
               gap: 8,
               flexWrap: "wrap",
-              alignItems: "center",
+              alignItems: "center"
             }}
           >
             {allReferenceImages.map((ref, i) => (
@@ -360,7 +369,7 @@ export function ImageEditDialog(props: {
                   overflow: "hidden",
                   border: "1px solid rgba(0,0,0,0.12)",
                   background: "#fff",
-                  flexShrink: 0,
+                  flexShrink: 0
                 }}
               >
                 <Image
@@ -393,7 +402,7 @@ export function ImageEditDialog(props: {
                     cursor: "pointer",
                     userSelect: "none",
                     lineHeight: 1,
-                    zIndex: 1,
+                    zIndex: 1
                   }}
                 >
                   ×
@@ -413,7 +422,7 @@ export function ImageEditDialog(props: {
                 cursor: "pointer",
                 color: "rgba(0,0,0,0.45)",
                 fontSize: 20,
-                flexShrink: 0,
+                flexShrink: 0
               }}
               title="上传参考图"
             >
@@ -439,7 +448,7 @@ export function ImageEditDialog(props: {
             padding: "16px",
             display: "flex",
             flexDirection: "column",
-            gap: 12,
+            gap: 12
           }}
         >
           {messages.length === 0 ? (
@@ -450,7 +459,7 @@ export function ImageEditDialog(props: {
                 alignItems: "center",
                 justifyContent: "center",
                 color: "rgba(0,0,0,0.25)",
-                fontSize: 14,
+                fontSize: 14
               }}
             >
               输入提示词描述你想要的修改
@@ -462,17 +471,19 @@ export function ImageEditDialog(props: {
                 style={{
                   display: "flex",
                   justifyContent:
-                    msg.role === "user" ? "flex-end" : "flex-start",
+                    msg.role === "user" ? "flex-end" : "flex-start"
                 }}
               >
                 {msg.role === "assistant" && msg.imageBase64 ? (
                   <Image
-                    src={`data:${msg.imageMimeType || "image/png"};base64,${msg.imageBase64}`}
+                    src={`data:${msg.imageMimeType || "image/png"};base64,${
+                      msg.imageBase64
+                    }`}
                     alt="generated"
                     style={{
                       maxWidth: "100%",
                       maxHeight: 300,
-                      objectFit: "contain",
+                      objectFit: "contain"
                     }}
                     preview={{ mask: "点击预览" }}
                   />
@@ -486,7 +497,7 @@ export function ImageEditDialog(props: {
                       color: msg.role === "user" ? "#fff" : "#333",
                       fontSize: 14,
                       lineHeight: 1.5,
-                      wordBreak: "break-word",
+                      wordBreak: "break-word"
                     }}
                   >
                     {msg.text ? <div>{msg.text}</div> : null}
@@ -504,7 +515,7 @@ export function ImageEditDialog(props: {
                   background: "#f0f0f0",
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
+                  gap: 8
                 }}
               >
                 <Spin size="small" />
@@ -526,7 +537,7 @@ export function ImageEditDialog(props: {
               background: "#fafafa",
               display: "flex",
               gap: 10,
-              alignItems: "center",
+              alignItems: "center"
             }}
           >
             <Typography.Text type="secondary" style={{ fontSize: 13 }}>
@@ -560,7 +571,7 @@ export function ImageEditDialog(props: {
             borderTop: "1px solid rgba(0,0,0,0.06)",
             display: "flex",
             gap: 10,
-            alignItems: "flex-end",
+            alignItems: "flex-end"
           }}
         >
           <Input.TextArea
@@ -590,4 +601,3 @@ export function ImageEditDialog(props: {
     </Modal>
   );
 }
-

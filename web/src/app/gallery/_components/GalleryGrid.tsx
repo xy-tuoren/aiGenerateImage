@@ -16,6 +16,7 @@ export function GalleryGrid(props: {
   previewConfig: any;
 
   images: GridImage[];
+  displayUrls?: string[];
   selectedKeySet: Set<string>;
   togglePick: (k: string) => void;
   onOpenPreviewAt: (idx: number) => void;
@@ -29,10 +30,11 @@ export function GalleryGrid(props: {
     previewItems,
     previewConfig,
     images,
+    displayUrls,
     selectedKeySet,
     togglePick,
     onOpenPreviewAt,
-    onOpenMeta,
+    onOpenMeta
   } = props;
 
   return (
@@ -46,7 +48,7 @@ export function GalleryGrid(props: {
           gap: 12,
           width: "100%",
           userSelect: dragBox.active ? "none" : undefined,
-          cursor: dragBox.active ? "crosshair" : undefined,
+          cursor: dragBox.active ? "crosshair" : undefined
         }}
         onMouseDown={(e) => {
           if (previewOpen) return;
@@ -68,7 +70,7 @@ export function GalleryGrid(props: {
               outline: "1px dashed rgba(0,0,0,0.25)",
               borderRadius: 6,
               pointerEvents: "none",
-              zIndex: 10,
+              zIndex: 10
             }}
           />
         ) : null}
@@ -78,6 +80,7 @@ export function GalleryGrid(props: {
             key={img.key}
             img={img}
             idx={idx}
+            displayUrl={displayUrls?.[idx]}
             selected={selectedKeySet.has(img.key)}
             onTogglePick={togglePick}
             onOpenPreview={onOpenPreviewAt}
@@ -88,4 +91,3 @@ export function GalleryGrid(props: {
     </Image.PreviewGroup>
   );
 }
-

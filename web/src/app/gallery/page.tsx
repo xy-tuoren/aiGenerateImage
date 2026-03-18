@@ -76,6 +76,9 @@ export default function GalleryPage() {
     h: number;
   }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
   const [imageEditOpen, setImageEditOpen] = useState(false);
+  const [overrideCacheBust, setOverrideCacheBust] = useState<
+    Record<string, number>
+  >({});
   const batchLastJobIdKey = "batch:lastJobId";
   const batchRecentJobIdsKey = "batch:recentJobIds";
 
@@ -529,10 +532,18 @@ export default function GalleryPage() {
     return filteredGridImages.slice(0, galleryPage * galleryPageSize);
   }, [filteredGridImages, galleryPage, galleryPageSize]);
 
-  const previewItems = useMemo(
-    () => paginatedGridImages.map((x) => x.url),
-    [paginatedGridImages]
+  const displayUrls = useMemo(
+    () =>
+      paginatedGridImages.map((img) =>
+        overrideCacheBust[img.url]
+          ? `${img.url}${img.url.includes("?") ? "&" : "?"}t=${
+              overrideCacheBust[img.url]
+            }`
+          : img.url
+      ),
+    [paginatedGridImages, overrideCacheBust]
   );
+  const previewItems = useMemo(() => displayUrls, [displayUrls]);
 
   useEffect(() => {
     setFilteredCount(filteredGridImages.length);
@@ -571,6 +582,17 @@ export default function GalleryPage() {
   const selectedPreviewImages = useMemo(
     () => selectedImages.slice(0, 80),
     [selectedImages]
+  );
+  const selectedPreviewDisplayUrls = useMemo(
+    () =>
+      selectedPreviewImages.map((img) =>
+        overrideCacheBust[img.url]
+          ? `${img.url}${img.url.includes("?") ? "&" : "?"}t=${
+              overrideCacheBust[img.url]
+            }`
+          : img.url
+      ),
+    [selectedPreviewImages, overrideCacheBust]
   );
 
   const togglePick = useCallback((k: string) => {
@@ -1134,6 +1156,7 @@ export default function GalleryPage() {
 
         <SelectedImagesStrip
           selectedPreviewImages={selectedPreviewImages}
+          selectedPreviewDisplayUrls={selectedPreviewDisplayUrls}
           selectedPreviewConfig={selectedPreviewConfig}
           onOpenPreviewAt={(i) => {
             setSelectedPreviewIndex(i);
@@ -1164,7 +1187,18 @@ export default function GalleryPage() {
           initialImages={selectedImages}
           aspectRatio={aspectRatio}
           messageApi={messageApi}
-          onSaved={() => {
+          onSaved={(payload) => {
+            if (
+              payload?.type === "override" &&
+              (payload.url || payload.originalUrl)
+            ) {
+              const ts = Date.now();
+              setOverrideCacheBust((prev) => ({
+                ...prev,
+                ...(payload.url ? { [payload.url]: ts } : {}),
+                ...(payload.originalUrl ? { [payload.originalUrl]: ts } : {})
+              }));
+            }
             fetchImages();
           }}
         />
@@ -1177,6 +1211,7 @@ export default function GalleryPage() {
           previewItems={previewItems}
           previewConfig={previewConfig}
           images={paginatedGridImages}
+          displayUrls={displayUrls}
           selectedKeySet={selectedKeySet}
           togglePick={togglePick}
           onOpenPreviewAt={onOpenPreviewAt}
