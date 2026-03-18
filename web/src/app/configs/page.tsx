@@ -44,6 +44,7 @@ import * as promptFns from "@/common/prompt";
 type ConfigItem = {
   id: string;
   modelProvider?: "gemini" | "jimeng";
+  description?: string;
   prompt: string;
   referenceImages?: string[];
   generationConfig?: {
@@ -282,6 +283,7 @@ export default function ConfigsPage() {
     id: string;
     field:
       | "appName"
+      | "description"
       | "lang"
       | "batchFun"
       | "promptTmpFunName"
@@ -517,6 +519,7 @@ export default function ConfigsPage() {
         );
         const payload = {
           modelProvider: row.modelProvider || "gemini",
+          description: String(row.description || "").trim() || undefined,
           prompt: row.prompt,
           count: row.count ?? undefined,
           appName: row.appName || undefined,
@@ -658,6 +661,7 @@ export default function ConfigsPage() {
     );
     return {
       modelProvider: row.modelProvider || "gemini",
+      description: String(row.description || "").trim() || undefined,
       prompt: row.prompt,
       count: row.count ?? undefined,
       appName: row.appName || undefined,
@@ -813,6 +817,7 @@ export default function ConfigsPage() {
       row: ConfigItem,
       field:
         | "appName"
+        | "description"
         | "lang"
         | "batchFun"
         | "promptTmpFunName"
@@ -1068,6 +1073,73 @@ export default function ConfigsPage() {
             >
               {getCellDisplay(text, saving)}
             </span>
+          );
+        }
+      },
+      {
+        title: "description",
+        dataIndex: "description",
+        key: "description",
+        width: 150,
+        align: "center",
+        onCell: () => ({ style: { whiteSpace: "normal" } }),
+        render: (v, row) => {
+          const field = "description" as const;
+          const savingKey = `${row.id}:${field}`;
+          const saving = Boolean(savingCellMap[savingKey]);
+          const isEditing =
+            editingCell?.id === row.id && editingCell?.field === field;
+          const text = String(v || "");
+          const displayText = text || "（空）";
+          if (isEditing) {
+            return (
+              <Input
+                autoFocus
+                allowClear
+                placeholder="请输入描述"
+                value={String(editingDraft ?? "")}
+                onChange={(e) => setEditingDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelEditCell();
+                  if (e.key === "Enter") void commitEditCell(row);
+                }}
+                onBlur={() => void commitEditCell(row)}
+              />
+            );
+          }
+          return (
+            <Tooltip
+              styles={{ root: { maxWidth: "none" } }}
+              title={
+                <div
+                  style={{
+                    width: "30vw",
+                    maxHeight: "70vh",
+                    overflowY: "auto",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word"
+                  }}
+                >
+                  {displayText}
+                </div>
+              }
+            >
+              <Typography.Paragraph
+                type={text ? undefined : "secondary"}
+                style={{
+                  margin: 0,
+                  cursor: saving ? "not-allowed" : "pointer",
+                  opacity: saving ? 0.6 : 1
+                }}
+                ellipsis={{ rows: 2 }}
+                onClick={() => {
+                  if (saving) return;
+                  startEditCell(row, field);
+                }}
+              >
+                {displayText}
+              </Typography.Paragraph>
+            </Tooltip>
           );
         }
       },
@@ -1378,34 +1450,37 @@ export default function ConfigsPage() {
             );
           }
           return (
-            <Typography.Paragraph
-              title={text}
-              style={{
-                margin: 0,
-                cursor: saving ? "not-allowed" : "pointer",
-                opacity: saving ? 0.6 : 1
-              }}
-              ellipsis={{
-                rows: 2,
-                tooltip: text,
-                expandable: true,
-                symbol: (
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  >
-                    展开
-                  </span>
-                )
-              }}
-              onClick={() => {
-                if (saving) return;
-                startEditCell(row, field);
-              }}
+            <Tooltip
+              styles={{ root: { maxWidth: "none" } }}
+              title={
+                <div
+                  style={{
+                    width: "30vw",
+                    maxHeight: "70vh",
+                    overflowY: "auto",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word"
+                  }}
+                >
+                  {text}
+                </div>
+              }
             >
-              {text}
-            </Typography.Paragraph>
+              <Typography.Paragraph
+                style={{
+                  margin: 0,
+                  cursor: saving ? "not-allowed" : "pointer",
+                  opacity: saving ? 0.6 : 1
+                }}
+                ellipsis={{ rows: 2 }}
+                onClick={() => {
+                  if (saving) return;
+                  startEditCell(row, field);
+                }}
+              >
+                {text}
+              </Typography.Paragraph>
+            </Tooltip>
           );
         }
       },
@@ -1449,6 +1524,7 @@ export default function ConfigsPage() {
                   form.setFieldsValue({
                     modelProvider: row.modelProvider || "gemini",
                     appName: row.appName,
+                    description: row.description,
                     langs,
                     batchFun: row.batchFun,
                     promptTmpFunName: row.promptTmpFunName,
@@ -2041,6 +2117,7 @@ export default function ConfigsPage() {
 
     const payload = {
       modelProvider,
+      description: String(values.description || "").trim() || undefined,
       prompt: values.prompt,
       count: values.count ?? undefined,
       appName: values.appName || undefined,
@@ -2427,7 +2504,7 @@ export default function ConfigsPage() {
               disabled={Boolean(editingTemplateId)}
             />
           </Form.Item>
-          <Form.Item name="description" label="描述（可选）">
+          <Form.Item name="description" label="描述">
             <Input placeholder="例如：用于节日活动促销图" />
           </Form.Item>
           <Form.Item
@@ -2473,6 +2550,9 @@ export default function ConfigsPage() {
                     .includes(String(inputValue || "").toLowerCase())
               }}
             />
+          </Form.Item>
+          <Form.Item name="description" label="description">
+            <Input allowClear placeholder="请输入该配置的描述" />
           </Form.Item>
           <Form.Item name="langs" label="lang">
             <Select

@@ -11,6 +11,7 @@ type ImageConfigDoc = {
   userId: string;
   username?: string;
   modelProvider?: "gemini" | "jimeng";
+  description?: string;
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, any>;
@@ -72,6 +73,8 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   }
 
   const prompt = (body.prompt ?? "").toString().trim();
+  const descriptionRaw = String((body as any).description ?? "").trim();
+  const description = descriptionRaw || undefined;
 
   const ref = body.referenceImages;
   const referenceImages = Array.isArray(ref)
@@ -110,6 +113,7 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   const now = new Date();
   const patch: Partial<ImageConfigDoc> = {
     modelProvider,
+    description,
     prompt,
     referenceImages,
     generationConfig: normalizeGenerationConfig(body.generationConfig),

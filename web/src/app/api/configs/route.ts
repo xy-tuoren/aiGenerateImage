@@ -8,6 +8,7 @@ type ImageConfigDoc = {
   userId: string;
   username?: string;
   modelProvider?: "gemini" | "jimeng";
+  description?: string;
   prompt: string;
   referenceImages?: string[];
   generationConfig?: Record<string, any>;
@@ -59,6 +60,8 @@ export async function POST(req: NextRequest) {
   }
 
   const prompt = (body.prompt ?? "").toString().trim();
+  const descriptionRaw = String((body as any).description ?? "").trim();
+  const description = descriptionRaw || undefined;
 
   const ref = body.referenceImages;
   const referenceImages = Array.isArray(ref)
@@ -101,6 +104,7 @@ export async function POST(req: NextRequest) {
     userId: user.userId,
     username: user.username,
     modelProvider,
+    description,
     prompt,
     referenceImages,
     generationConfig: normalizeGenerationConfig(body.generationConfig),
