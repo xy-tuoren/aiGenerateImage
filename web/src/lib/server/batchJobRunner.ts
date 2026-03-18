@@ -115,6 +115,13 @@ type GenerationRecordDoc = {
   referenceImages?: string[];
 };
 
+type PromptTemplateDoc = {
+  _id?: ObjectId;
+  name: string;
+  nameKey?: string;
+  template: string;
+};
+
 type StartJobInput = {
   jobId: string;
   configIds: string[];
@@ -122,6 +129,36 @@ type StartJobInput = {
   countOverrideMap?: Record<string, number>;
   onlyMissing?: boolean;
 };
+
+function renderCustomPromptTemplate(
+  template: string,
+  args: Record<string, unknown>
+): string {
+  const text = String(template || "");
+  if (!text) return "";
+  return text.replace(
+    /\{\{\s*([A-Za-z0-9_]+)\s*\}\}|\$\{([A-Za-z0-9_]+)\}/g,
+    (_m, k1, k2) => {
+      const key = String(k1 || k2 || "").trim();
+      if (!key) return "";
+      const v = (args as any)[key];
+      return v === undefined || v === null ? "" : String(v);
+    }
+  );
+}
+
+async function getPromptTemplateMap(db: Awaited<ReturnType<typeof getMongoDb>>) {
+  const col = db.collection<PromptTemplateDoc>("prompt_templates");
+  const docs = await col.find({}).toArray();
+  const map = new Map<string, string>();
+  for (const d of docs) {
+    const name = String(d?.name || "").trim();
+    const tpl = String(d?.template || "");
+    if (!name || !tpl.trim()) continue;
+    map.set(name, tpl);
+  }
+  return map;
+}
 
 declare global {
   var __batchJobRunning: Map<string, Promise<void>> | undefined;
@@ -438,7 +475,10 @@ async function prepareReferenceImages(
   return { forModel: forModel.length ? forModel : undefined, publicUrls: publicUrls.length ? publicUrls : undefined };
 }
 
-function buildPrompt(config: ImageConfigDoc): string {
+function buildPrompt(
+  config: ImageConfigDoc,
+  customTemplateMap?: Map<string, string>
+): string {
   const fnName = (config.promptTmpFunName || "").trim();
   const modelProvider = getModelProvider(config);
   const imageCfg = config.imageConfig && typeof config.imageConfig === "object" ? (config.imageConfig as any) : {};
@@ -453,7 +493,14 @@ function buildPrompt(config: ImageConfigDoc): string {
     ...(config.extra || {}),
   };
   const fn = fnName ? (promptFns as Record<string, unknown>)[fnName] : undefined;
-  const out = typeof fn === "function" ? String((fn as (args: typeof baseArgs) => unknown)(baseArgs)) : String(config.prompt || "");
+  const customTemplate =
+    fnName && customTemplateMap ? customTemplateMap.get(fnName) : undefined;
+  const out =
+    typeof fn === "function"
+      ? String((fn as (args: typeof baseArgs) => unknown)(baseArgs))
+      : customTemplate
+        ? renderCustomPromptTemplate(customTemplate, baseArgs as any)
+        : String(config.prompt || "");
   return appendGlobalPrompt(out, baseArgs);
 }
 
@@ -502,6 +549,9 @@ const formatRetryFailedError = (msg: string, retryMax: number) => {
 
 async function runBatchJob(input: StartJobInput) {
   const db = await getMongoDb();
+  const promptTemplateMap = await getPromptTemplateMap(db).catch(
+    () => new Map<string, string>()
+  );
   const jobObjectId = new ObjectId(input.jobId);
   const jobsCol = db.collection<BatchJobDoc>("batch_jobs");
   const jobConfigsCol = db.collection<BatchJobConfigDoc>("batch_job_configs");
@@ -561,7 +611,7 @@ async function runBatchJob(input: StartJobInput) {
       { $set: { status: "running", updatedAt: new Date() }, $unset: { error: "" } as any }
     );
 
-    const prompt = buildPrompt(config);
+    const prompt = buildPrompt(config, promptTemplateMap);
     const imageCfg = config.imageConfig && typeof config.imageConfig === "object" ? (config.imageConfig as any) : {};
     const modelProvider = getModelProvider(config);
     const aspectRatio0 =

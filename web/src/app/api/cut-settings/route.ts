@@ -38,10 +38,19 @@ export async function PUT(req: NextRequest) {
     return Response.json({ ok: false, error: "body 必须是 JSON 对象" }, { status: 400 });
   }
 
+  const hasOwn = (k: string) => Object.prototype.hasOwnProperty.call(body, k);
+  const current = await getCutSettingsForUser(guard.user.userId);
   const normalized = normalizeCutSettings({
-    byAppRatio: (body as any).byAppRatio,
-    customTemplatePrompts: (body as any).customTemplatePrompts,
-    customTemplateThinkingLevels: (body as any).customTemplateThinkingLevels,
+    byAppRatio: hasOwn("byAppRatio") ? (body as any).byAppRatio : current.byAppRatio,
+    customTemplatePrompts: hasOwn("customTemplatePrompts")
+      ? (body as any).customTemplatePrompts
+      : current.customTemplatePrompts,
+    customTemplateThinkingLevels: hasOwn("customTemplateThinkingLevels")
+      ? (body as any).customTemplateThinkingLevels
+      : current.customTemplateThinkingLevels,
+    downloadFixedCode: hasOwn("downloadFixedCode")
+      ? (body as any).downloadFixedCode
+      : current.downloadFixedCode,
   });
 
   const builtIn = new Set(listBuiltInCutTemplateNames());

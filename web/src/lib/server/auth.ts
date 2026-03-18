@@ -576,6 +576,18 @@ function resolveApiPermissionKey(pathname: string, method: string): string | nul
     return null;
   }
 
+  if (parts[1] === "prompt-templates") {
+    if (parts.length === 2) {
+      if (m === "GET") return "api:prompt-templates:read";
+      if (m === "POST") return "api:prompt-templates:write";
+      return null;
+    }
+    if (parts.length === 3) {
+      if (m === "PUT" || m === "DELETE") return "api:prompt-templates:write";
+      return null;
+    }
+  }
+
   if (parts[1] === "batch-jobs") {
     if (parts.length === 2) {
       if (m === "GET") return "api:batch-jobs:read";

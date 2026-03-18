@@ -446,8 +446,8 @@ export const CUT_TEMPLATES_BY_APP_RATIO: Record<string, Partial<Record<string, s
     ],
   },
   buzz: {
-    "1:1": ["getBuzzCutScaleFinalPrompt", "getBuzzCutChangeFinalPrompt"],
-    "4:5": ["getBuzzCutScaleFinalPrompt", "getBuzzCutChangeFinalPrompt"],
+    "1:1": ["getBuzzCutScaleFinalPrompt", "getBuzzCutChangeFinalPrompt", "stitchLongImage1024"],
+    "4:5": ["getBuzzCutScaleFinalPrompt", "getBuzzCutChangeFinalPrompt", "getCutVerticalCollagePrompt"],
   },
   kids: {
     "1:1": ["getKidsCutScaleFinalPrompt", "getKidsCutChangeFinalPrompt", "stitchLongImage1024"],

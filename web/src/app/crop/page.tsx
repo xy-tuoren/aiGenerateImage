@@ -87,6 +87,11 @@ export default function CropPage() {
   const [downloadFixedCode, setDownloadFixedCode] = useState<string>("@404");
   const [downloadWithSubfolders, setDownloadWithSubfolders] =
     useState<boolean>(false);
+  const cutSettingsReadyRef = useRef(false);
+  const downloadFixedCodeSaveTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const lastSavedDownloadFixedCodeRef = useRef<string>("@404");
   const [downloading, setDownloading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [excludedKeys, setExcludedKeys] = useState<Record<string, true>>({});
@@ -153,6 +158,10 @@ export default function CropPage() {
     return () => {
       isMountedRef.current = false;
       downloadAbortRef.current?.abort();
+      if (downloadFixedCodeSaveTimerRef.current) {
+        clearTimeout(downloadFixedCodeSaveTimerRef.current);
+        downloadFixedCodeSaveTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -859,6 +868,64 @@ export default function CropPage() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/cut-settings", { method: "GET" });
+        const data = await res.json().catch(() => null);
+        if (
+          res.ok &&
+          data?.ok &&
+          data?.settings &&
+          typeof data.settings === "object"
+        ) {
+          const nextCode = String(
+            (data.settings as any).downloadFixedCode ?? ""
+          );
+          setDownloadFixedCode(nextCode || "@404");
+          lastSavedDownloadFixedCodeRef.current = nextCode || "@404";
+        } else {
+          lastSavedDownloadFixedCodeRef.current = "@404";
+        }
+      } catch {
+        lastSavedDownloadFixedCodeRef.current = "@404";
+      } finally {
+        cutSettingsReadyRef.current = true;
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!cutSettingsReadyRef.current) return;
+    if (downloadFixedCode === lastSavedDownloadFixedCodeRef.current) return;
+    if (downloadFixedCodeSaveTimerRef.current) {
+      clearTimeout(downloadFixedCodeSaveTimerRef.current);
+    }
+    downloadFixedCodeSaveTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/cut-settings", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ downloadFixedCode })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          messageApi.error(data?.error || "固定码自动保存失败");
+          return;
+        }
+        lastSavedDownloadFixedCodeRef.current = downloadFixedCode;
+      } catch (e) {
+        messageApi.error(e instanceof Error ? e.message : String(e));
+      }
+    }, 500);
+    return () => {
+      if (downloadFixedCodeSaveTimerRef.current) {
+        clearTimeout(downloadFixedCodeSaveTimerRef.current);
+        downloadFixedCodeSaveTimerRef.current = null;
+      }
+    };
+  }, [downloadFixedCode, messageApi]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {

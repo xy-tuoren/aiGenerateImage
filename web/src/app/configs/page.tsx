@@ -10,10 +10,13 @@ import {
   Form,
   Input,
   InputNumber,
+  Modal,
   Popconfirm,
   Select,
   Space,
   Table,
+  Tabs,
+  Tooltip,
   Typography,
   message
 } from "antd";
@@ -67,6 +70,17 @@ type ConfigItem = {
   promptTmpFunName?: string;
   extra?: Record<string, unknown>;
   createdAt?: string;
+};
+
+type PromptTemplateItem = {
+  id: string;
+  userId?: string;
+  name: string;
+  template: string;
+  description?: string;
+  username?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 const MODEL_PROVIDER_OPTIONS = [
@@ -241,6 +255,13 @@ function splitLinesToList(input: string): string[] {
   );
 }
 
+function normalizeTemplateVarsForPreview(input: string): string {
+  return String(input || "").replace(
+    /\$\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}/g,
+    "{{$1}}"
+  );
+}
+
 export default function ConfigsPage() {
   const router = useRouter();
   const [messageApi, contextHolder] = message.useMessage();
@@ -275,6 +296,7 @@ export default function ConfigsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingBatch, setDeletingBatch] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState("");
   const [form] = Form.useForm();
   const [appNameOptions, setAppNameOptions] = useState<
     { label: string; value: string }[]
@@ -314,6 +336,15 @@ export default function ConfigsPage() {
     width: 0,
     scrollWidth: 0
   });
+  const [activeTab, setActiveTab] = useState("configs");
+  const [templateItems, setTemplateItems] = useState<PromptTemplateItem[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [templateSubmitting, setTemplateSubmitting] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
+    null
+  );
+  const [templateForm] = Form.useForm();
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -331,6 +362,95 @@ export default function ConfigsPage() {
       setLoading(false);
     }
   }, [messageApi]);
+
+  const fetchPromptTemplates = useCallback(async () => {
+    setTemplatesLoading(true);
+    try {
+      const res = await fetch("/api/prompt-templates", { method: "GET" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        messageApi.error(data?.error || "获取提示词模板失败");
+        return;
+      }
+      setTemplateItems(Array.isArray(data.items) ? data.items : []);
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTemplatesLoading(false);
+    }
+  }, [messageApi]);
+
+  const handleSubmitPromptTemplate = useCallback(async () => {
+    const values = await templateForm.validateFields();
+    setTemplateSubmitting(true);
+    try {
+      const isEdit = Boolean(editingTemplateId);
+      const res = await fetch(
+        isEdit
+          ? `/api/prompt-templates/${editingTemplateId}`
+          : "/api/prompt-templates",
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            ...(isEdit ? {} : { name: String(values.name || "").trim() }),
+            description: String(values.description || "").trim() || undefined,
+            template: String(values.template || "")
+          })
+        }
+      );
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        messageApi.error(
+          data?.error || (isEdit ? "修改模板失败" : "新增模板失败")
+        );
+        return;
+      }
+      messageApi.success(isEdit ? "修改模板成功" : "新增模板成功");
+      setEditingTemplateId(null);
+      setTemplateModalOpen(false);
+      templateForm.resetFields();
+      await fetchPromptTemplates();
+    } catch (e) {
+      messageApi.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTemplateSubmitting(false);
+    }
+  }, [editingTemplateId, fetchPromptTemplates, messageApi, templateForm]);
+
+  const handleEditPromptTemplate = useCallback(
+    (row: PromptTemplateItem) => {
+      setEditingTemplateId(String(row.id));
+      templateForm.resetFields();
+      templateForm.setFieldsValue({
+        name: String(row.name || ""),
+        description: String(row.description || ""),
+        template: String(row.template || "")
+      });
+      setTemplateModalOpen(true);
+    },
+    [templateForm]
+  );
+
+  const handleDeletePromptTemplate = useCallback(
+    async (id: string) => {
+      try {
+        const res = await fetch(`/api/prompt-templates/${id}`, {
+          method: "DELETE"
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          messageApi.error(data?.error || "删除模板失败");
+          return;
+        }
+        messageApi.success("删除模板成功");
+        await fetchPromptTemplates();
+      } catch (e) {
+        messageApi.error(e instanceof Error ? e.message : String(e));
+      }
+    },
+    [fetchPromptTemplates, messageApi]
+  );
 
   const uploadReferenceFiles = useCallback(
     async (files: File[]) => {
@@ -621,12 +741,72 @@ export default function ConfigsPage() {
     [buildPutPayload, messageApi]
   );
 
-  const promptTmpFunNameOptions = useMemo(() => {
+  const builtinPromptTemplateRows = useMemo(() => {
+    const demoParams = {
+      appName: "{{appName}}",
+      lang: "{{lang}}",
+      prompt: "{{prompt}}",
+      aspectRatio: "{{aspectRatio}}"
+    };
     return Object.keys(promptFns)
       .filter((k) => typeof (promptFns as any)[k] === "function")
       .sort()
-      .map((k) => ({ label: k, value: k }));
+      .map((k) => {
+        const fn = (promptFns as any)[k];
+        let preview = "";
+        try {
+          preview = normalizeTemplateVarsForPreview(
+            String(fn(demoParams) || "")
+          );
+        } catch {
+          preview = "";
+        }
+        return {
+          id: `builtin:${k}`,
+          name: k,
+          template: preview || "（内置函数动态生成模板）",
+          description: "内置模板",
+          username: "system",
+          source: "builtin" as const
+        };
+      });
   }, []);
+
+  const promptTmpFunNameOptions = useMemo(() => {
+    const names = new Set<string>();
+    const out: { label: string; value: string }[] = [];
+    for (const row of builtinPromptTemplateRows) {
+      if (names.has(row.name)) continue;
+      names.add(row.name);
+      out.push({ label: `${row.name}（内置）`, value: row.name });
+    }
+    for (const row of templateItems) {
+      const name = String(row?.name || "").trim();
+      if (!name || names.has(name)) continue;
+      names.add(name);
+      out.push({ label: `${name}（自定义）`, value: name });
+    }
+    return out.sort((a, b) => String(a.value).localeCompare(String(b.value)));
+  }, [builtinPromptTemplateRows, templateItems]);
+
+  const allPromptTemplateRows = useMemo(() => {
+    const customRows = (templateItems || []).map((it) => ({
+      id: it.id,
+      name: String(it.name || ""),
+      template: String(it.template || ""),
+      description: it.description || "",
+      username: it.username || "",
+      createdAt: it.createdAt || "",
+      updatedAt: it.updatedAt || it.createdAt || "",
+      source: "custom" as const
+    }));
+    customRows.sort((a, b) => {
+      const ta = new Date(String(a.createdAt || "")).getTime();
+      const tb = new Date(String(b.createdAt || "")).getTime();
+      return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0);
+    });
+    return [...customRows, ...builtinPromptTemplateRows];
+  }, [builtinPromptTemplateRows, templateItems]);
 
   const startEditCell = useCallback(
     (
@@ -1392,6 +1572,7 @@ export default function ConfigsPage() {
   useEffect(() => {
     fetchList();
     fetchAppNameOptions();
+    fetchPromptTemplates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1407,9 +1588,11 @@ export default function ConfigsPage() {
         const data = await res.json().catch(() => null);
         if (!mounted) return;
         setIsSuperAdmin(Boolean(data?.ok && data?.user?.isSuperAdmin));
+        setCurrentUserId(String(data?.ok ? data?.user?.userId || "" : ""));
       } catch {
         if (!mounted) return;
         setIsSuperAdmin(false);
+        setCurrentUserId("");
       }
     })();
     return () => {
@@ -1603,6 +1786,181 @@ export default function ConfigsPage() {
     });
   }, [filterAppName, filterLang, items]);
 
+  const promptTemplateColumns: ColumnsType<
+    (PromptTemplateItem & { source?: "builtin" | "custom" }) | any
+  > = useMemo(
+    () => [
+      {
+        title: "模板函数名",
+        dataIndex: "name",
+        key: "name",
+        width: 200,
+        ellipsis: { showTitle: true }
+      },
+      {
+        title: "描述",
+        dataIndex: "description",
+        key: "description",
+        width: 110,
+        ellipsis: { showTitle: true },
+        render: (v) => String(v || "—")
+      },
+      {
+        title: "模板预览",
+        dataIndex: "template",
+        key: "template",
+        width: 680,
+        render: (v) =>
+          (() => {
+            const previewText = normalizeTemplateVarsForPreview(
+              String(v || "")
+            );
+            return (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  width: "100%"
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                  <Tooltip
+                    styles={{ root: { maxWidth: "none" } }}
+                    title={
+                      <div
+                        style={{
+                          width: 920,
+                          maxHeight: "70vh",
+                          overflowY: "auto",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word"
+                        }}
+                      >
+                        {previewText}
+                      </div>
+                    }
+                  >
+                    <Typography.Text
+                      style={{ display: "block", whiteSpace: "nowrap" }}
+                      ellipsis
+                    >
+                      {previewText}
+                    </Typography.Text>
+                  </Tooltip>
+                </div>
+                <Tooltip title="复制模板内容">
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<CopyOutlined />}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        await navigator.clipboard.writeText(previewText);
+                        messageApi.success("已复制模板内容");
+                      } catch (err) {
+                        messageApi.error(
+                          err instanceof Error ? err.message : "复制失败"
+                        );
+                      }
+                    }}
+                  />
+                </Tooltip>
+              </div>
+            );
+          })()
+      },
+      {
+        title: "创建人",
+        dataIndex: "username",
+        key: "username",
+        width: 80,
+        ellipsis: { showTitle: true },
+        align: "center",
+        render: (v, row: any) =>
+          row?.source === "custom" ? String(v || "—") : "system"
+      },
+      {
+        title: "新增时间",
+        dataIndex: "createdAt",
+        key: "createdAt",
+        width: 180,
+        ellipsis: { showTitle: true },
+        render: (v, row: any) => {
+          if (row?.source !== "custom") return "—";
+          const t = new Date(String(v || ""));
+          if (!Number.isFinite(t.getTime())) return "—";
+          const pad = (n: number) => String(n).padStart(2, "0");
+          return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(
+            t.getDate()
+          )} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
+        }
+      },
+      {
+        title: "操作",
+        key: "actions",
+        width: 130,
+        align: "center",
+        render: (_v, row: any) => {
+          if (row?.source !== "custom") return "—";
+          const isOwner =
+            String(row?.userId || "").trim() &&
+            String(row?.userId || "").trim() ===
+              String(currentUserId || "").trim();
+          const canEdit = Boolean(isSuperAdmin || isOwner);
+          const canDelete = Boolean(isSuperAdmin || isOwner);
+          return (
+            <Space size={8}>
+              {canEdit ? (
+                <Button
+                  size="small"
+                  onClick={() =>
+                    handleEditPromptTemplate(row as PromptTemplateItem)
+                  }
+                >
+                  修改
+                </Button>
+              ) : (
+                <Button size="small" disabled title="仅管理员或创建者可修改">
+                  修改
+                </Button>
+              )}
+              {canDelete ? (
+                <Popconfirm
+                  title="确认删除该模板？"
+                  okText="删除"
+                  cancelText="取消"
+                  onConfirm={() => handleDeletePromptTemplate(String(row.id))}
+                >
+                  <Button size="small" danger>
+                    删除
+                  </Button>
+                </Popconfirm>
+              ) : (
+                <Button
+                  size="small"
+                  danger
+                  disabled
+                  title="仅管理员或创建者可删除"
+                >
+                  删除
+                </Button>
+              )}
+            </Space>
+          );
+        }
+      }
+    ],
+    [
+      currentUserId,
+      handleDeletePromptTemplate,
+      handleEditPromptTemplate,
+      isSuperAdmin,
+      messageApi
+    ]
+  );
+
   const openCreate = () => {
     form.resetFields();
     const geminiMatched = deriveGeminiMatchFields(1024, 1024);
@@ -1755,230 +2113,335 @@ export default function ConfigsPage() {
   return (
     <AdminShell defaultSelectedKey="/configs">
       {contextHolder}
-      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-        <Card>
-          <Space wrap>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              新增配置
-            </Button>
-            <Typography.Text strong>筛选：</Typography.Text>
-            <AutoComplete
-              style={{ width: 180 }}
-              value={filterAppName}
-              options={appNameOptions}
-              onChange={(v) => setFilterAppName(String(v || ""))}
-              showSearch={{
-                filterOption: (inputValue, option) => {
-                  const v = String(option?.value ?? "");
-                  const l = String((option as any)?.label ?? "");
-                  const q = String(inputValue || "").toLowerCase();
-                  return (
-                    v.toLowerCase().includes(q) || l.toLowerCase().includes(q)
-                  );
-                }
-              }}
-            >
-              <Input allowClear placeholder="appName" />
-            </AutoComplete>
-            <AutoComplete
-              style={{ width: 100 }}
-              value={filterLang}
-              options={SUPPORTED_LANGUAGES.map((x) => ({ value: x }))}
-              onChange={(v) => setFilterLang(String(v || ""))}
-              showSearch={{
-                filterOption: (inputValue, option) =>
-                  String(option?.value ?? "")
-                    .toLowerCase()
-                    .includes(String(inputValue || "").toLowerCase())
-              }}
-            >
-              <Input allowClear placeholder="lang" />
-            </AutoComplete>
-            {!tableEditMode ? (
-              <Button
-                icon={<EditOutlined />}
-                disabled={loading || deletingBatch}
-                onClick={() => {
-                  const base: Record<string, ConfigItem> = {};
-                  items.forEach((it) => {
-                    if (it?.id) base[it.id] = it;
-                  });
-                  setEditModeBaseMap(base);
-                  setDraftMap({});
-                  setEditingCell(null);
-                  setEditingDraft("");
-                  setTableEditMode(true);
-                }}
-              >
-                进入编辑模式
-              </Button>
-            ) : (
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          { key: "configs", label: "配置表格" },
+          { key: "templates", label: "提示词模板" }
+        ]}
+      />
+      {activeTab === "configs" ? (
+        <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+          <Card>
+            <Space wrap>
               <Button
                 type="primary"
-                loading={savingEditMode}
-                onClick={async () => {
-                  const ids = Object.keys(draftMap || {});
-                  if (!ids.length) {
-                    setTableEditMode(false);
-                    setEditModeBaseMap({});
-                    setDraftMap({});
-                    messageApi.success("未修改，无需保存");
-                    return;
+                icon={<PlusOutlined />}
+                onClick={openCreate}
+              >
+                新增配置
+              </Button>
+              <Typography.Text strong>筛选：</Typography.Text>
+              <AutoComplete
+                style={{ width: 180 }}
+                value={filterAppName}
+                options={appNameOptions}
+                onChange={(v) => setFilterAppName(String(v || ""))}
+                showSearch={{
+                  filterOption: (inputValue, option) => {
+                    const v = String(option?.value ?? "");
+                    const l = String((option as any)?.label ?? "");
+                    const q = String(inputValue || "").toLowerCase();
+                    return (
+                      v.toLowerCase().includes(q) || l.toLowerCase().includes(q)
+                    );
                   }
-                  setSavingEditMode(true);
-                  try {
-                    const failures: { id: string; error: string }[] = [];
-                    for (const id of ids) {
-                      const baseRow = editModeBaseMap[id];
-                      const currentRow = items.find((it) => it.id === id);
-                      if (!baseRow || !currentRow) continue;
-                      try {
-                        await saveInlineRow(
-                          currentRow,
-                          baseRow,
-                          `${id}:__editmode__`,
-                          { silentSuccess: true }
-                        );
-                      } catch (e) {
-                        failures.push({
-                          id,
-                          error: e instanceof Error ? e.message : String(e)
-                        });
-                      }
-                    }
-                    if (failures.length) {
-                      messageApi.error(
-                        `保存失败 ${failures.length}/${ids.length}：${
-                          failures[0]?.id
-                        } ${failures[0]?.error || ""}`
-                      );
-                      return;
-                    }
-                    messageApi.success(`保存成功：${ids.length} 条`);
-                    setTableEditMode(false);
-                    setEditModeBaseMap({});
+                }}
+              >
+                <Input allowClear placeholder="appName" />
+              </AutoComplete>
+              <AutoComplete
+                style={{ width: 100 }}
+                value={filterLang}
+                options={SUPPORTED_LANGUAGES.map((x) => ({ value: x }))}
+                onChange={(v) => setFilterLang(String(v || ""))}
+                showSearch={{
+                  filterOption: (inputValue, option) =>
+                    String(option?.value ?? "")
+                      .toLowerCase()
+                      .includes(String(inputValue || "").toLowerCase())
+                }}
+              >
+                <Input allowClear placeholder="lang" />
+              </AutoComplete>
+              {!tableEditMode ? (
+                <Button
+                  icon={<EditOutlined />}
+                  disabled={loading || deletingBatch}
+                  onClick={() => {
+                    const base: Record<string, ConfigItem> = {};
+                    items.forEach((it) => {
+                      if (it?.id) base[it.id] = it;
+                    });
+                    setEditModeBaseMap(base);
                     setDraftMap({});
                     setEditingCell(null);
                     setEditingDraft("");
-                  } finally {
-                    setSavingEditMode(false);
-                  }
+                    setTableEditMode(true);
+                  }}
+                >
+                  进入编辑模式
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  loading={savingEditMode}
+                  onClick={async () => {
+                    const ids = Object.keys(draftMap || {});
+                    if (!ids.length) {
+                      setTableEditMode(false);
+                      setEditModeBaseMap({});
+                      setDraftMap({});
+                      messageApi.success("未修改，无需保存");
+                      return;
+                    }
+                    setSavingEditMode(true);
+                    try {
+                      const failures: { id: string; error: string }[] = [];
+                      for (const id of ids) {
+                        const baseRow = editModeBaseMap[id];
+                        const currentRow = items.find((it) => it.id === id);
+                        if (!baseRow || !currentRow) continue;
+                        try {
+                          await saveInlineRow(
+                            currentRow,
+                            baseRow,
+                            `${id}:__editmode__`,
+                            { silentSuccess: true }
+                          );
+                        } catch (e) {
+                          failures.push({
+                            id,
+                            error: e instanceof Error ? e.message : String(e)
+                          });
+                        }
+                      }
+                      if (failures.length) {
+                        messageApi.error(
+                          `保存失败 ${failures.length}/${ids.length}：${
+                            failures[0]?.id
+                          } ${failures[0]?.error || ""}`
+                        );
+                        return;
+                      }
+                      messageApi.success(`保存成功：${ids.length} 条`);
+                      setTableEditMode(false);
+                      setEditModeBaseMap({});
+                      setDraftMap({});
+                      setEditingCell(null);
+                      setEditingDraft("");
+                    } finally {
+                      setSavingEditMode(false);
+                    }
+                  }}
+                >
+                  退出编辑模式并保存
+                </Button>
+              )}
+              <Button
+                icon={<PictureOutlined />}
+                disabled={!selectedRowKeys.length}
+                onClick={() => {
+                  const qs = encodeURIComponent(selectedRowKeys.join(","));
+                  router.push(`/batch?configIds=${qs}`);
                 }}
               >
-                退出编辑模式并保存
+                选择配置去生图
               </Button>
-            )}
-            <Button
-              icon={<PictureOutlined />}
-              disabled={!selectedRowKeys.length}
-              onClick={() => {
-                const qs = encodeURIComponent(selectedRowKeys.join(","));
-                router.push(`/batch?configIds=${qs}`);
+              <Popconfirm
+                title={`确认删除选中的 ${selectedRowKeys.length} 条配置？`}
+                okText="删除"
+                cancelText="取消"
+                onConfirm={handleBatchDelete}
+                disabled={!selectedRowKeys.length}
+              >
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  disabled={!selectedRowKeys.length}
+                  loading={deletingBatch}
+                >
+                  删除
+                </Button>
+              </Popconfirm>
+            </Space>
+          </Card>
+
+          <Card>
+            <style jsx global>{`
+              /* 固定底部横向滚动条（同步表格横向滚动） */
+              .configsStickyHScroll {
+                height: 14px;
+                overflow-x: scroll; /* 尽量保持滚动条常驻显示 */
+                overflow-y: hidden;
+                background: rgba(255, 255, 255, 0.92);
+                backdrop-filter: blur(6px);
+                border-top: 1px solid rgba(0, 0, 0, 0.06);
+              }
+              .configsStickyHScroll::-webkit-scrollbar {
+                height: 10px;
+              }
+              .configsStickyHScroll::-webkit-scrollbar-thumb {
+                background: rgba(0, 0, 0, 0.18);
+                border-radius: 999px;
+              }
+            `}</style>
+
+            <div
+              ref={tableWrapRef}
+              style={{
+                paddingBottom: isNarrowScreen && stickyHScroll.visible ? 14 : 0
               }}
             >
-              选择配置去生图
-            </Button>
-            <Popconfirm
-              title={`确认删除选中的 ${selectedRowKeys.length} 条配置？`}
-              okText="删除"
-              cancelText="取消"
-              onConfirm={handleBatchDelete}
-              disabled={!selectedRowKeys.length}
-            >
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                disabled={!selectedRowKeys.length}
-                loading={deletingBatch}
+              <Table
+                rowKey="id"
+                loading={loading}
+                columns={columns}
+                dataSource={filteredItems}
+                tableLayout="fixed"
+                // 强制表格在窄屏使用自身横向滚动，避免 UI 直接溢出
+                scroll={{ x: "max-content" }}
+                pagination={{
+                  current: configPage,
+                  pageSize: configPageSize,
+                  showSizeChanger: true,
+                  pageSizeOptions: ["10", "20", "50", "100"],
+                  showTotal: (total) => {
+                    const pages = Math.max(
+                      1,
+                      Math.ceil(
+                        (Number(total) || 0) / (Number(configPageSize) || 10)
+                      )
+                    );
+                    return `共 ${total} 条 / ${pages} 页`;
+                  },
+                  onChange: (page, pageSize) => {
+                    if (pageSize !== configPageSize) {
+                      setConfigPageSize(pageSize);
+                      setConfigPage(1);
+                    } else {
+                      setConfigPage(page);
+                    }
+                  }
+                }}
+                rowSelection={{
+                  selectedRowKeys,
+                  onChange: (keys) => setSelectedRowKeys(keys as string[])
+                }}
+              />
+            </div>
+
+            {isNarrowScreen && stickyHScroll.visible ? (
+              <div
+                ref={stickyHScrollRef}
+                className="configsStickyHScroll"
+                style={{
+                  position: "fixed",
+                  left: stickyHScroll.left,
+                  bottom: 0,
+                  width: stickyHScroll.width,
+                  zIndex: 999
+                }}
               >
-                删除
-              </Button>
-            </Popconfirm>
-          </Space>
-        </Card>
-
+                {/* 只用来撑出 scrollWidth，从而生成滚动条 */}
+                <div style={{ width: stickyHScroll.scrollWidth, height: 1 }} />
+              </div>
+            ) : null}
+          </Card>
+        </Space>
+      ) : (
         <Card>
-          <style jsx global>{`
-            /* 固定底部横向滚动条（同步表格横向滚动） */
-            .configsStickyHScroll {
-              height: 14px;
-              overflow-x: scroll; /* 尽量保持滚动条常驻显示 */
-              overflow-y: hidden;
-              background: rgba(255, 255, 255, 0.92);
-              backdrop-filter: blur(6px);
-              border-top: 1px solid rgba(0, 0, 0, 0.06);
-            }
-            .configsStickyHScroll::-webkit-scrollbar {
-              height: 10px;
-            }
-            .configsStickyHScroll::-webkit-scrollbar-thumb {
-              background: rgba(0, 0, 0, 0.18);
-              border-radius: 999px;
-            }
-          `}</style>
-
-          <div
-            ref={tableWrapRef}
-            style={{
-              paddingBottom: isNarrowScreen && stickyHScroll.visible ? 14 : 0
-            }}
+          <Space
+            orientation="vertical"
+            size={16}
+            style={{ width: "100%", display: "flex" }}
           >
+            <Space wrap>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setEditingTemplateId(null);
+                  templateForm.resetFields();
+                  setTemplateModalOpen(true);
+                }}
+              >
+                新增自定义提示词模板函数
+              </Button>
+              <Button
+                onClick={() => {
+                  void fetchPromptTemplates();
+                }}
+              >
+                刷新模板列表
+              </Button>
+              <Typography.Text type="secondary">
+                占位符支持 `{"{{appName}}"}` / `{"{{lang}}"}` / `{"{{prompt}}"}`
+                / `{"{{aspectRatio}}"}`。
+              </Typography.Text>
+            </Space>
+
             <Table
               rowKey="id"
-              loading={loading}
-              columns={columns}
-              dataSource={filteredItems}
+              loading={templatesLoading}
+              columns={promptTemplateColumns}
+              dataSource={allPromptTemplateRows as any[]}
               tableLayout="fixed"
-              // 强制表格在窄屏使用自身横向滚动，避免 UI 直接溢出
-              scroll={{ x: "max-content" }}
-              pagination={{
-                current: configPage,
-                pageSize: configPageSize,
-                showSizeChanger: true,
-                pageSizeOptions: ["10", "20", "50", "100"],
-                showTotal: (total) => {
-                  const pages = Math.max(
-                    1,
-                    Math.ceil(
-                      (Number(total) || 0) / (Number(configPageSize) || 10)
-                    )
-                  );
-                  return `共 ${total} 条 / ${pages} 页`;
-                },
-                onChange: (page, pageSize) => {
-                  if (pageSize !== configPageSize) {
-                    setConfigPageSize(pageSize);
-                    setConfigPage(1);
-                  } else {
-                    setConfigPage(page);
-                  }
-                }
-              }}
-              rowSelection={{
-                selectedRowKeys,
-                onChange: (keys) => setSelectedRowKeys(keys as string[])
-              }}
+              style={{ width: "100%" }}
+              pagination={{ pageSize: 20, showSizeChanger: true }}
             />
-          </div>
-
-          {isNarrowScreen && stickyHScroll.visible ? (
-            <div
-              ref={stickyHScrollRef}
-              className="configsStickyHScroll"
-              style={{
-                position: "fixed",
-                left: stickyHScroll.left,
-                bottom: 0,
-                width: stickyHScroll.width,
-                zIndex: 999
-              }}
-            >
-              {/* 只用来撑出 scrollWidth，从而生成滚动条 */}
-              <div style={{ width: stickyHScroll.scrollWidth, height: 1 }} />
-            </div>
-          ) : null}
+          </Space>
         </Card>
-      </Space>
+      )}
+
+      <Modal
+        title={
+          editingTemplateId
+            ? "修改自定义提示词模板函数"
+            : "新增自定义提示词模板函数"
+        }
+        open={templateModalOpen}
+        onCancel={() => {
+          setTemplateModalOpen(false);
+          setEditingTemplateId(null);
+        }}
+        onOk={() => void handleSubmitPromptTemplate()}
+        okButtonProps={{ loading: templateSubmitting }}
+        width={760}
+      >
+        <Form form={templateForm} layout="vertical">
+          <Form.Item
+            name="name"
+            label="函数名"
+            rules={[
+              { required: true, message: "请输入函数名" },
+              {
+                pattern: /^[A-Za-z_][A-Za-z0-9_]*$/,
+                message: "函数名仅支持字母/数字/下划线，且不能以数字开头"
+              }
+            ]}
+          >
+            <Input
+              placeholder="例如：getPromoPromptV2"
+              disabled={Boolean(editingTemplateId)}
+            />
+          </Form.Item>
+          <Form.Item name="description" label="描述（可选）">
+            <Input placeholder="例如：用于节日活动促销图" />
+          </Form.Item>
+          <Form.Item
+            name="template"
+            label="模板内容"
+            rules={[{ required: true, message: "请输入模板内容" }]}
+          >
+            <Input.TextArea
+              rows={10}
+              placeholder="你是一个广告设计师，应用名是{{appName}}，语言是{{lang}}。补充要求：{{prompt}}"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Drawer
         title={editingId ? "编辑生图配置" : "新增生图配置"}

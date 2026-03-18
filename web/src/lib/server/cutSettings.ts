@@ -18,6 +18,7 @@ type CutTemplateSettingsDoc = {
   byAppRatio?: Record<string, Partial<Record<CutSettingRatio, string[]>>>;
   customTemplatePrompts?: Record<string, string>;
   customTemplateThinkingLevels?: Record<string, string>;
+  downloadFixedCode?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -26,6 +27,7 @@ export type NormalizedCutTemplateSettings = {
   byAppRatio: Record<string, Partial<Record<CutSettingRatio, string[]>>>;
   customTemplatePrompts: Record<string, string>;
   customTemplateThinkingLevels: Record<string, string>;
+  downloadFixedCode: string;
 };
 
 const BUILTIN_SPECIAL_TEMPLATES = ["stitchLongImage1024"];
@@ -120,10 +122,16 @@ function normalizeCustomTemplateThinkingLevels(
   return out;
 }
 
+function normalizeDownloadFixedCode(input: unknown): string {
+  // 固定码本质是短标记，避免异常长字符串进入配置。
+  return String(input ?? "").trim().slice(0, 64);
+}
+
 export function normalizeCutSettings(input: {
   byAppRatio?: unknown;
   customTemplatePrompts?: unknown;
   customTemplateThinkingLevels?: unknown;
+  downloadFixedCode?: unknown;
 }): NormalizedCutTemplateSettings {
   const customTemplatePrompts = normalizeCustomTemplatePrompts(
     input?.customTemplatePrompts
@@ -134,7 +142,8 @@ export function normalizeCutSettings(input: {
     customTemplateThinkingLevels: normalizeCustomTemplateThinkingLevels(
       input?.customTemplateThinkingLevels,
       customTemplatePrompts
-    )
+    ),
+    downloadFixedCode: normalizeDownloadFixedCode(input?.downloadFixedCode)
   };
 }
 
@@ -144,7 +153,8 @@ export async function getCutSettingsForUser(userId: string): Promise<NormalizedC
     return {
       byAppRatio: {},
       customTemplatePrompts: {},
-      customTemplateThinkingLevels: {}
+      customTemplateThinkingLevels: {},
+      downloadFixedCode: ""
     };
   const db = await getMongoDb();
   const col = db.collection<CutTemplateSettingsDoc>("cut_template_settings");
@@ -152,7 +162,8 @@ export async function getCutSettingsForUser(userId: string): Promise<NormalizedC
   return normalizeCutSettings({
     byAppRatio: doc?.byAppRatio,
     customTemplatePrompts: doc?.customTemplatePrompts,
-    customTemplateThinkingLevels: doc?.customTemplateThinkingLevels
+    customTemplateThinkingLevels: doc?.customTemplateThinkingLevels,
+    downloadFixedCode: doc?.downloadFixedCode
   });
 }
 
@@ -163,6 +174,7 @@ export async function saveCutSettingsForUser(
     byAppRatio?: unknown;
     customTemplatePrompts?: unknown;
     customTemplateThinkingLevels?: unknown;
+    downloadFixedCode?: unknown;
   }
 ): Promise<NormalizedCutTemplateSettings> {
   const uid = String(userId || "").trim();
@@ -180,6 +192,7 @@ export async function saveCutSettingsForUser(
         byAppRatio: normalized.byAppRatio,
         customTemplatePrompts: normalized.customTemplatePrompts,
         customTemplateThinkingLevels: normalized.customTemplateThinkingLevels,
+        downloadFixedCode: normalized.downloadFixedCode,
         updatedAt: now,
       } as any,
       $setOnInsert: { createdAt: now } as any,
