@@ -44,6 +44,16 @@
       "username": "zx",
       "password": "123456",
       "role": "operator"
+    },
+    {
+      "username": "lq",
+      "password": "123456",
+      "role": "operator"
+    },
+    {
+      "username": "dyy",
+      "password": "123456",
+      "role": "operator"
     }
   ],
   "roleLimits": {
