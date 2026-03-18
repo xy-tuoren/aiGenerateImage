@@ -1,7 +1,8 @@
 "use client";
 
 import { Image } from "antd";
-import { memo, useCallback } from "react";
+import { StarFilled } from "@ant-design/icons";
+import { memo, useCallback, useRef } from "react";
 
 import type { GridImage } from "../_lib/types";
 
@@ -11,7 +12,9 @@ export const GridTile = memo(
     idx: number;
     displayUrl?: string;
     selected: boolean;
+    favorited: boolean;
     onTogglePick: (k: string) => void;
+    onToggleFavorite: () => void;
     onOpenPreview: (idx: number) => void;
     onOpenMeta: (img: GridImage) => void;
   }) {
@@ -20,11 +23,14 @@ export const GridTile = memo(
       idx,
       displayUrl,
       selected,
+      favorited,
       onTogglePick,
+      onToggleFavorite,
       onOpenPreview,
       onOpenMeta
     } = props;
     const src = displayUrl ?? img.url;
+    const clickTimerRef = useRef<number | null>(null);
 
     const onContextMenu = useCallback(
       (e: any) => {
@@ -35,8 +41,25 @@ export const GridTile = memo(
     );
 
     const onClick = useCallback(() => {
-      onOpenPreview(idx);
+      if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = window.setTimeout(() => {
+        clickTimerRef.current = null;
+        onOpenPreview(idx);
+      }, 220);
     }, [idx, onOpenPreview]);
+
+    const onDoubleClick = useCallback(
+      (e: any) => {
+        if (clickTimerRef.current) {
+          window.clearTimeout(clickTimerRef.current);
+          clickTimerRef.current = null;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        onToggleFavorite();
+      },
+      [onToggleFavorite]
+    );
 
     const onMouseDown = useCallback(
       (e: any) => {
@@ -63,6 +86,7 @@ export const GridTile = memo(
         }}
         onContextMenu={onContextMenu}
         onClick={onClick}
+        onDoubleClick={onDoubleClick}
         onMouseDown={onMouseDown}
       >
         <Image
@@ -75,6 +99,30 @@ export const GridTile = memo(
           loading="lazy"
           decoding="async"
         />
+        {favorited ? (
+          <div
+            style={{
+              position: "absolute",
+              top: 6,
+              right: 6,
+              width: 24,
+              height: 24,
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.85)",
+              background: "rgba(255,215,0,0.85)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "rgba(0,0,0,0.75)",
+              fontSize: 14,
+              userSelect: "none",
+              boxShadow: "0 6px 14px rgba(0,0,0,0.18)"
+            }}
+            title="已收藏（双击切换）"
+          >
+            <StarFilled />
+          </div>
+        ) : null}
         {selected ? (
           <div
             style={{
@@ -116,7 +164,9 @@ export const GridTile = memo(
     a.idx === b.idx &&
     a.displayUrl === b.displayUrl &&
     a.selected === b.selected &&
+    a.favorited === b.favorited &&
     a.onTogglePick === b.onTogglePick &&
+    a.onToggleFavorite === b.onToggleFavorite &&
     a.onOpenPreview === b.onOpenPreview &&
     a.onOpenMeta === b.onOpenMeta
 );

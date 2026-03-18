@@ -14,6 +14,7 @@ export function useGalleryData(args: {
     cutUrls: string[];
     fireplayUploadedUrls: string[];
     downloadedUrls: string[];
+    favoriteUrls: string[];
   }) => void;
 }) {
   const {
@@ -68,9 +69,12 @@ export function useGalleryData(args: {
     const downloadedUrls = Array.isArray(data2.downloadedUrls)
       ? (data2.downloadedUrls as any[]).map((x: any) => String(x || "").trim()).filter(Boolean)
       : [];
+    const favoriteUrls = Array.isArray(data2.favoriteUrls)
+      ? (data2.favoriteUrls as any[]).map((x: any) => String(x || "").trim()).filter(Boolean)
+      : [];
 
-    if (cutUrls.length || fireplayUploadedUrls.length || downloadedUrls.length) {
-      onFlagsLoadedRef.current?.({ cutUrls, fireplayUploadedUrls, downloadedUrls });
+    if (cutUrls.length || fireplayUploadedUrls.length || downloadedUrls.length || favoriteUrls.length) {
+      onFlagsLoadedRef.current?.({ cutUrls, fireplayUploadedUrls, downloadedUrls, favoriteUrls });
     }
   }, []);
 
@@ -151,17 +155,34 @@ export function useGalleryData(args: {
           .filter(Boolean);
         if (urlsToFetchFlags.length) {
           const firstBatchUrls = urlsToFetchFlags.slice(0, 300);
-          const res2 = await fetch("/api/cut-records/flags?scope=gallery", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ urls: firstBatchUrls }),
-          });
+          const [res2, favRes2] = await Promise.all([
+            fetch("/api/cut-records/flags?scope=gallery", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ urls: firstBatchUrls }),
+            }),
+            fetch("/api/gallery-favorites/flags", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ urls: firstBatchUrls }),
+            }),
+          ]);
           const data2 = await res2.json().catch(() => null);
           if (res2.ok) emitFlags(data2);
+          const favData2 = await favRes2.json().catch(() => null);
+          if (favRes2.ok) emitFlags(favData2);
 
           const restUrls = urlsToFetchFlags.slice(300);
           if (restUrls.length) {
             fetch("/api/cut-records/flags?scope=gallery", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ urls: restUrls }),
+            })
+              .then((r) => r.json().catch(() => null))
+              .then((data2: any) => emitFlags(data2))
+              .catch(() => { });
+            fetch("/api/gallery-favorites/flags", {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify({ urls: restUrls }),

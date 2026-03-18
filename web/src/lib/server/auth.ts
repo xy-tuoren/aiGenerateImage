@@ -631,6 +631,12 @@ function resolveApiPermissionKey(pathname: string, method: string): string | nul
     return null;
   }
 
+  if (parts[1] === "gallery-favorites") {
+    if (parts.length === 3 && parts[2] === "flags" && m === "POST") return "api:gallery-favorites:flags";
+    if (parts.length === 3 && parts[2] === "toggle" && m === "POST") return "api:gallery-favorites:toggle";
+    return null;
+  }
+
   if (parts[1] === "crop-previews") {
     if (parts.length === 2 && m === "POST") return "api:crop-previews";
     return null;

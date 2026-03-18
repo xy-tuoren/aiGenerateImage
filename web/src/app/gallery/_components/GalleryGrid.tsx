@@ -19,6 +19,8 @@ export function GalleryGrid(props: {
   displayUrls?: string[];
   selectedKeySet: Set<string>;
   togglePick: (k: string) => void;
+  favoriteUrlSet: Set<string>;
+  onToggleFavorite: (img: GridImage) => void;
   onOpenPreviewAt: (idx: number) => void;
   onOpenMeta: (img: GridImage) => void;
 }) {
@@ -33,6 +35,8 @@ export function GalleryGrid(props: {
     displayUrls,
     selectedKeySet,
     togglePick,
+    favoriteUrlSet,
+    onToggleFavorite,
     onOpenPreviewAt,
     onOpenMeta
   } = props;
@@ -82,7 +86,9 @@ export function GalleryGrid(props: {
             idx={idx}
             displayUrl={displayUrls?.[idx]}
             selected={selectedKeySet.has(img.key)}
+            favorited={favoriteUrlSet.has(img.url)}
             onTogglePick={togglePick}
+            onToggleFavorite={() => onToggleFavorite(img)}
             onOpenPreview={onOpenPreviewAt}
             onOpenMeta={onOpenMeta}
           />

@@ -31,6 +31,9 @@ export function GalleryToolbar(props: {
   downloadedFilter: "downloaded" | "undownloaded";
   onDownloadedFilterChange: (v: "downloaded" | "undownloaded") => void;
 
+  favoriteFilter: "all" | "favorite";
+  onFavoriteFilterChange: (v: "all" | "favorite") => void;
+
   loading: boolean;
   creatingCut: boolean;
   uploadingFireplay: boolean;
@@ -52,7 +55,6 @@ export function GalleryToolbar(props: {
 
   onCreateCut: () => void;
   onOpenImageEdit: () => void;
-  onUploadToFireplay: () => void;
   onDownloadSelected: () => void;
 }) {
   const {
@@ -67,6 +69,8 @@ export function GalleryToolbar(props: {
     onCutFilterChange,
     downloadedFilter,
     onDownloadedFilterChange,
+    favoriteFilter,
+    onFavoriteFilterChange,
     loading,
     creatingCut,
     uploadingFireplay,
@@ -84,7 +88,6 @@ export function GalleryToolbar(props: {
     dataTotalCount,
     onCreateCut,
     onOpenImageEdit,
-    onUploadToFireplay,
     onDownloadSelected
   } = props;
 
@@ -131,7 +134,7 @@ export function GalleryToolbar(props: {
       </AutoComplete>
 
       <Input
-        style={{ width: 120 }}
+        style={{ width: 100 }}
         placeholder="比例"
         value={aspectRatio}
         onChange={(e) => onAspectRatioChange(String(e.target.value || ""))}
@@ -157,7 +160,7 @@ export function GalleryToolbar(props: {
       />
 
       <Select
-        style={{ width: 100 }}
+        style={{ width: 90 }}
         placeholder="筛选"
         value={cutFilter}
         options={[
@@ -169,7 +172,7 @@ export function GalleryToolbar(props: {
       />
 
       <Select
-        style={{ width: 100 }}
+        style={{ width: 90 }}
         placeholder="是否下载"
         value={downloadedFilter}
         options={[
@@ -178,6 +181,20 @@ export function GalleryToolbar(props: {
         ]}
         onChange={(v) =>
           onDownloadedFilterChange((String(v || "") as any) || "undownloaded")
+        }
+        menuItemSelectedIcon={null as any}
+      />
+
+      <Select
+        style={{ width: 90 }}
+        placeholder="收藏"
+        value={favoriteFilter}
+        options={[
+          { label: "全部", value: "all" },
+          { label: "已收藏", value: "favorite" }
+        ]}
+        onChange={(v) =>
+          onFavoriteFilterChange((String(v || "") as any) || "all")
         }
         menuItemSelectedIcon={null as any}
       />

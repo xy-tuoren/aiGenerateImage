@@ -35,6 +35,10 @@ export default function GalleryPage() {
   const [downloadedFilter, setDownloadedFilter] = useState<
     "downloaded" | "undownloaded"
   >("undownloaded");
+  const [favoriteFilter, setFavoriteFilter] = useState<"all" | "favorite">(
+    "all"
+  );
+  const [favoriteUrls, setFavoriteUrls] = useState<string[]>([]);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [hiddenKeys, setHiddenKeys] = useState<string[]>([]);
@@ -94,6 +98,7 @@ export default function GalleryPage() {
       cutUrls: string[];
       downloadedUrls: string[];
       fireplayUploadedUrls: string[];
+      favoriteUrls: string[];
     }) => {
       if (flags.cutUrls?.length) {
         setCutUrls((prev) =>
@@ -112,6 +117,11 @@ export default function GalleryPage() {
           Array.from(
             new Set([...(prev || []), ...(flags.downloadedUrls || [])])
           )
+        );
+      }
+      if (flags.favoriteUrls?.length) {
+        setFavoriteUrls((prev) =>
+          Array.from(new Set([...(prev || []), ...(flags.favoriteUrls || [])]))
         );
       }
     },
@@ -501,6 +511,41 @@ export default function GalleryPage() {
     () => new Set(fireplayUploadedUrls),
     [fireplayUploadedUrls]
   );
+  const favoriteUrlSet = useMemo(() => new Set(favoriteUrls), [favoriteUrls]);
+
+  const toggleFavoriteByUrl = useCallback(
+    async (rawUrl: string) => {
+      const url = normalizeMaterialUrl(String(rawUrl || "").trim());
+      if (!url) return;
+      try {
+        const res = await fetch("/api/gallery-favorites/toggle", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          messageApi.error(data?.error || "收藏操作失败");
+          return;
+        }
+        const favorited = !!data?.favorited;
+        setFavoriteUrls((prev) => {
+          const set = new Set(prev || []);
+          if (favorited) set.add(url);
+          else set.delete(url);
+          return Array.from(set);
+        });
+        messageApi.open({
+          type: "info",
+          content: favorited ? "已收藏" : "已取消收藏",
+          duration: 0.6
+        });
+      } catch (e) {
+        messageApi.error(e instanceof Error ? e.message : String(e));
+      }
+    },
+    [messageApi]
+  );
 
   const visibleGridImages: GridImage[] = useMemo(() => {
     if (!hiddenKeys.length) return gridImages;
@@ -518,6 +563,9 @@ export default function GalleryPage() {
         ? downloadedUrlSet.has(img.url)
         : !downloadedUrlSet.has(img.url)
     );
+    arr = arr.filter((img) =>
+      favoriteFilter === "favorite" ? favoriteUrlSet.has(img.url) : true
+    );
     return arr;
   }, [
     visibleGridImages,
@@ -525,7 +573,9 @@ export default function GalleryPage() {
     cutUrlSet,
     downloadedFilter,
     downloadedUrlSet,
-    fireplayUploadedUrlSet
+    fireplayUploadedUrlSet,
+    favoriteFilter,
+    favoriteUrlSet
   ]);
 
   const paginatedGridImages: GridImage[] = useMemo(() => {
@@ -555,7 +605,7 @@ export default function GalleryPage() {
     return m;
   }, [gridImages]);
 
-  const { uploadingFireplay, onUploadToFireplay } = useUploadToFireplay({
+  const { uploadingFireplay } = useUploadToFireplay({
     messageApi,
     selectedKeys,
     keyToImg,
@@ -739,12 +789,16 @@ export default function GalleryPage() {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!previewOpen) return;
       const k = String(e.key || "").toLowerCase();
-      if (k !== "c" && k !== "x") return;
+      if (k !== "c" && k !== "x" && k !== "v") return;
       const img = paginatedGridImages[previewIndex];
       if (!img) return;
       e.preventDefault();
       e.stopPropagation();
       (e as any).stopImmediatePropagation?.();
+      if (k === "v") {
+        toggleFavoriteByUrl(img.url);
+        return;
+      }
       if (k === "c") {
         togglePick(img.key);
         setPreviewIndex((cur) => {
@@ -780,7 +834,9 @@ export default function GalleryPage() {
     previewOpen,
     previewIndex,
     selectedKeySet,
+    messageApi,
     togglePick,
+    toggleFavoriteByUrl,
     paginatedGridImages
   ]);
 
@@ -1133,6 +1189,8 @@ export default function GalleryPage() {
           onCutFilterChange={setCutFilter}
           downloadedFilter={downloadedFilter}
           onDownloadedFilterChange={setDownloadedFilter}
+          favoriteFilter={favoriteFilter}
+          onFavoriteFilterChange={setFavoriteFilter}
           loading={loading}
           creatingCut={creatingCut}
           uploadingFireplay={uploadingFireplay}
@@ -1150,7 +1208,6 @@ export default function GalleryPage() {
           dataTotalCount={dataTotalCount}
           onCreateCut={onCreateCut}
           onOpenImageEdit={() => setImageEditOpen(true)}
-          onUploadToFireplay={onUploadToFireplay}
           onDownloadSelected={onDownloadSelected}
         />
 
@@ -1214,6 +1271,10 @@ export default function GalleryPage() {
           displayUrls={displayUrls}
           selectedKeySet={selectedKeySet}
           togglePick={togglePick}
+          favoriteUrlSet={favoriteUrlSet}
+          onToggleFavorite={(img) => {
+            toggleFavoriteByUrl(img.url);
+          }}
           onOpenPreviewAt={onOpenPreviewAt}
           onOpenMeta={onOpenMeta}
         />
