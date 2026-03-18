@@ -352,9 +352,9 @@ export function getKidsCutChangeFinalPrompt({ appName, lang, prompt, aspectRatio
 //-----------------------Games-----------------------------
 
 export function getGamesDefaultPrompt({ appName, lang, prompt, aspectRatio }: PromptParams) {
-  return `1. 你是一名专业的广告设计师，这是你过去制作的图片，参考图 **作为风格参考**、**意境氛围的延续**，你需要通过调整构图、修改元素与背景等方式，避免生成图与参考图过于相似。
+  return `1. 你是一名专业的游戏广告设计师，这是你过去制作的图片，参考图 **作为风格、元素、构图、色调的参考**，你需要通过调整构图、修改元素与背景等方式，避免生成图与参考图过于相似。
 2. 除非参考图中包含文字，否则不添加文字，如果添加文字，文字语言必须为${lang}。
-3. 使用对比色或光影效果突出主体元素。
+3. 使用对比色或光影效果突出主体游戏相关内容元素。
 4. ${prompt}`
 }
 
