@@ -6,14 +6,16 @@ import {
   Card,
   Image,
   Input,
+  Popover,
   Select,
   Space,
   Switch,
   Table,
+  Tooltip,
   Typography,
   message
 } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { EditOutlined, ReloadOutlined } from "@ant-design/icons";
 import AdminShell from "@/app/_components/AdminShell";
 import { SUPPORTED_LANGUAGES } from "@/common/constants";
 
@@ -85,6 +87,8 @@ export default function CropPage() {
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [downloadFixedCode, setDownloadFixedCode] = useState<string>("@404");
+  const [fixedCodeEditorOpen, setFixedCodeEditorOpen] = useState(false);
+  const [fixedCodeDraft, setFixedCodeDraft] = useState<string>("@404");
   const [downloadWithSubfolders, setDownloadWithSubfolders] =
     useState<boolean>(false);
   const cutSettingsReadyRef = useRef(false);
@@ -1342,12 +1346,63 @@ export default function CropPage() {
           </Typography.Text>
           <Space size={6}>
             <Typography.Text type="secondary">固定码</Typography.Text>
-            <Input
-              size="small"
-              style={{ width: 90 }}
-              value={downloadFixedCode}
-              onChange={(e) => setDownloadFixedCode(e.target.value)}
-            />
+            <Tooltip
+              title={downloadFixedCode || "未设置固定码"}
+              placement="topLeft"
+              styles={{ root: { maxWidth: 560 } }}
+            >
+              <Input
+                size="small"
+                style={{ width: 90 }}
+                value={downloadFixedCode}
+                onChange={(e) => setDownloadFixedCode(e.target.value)}
+              />
+            </Tooltip>
+            <Popover
+              trigger="click"
+              placement="bottomLeft"
+              open={fixedCodeEditorOpen}
+              onOpenChange={(open) => {
+                setFixedCodeEditorOpen(open);
+                if (open) setFixedCodeDraft(downloadFixedCode);
+              }}
+              content={
+                <Space direction="vertical" size={8}>
+                  <Input.TextArea
+                    rows={4}
+                    style={{ width: 420 }}
+                    value={fixedCodeDraft}
+                    placeholder="输入固定码（支持长文本）"
+                    onChange={(e) => setFixedCodeDraft(e.target.value)}
+                  />
+                  <Space size={8} style={{ justifyContent: "flex-end" }}>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setFixedCodeEditorOpen(false);
+                        setFixedCodeDraft(downloadFixedCode);
+                      }}
+                    >
+                      取消
+                    </Button>
+                    <Button
+                      size="small"
+                      type="primary"
+                      onClick={() => {
+                        setDownloadFixedCode(fixedCodeDraft);
+                        setFixedCodeEditorOpen(false);
+                      }}
+                    >
+                      应用
+                    </Button>
+                  </Space>
+                </Space>
+              }
+            >
+              <Button size="small" icon={<EditOutlined />}>
+                编辑
+              </Button>
+            </Popover>
             <Typography.Text type="secondary">子文件夹</Typography.Text>
             <Switch
               size="small"

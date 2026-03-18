@@ -15,6 +15,7 @@ import { SelectedImagesStrip } from "./_components/SelectedImagesStrip";
 import { MetaModal } from "./_components/MetaModal";
 import { GalleryGrid } from "./_components/GalleryGrid";
 import { LoadMoreFooter } from "./_components/LoadMoreFooter";
+import { ImageAdjustPanel } from "./_components/ImageAdjustPanel";
 
 export default function GalleryPage() {
   const [messageApi, contextHolder] = message.useMessage();
@@ -80,6 +81,11 @@ export default function GalleryPage() {
     h: number;
   }>({ active: false, x: 0, y: 0, w: 0, h: 0 });
   const [imageEditOpen, setImageEditOpen] = useState(false);
+  const [showAdjustPanel, setShowAdjustPanel] = useState(false);
+  const [adjustMainPreviewUrl, setAdjustMainPreviewUrl] = useState<
+    string | null
+  >(null);
+  const adjustMainPreviewUrlRef = useRef<string | null>(null);
   const [overrideCacheBust, setOverrideCacheBust] = useState<
     Record<string, number>
   >({});
@@ -593,7 +599,39 @@ export default function GalleryPage() {
       ),
     [paginatedGridImages, overrideCacheBust]
   );
-  const previewItems = useMemo(() => displayUrls, [displayUrls]);
+  const onAdjustMainPreviewUrl = useCallback((url: string | null) => {
+    const prev = adjustMainPreviewUrlRef.current;
+    if (prev && prev !== url) URL.revokeObjectURL(prev);
+    adjustMainPreviewUrlRef.current = url;
+    setAdjustMainPreviewUrl(url);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      const u = adjustMainPreviewUrlRef.current;
+      if (u) URL.revokeObjectURL(u);
+    };
+  }, []);
+
+  const previewItems = useMemo(() => {
+    const base = [...displayUrls];
+    if (
+      previewOpen &&
+      showAdjustPanel &&
+      adjustMainPreviewUrl &&
+      previewIndex >= 0 &&
+      previewIndex < base.length
+    ) {
+      base[previewIndex] = adjustMainPreviewUrl;
+    }
+    return base;
+  }, [
+    displayUrls,
+    previewOpen,
+    showAdjustPanel,
+    adjustMainPreviewUrl,
+    previewIndex
+  ]);
 
   useEffect(() => {
     setFilteredCount(filteredGridImages.length);
@@ -779,11 +817,34 @@ export default function GalleryPage() {
   }, []);
 
   useEffect(() => {
-    if (!previewOpen) return;
+    if (!previewOpen) {
+      const u = adjustMainPreviewUrlRef.current;
+      if (u) URL.revokeObjectURL(u);
+      adjustMainPreviewUrlRef.current = null;
+      setAdjustMainPreviewUrl(null);
+      return;
+    }
+    setShowAdjustPanel(true);
     const len = paginatedGridImages.length;
     if (previewIndex < 0) setPreviewIndex(0);
     else if (previewIndex >= len) setPreviewIndex(Math.max(0, len - 1));
   }, [previewOpen, previewIndex, paginatedGridImages.length]);
+
+  const lastAdjustPreviewIdxRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!previewOpen) {
+      lastAdjustPreviewIdxRef.current = null;
+      return;
+    }
+    const prev = lastAdjustPreviewIdxRef.current;
+    if (prev !== null && prev !== previewIndex) {
+      const u = adjustMainPreviewUrlRef.current;
+      if (u) URL.revokeObjectURL(u);
+      adjustMainPreviewUrlRef.current = null;
+      setAdjustMainPreviewUrl(null);
+    }
+    lastAdjustPreviewIdxRef.current = previewIndex;
+  }, [previewIndex, previewOpen]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -1259,6 +1320,28 @@ export default function GalleryPage() {
             fetchImages();
           }}
         />
+
+        {previewOpen && (
+          <ImageAdjustPanel
+            open={showAdjustPanel}
+            imageUrl={paginatedGridImages[previewIndex]?.url ?? ""}
+            imageInfo={paginatedGridImages[previewIndex] ?? null}
+            onMainPreviewUrlChange={onAdjustMainPreviewUrl}
+            onClose={() => setShowAdjustPanel(false)}
+            onSaved={(payload: any) => {
+              if (payload?.url || payload?.originalUrl) {
+                const ts = Date.now();
+                setOverrideCacheBust((prev) => ({
+                  ...prev,
+                  ...(payload.url ? { [payload.url]: ts } : {}),
+                  ...(payload.originalUrl ? { [payload.originalUrl]: ts } : {})
+                }));
+              }
+              fetchImages();
+            }}
+            messageApi={messageApi}
+          />
+        )}
 
         <GalleryGrid
           gridWrapRef={gridWrapRef}
