@@ -413,6 +413,27 @@ export default function CropPage() {
       .map((k) => recordKeyToRow.get(k) || recordCacheRef.current.get(k))
       .filter(Boolean) as CutRecordItem[];
     const selectedIds = selectedRows.map((r) => String(r.id)).filter(Boolean);
+    const excludedKeysForDownload = Array.from(
+      new Set(
+        Object.keys(excludedKeys)
+          .map((k) => {
+            const firstPipe = k.indexOf("|");
+            if (firstPipe <= 0) return "";
+            const secondPipe = k.indexOf("|", firstPipe + 1);
+            if (secondPipe <= firstPipe + 1) return "";
+            const rowK = k.slice(0, firstPipe);
+            const ratio = k.slice(firstPipe + 1, secondPipe);
+            const tpl = k.slice(secondPipe + 1);
+            if (!ratio || !tpl) return "";
+            const row =
+              recordKeyToRow.get(rowK) || recordCacheRef.current.get(rowK);
+            const recId = row?.id ? String(row.id) : "";
+            if (!recId) return "";
+            return `${recId}|${ratio}|${tpl}`;
+          })
+          .filter(Boolean)
+      )
+    );
     const pickedAppNames = selectedRows
       .map((d) => String(d.appName || "").trim())
       .filter(Boolean);
@@ -469,7 +490,7 @@ export default function CropPage() {
               ids: selectedIds,
               fixedCode: downloadFixedCode,
               includeSubfolders: downloadWithSubfolders,
-              excludedKeys: Object.keys(excludedKeys)
+              excludedKeys: excludedKeysForDownload
             }),
             signal: controller.signal
           });
@@ -539,7 +560,7 @@ export default function CropPage() {
           ids: selectedIds,
           fixedCode: downloadFixedCode,
           includeSubfolders: downloadWithSubfolders,
-          excludedKeys: Object.keys(excludedKeys)
+          excludedKeys: excludedKeysForDownload
         }),
         signal: controller.signal
       });
