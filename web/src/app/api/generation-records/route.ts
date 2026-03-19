@@ -22,6 +22,13 @@ type GenerationRecordDoc = {
   batchFun?: string;
   aspectRatio?: string;
   referenceImages?: string[];
+  adjustParams?: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    hue: number;
+    temperature: number;
+  };
 };
 
 type GeneratedImageDoc = {
@@ -39,6 +46,13 @@ type GeneratedImageDoc = {
   batchFun?: string;
   aspectRatio?: string;
   referenceImages?: string[];
+  adjustParams?: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    hue: number;
+    temperature: number;
+  };
 };
 
 type BatchJobConfigDoc = {
@@ -126,6 +140,7 @@ export async function GET(req: Request) {
       batchFun: img.batchFun,
       aspectRatio: img.aspectRatio,
       referenceImages: img.referenceImages,
+      adjustParams: img.adjustParams,
     }))
     .filter((r) => !existingKeys.has(`${String(r.jobId)}|${String(r.configId)}|${Number(r.index)}`));
 
@@ -195,6 +210,7 @@ export async function GET(req: Request) {
     const appName2 = r.appName ?? cfg?.appName;
     const lang2 = r.lang ?? cfg?.lang;
     const referenceImages2 = r.referenceImages ?? cfg?.referenceImages;
+    const adjustParams2 = r.adjustParams;
     const batchFun2 = r.batchFun ?? cfg?.batchFun;
     const aspectRatio2 = r.aspectRatio ?? cfg?.imageConfig?.aspectRatio;
     return {
@@ -214,6 +230,7 @@ export async function GET(req: Request) {
       batchFun: batchFun2,
       aspectRatio: aspectRatio2,
       referenceImages: referenceImages2,
+      adjustParams: adjustParams2,
       configMeta: appName2 || lang2 || batchFun2 || aspectRatio2 || referenceImages2
         ? {
           appName: appName2,

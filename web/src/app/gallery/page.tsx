@@ -468,6 +468,23 @@ export default function GalleryPage() {
       const referenceImages = referenceImagesRaw
         .map((x) => String(x || "").trim())
         .filter(Boolean);
+      const adjustParamsRaw = it?.adjustParams as any;
+      const adjustParams =
+        adjustParamsRaw &&
+        typeof adjustParamsRaw === "object" &&
+        Number.isFinite(Number(adjustParamsRaw.brightness)) &&
+        Number.isFinite(Number(adjustParamsRaw.contrast)) &&
+        Number.isFinite(Number(adjustParamsRaw.saturation)) &&
+        Number.isFinite(Number(adjustParamsRaw.hue)) &&
+        Number.isFinite(Number(adjustParamsRaw.temperature))
+          ? {
+              brightness: Number(adjustParamsRaw.brightness),
+              contrast: Number(adjustParamsRaw.contrast),
+              saturation: Number(adjustParamsRaw.saturation),
+              hue: Number(adjustParamsRaw.hue),
+              temperature: Number(adjustParamsRaw.temperature)
+            }
+          : undefined;
       const url = normalizeMaterialUrl(String(it.url));
       g.imgs.push({
         key: `${recId || `${gk}|${configId}|${index}|${createdAt || ""}`}|${
@@ -482,6 +499,7 @@ export default function GalleryPage() {
         appName: it.appName ?? it.configMeta?.appName,
         lang: it.lang ?? it.configMeta?.lang,
         prompt: prompt || undefined,
+        adjustParams,
         referenceImages: referenceImages.length
           ? referenceImages.map((u) => normalizeMaterialUrl(u))
           : undefined

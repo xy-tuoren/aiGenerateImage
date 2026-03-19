@@ -12,6 +12,13 @@ export type HistoryItem = {
   appName?: string;
   lang?: string;
   referenceImages?: string[];
+  adjustParams?: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    hue: number;
+    temperature: number;
+  };
   configMeta?: {
     appName?: string;
     lang?: string;
@@ -34,5 +41,12 @@ export type GridImage = {
   lang?: string;
   prompt?: string;
   referenceImages?: string[];
+  adjustParams?: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    hue: number;
+    temperature: number;
+  };
 };
 

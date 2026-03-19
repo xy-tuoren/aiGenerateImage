@@ -10,6 +10,7 @@ type AdjustParams = {
   contrast: number;
   saturation: number;
   hue: number;
+  lightness: number;
   temperature: number;
 };
 
@@ -75,7 +76,8 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 }
 
 function applyAdjustToImageData(data: ImageData, params: AdjustParams): void {
-  const { brightness, contrast, saturation, hue, temperature } = params;
+  const { brightness, contrast, saturation, hue, lightness, temperature } =
+    params;
   const pixels = data.data;
   const brightOff = (brightness / 100) * 255;
   const contrastFactor =
@@ -106,7 +108,8 @@ function applyAdjustToImageData(data: ImageData, params: AdjustParams): void {
       clamp(b, 0, 255)
     );
     const newS = clamp(s * (1 + saturation / 100), 0, 100);
-    const [r2, g2, b2] = hslToRgb(h + hue, newS, l);
+    const newL = clamp(l * (1 + lightness / 100), 0, 100);
+    const [r2, g2, b2] = hslToRgb(h + hue, newS, newL);
 
     pixels[i] = clampByte(r2);
     pixels[i + 1] = clampByte(g2);
@@ -120,6 +123,7 @@ const DEFAULT_ADJUST: AdjustParams = {
   contrast: 0,
   saturation: 0,
   hue: 0,
+  lightness: 0,
   temperature: 0
 };
 
@@ -129,6 +133,7 @@ function isAdjustDefault(p: AdjustParams): boolean {
     p.contrast === DEFAULT_ADJUST.contrast &&
     p.saturation === DEFAULT_ADJUST.saturation &&
     p.hue === DEFAULT_ADJUST.hue &&
+    p.lightness === DEFAULT_ADJUST.lightness &&
     p.temperature === DEFAULT_ADJUST.temperature
   );
 }
@@ -210,6 +215,7 @@ export function ImageAdjustPanel(props: {
     if (!imageUrl || !open) return;
     setError(null);
     setLoading(true);
+    // 每次进入调色都从 0 开始。
     setParams({ ...DEFAULT_ADJUST });
     try {
       const url = imageUrl.startsWith("/")
@@ -553,11 +559,18 @@ export function ImageAdjustPanel(props: {
               onChange={(v) => setParams((p) => ({ ...p, saturation: v }))}
             />
             <SliderRow
-              label="色调"
+              label="色相"
               value={params.hue}
               min={-180}
               max={180}
               onChange={(v) => setParams((p) => ({ ...p, hue: v }))}
+            />
+            <SliderRow
+              label="明度"
+              value={params.lightness}
+              min={-100}
+              max={100}
+              onChange={(v) => setParams((p) => ({ ...p, lightness: v }))}
             />
             <SliderRow
               label="色温"
